@@ -1,0 +1,16 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './styles/globals.css'
+import { CRMProvider } from './context/CRMContext.jsx'
+
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <CRMProvider>
+      <App />
+    </CRMProvider>
+  </React.StrictMode>,
+)
