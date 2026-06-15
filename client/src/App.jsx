@@ -13,6 +13,15 @@ import AuditLogs from './pages/AuditLogs.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import Toast from './components/common/Toast.jsx';
 
+import AdminLayout from './components/layout/AdminLayout.jsx';
+import AdminOverview from './pages/admin/AdminOverview.jsx';
+import AdminUsers from './pages/admin/AdminUsers.jsx';
+import AdminApprovals from './pages/admin/AdminApprovals.jsx';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs.jsx';
+import AdminMasterData from './pages/admin/AdminMasterData.jsx';
+import AdminOwnership from './pages/admin/AdminOwnership.jsx';
+import AdminRoles from './pages/admin/AdminRoles.jsx';
+
 function AppLayout() {
   return (
     <CRMProvider>
@@ -24,23 +33,6 @@ function AppLayout() {
           <Route path="/leads" element={<LeadsPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/tenders" element={<TenderPage />} />
-          
-          <Route 
-            path="/admin/users" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                <UserManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/audit-logs" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                <AuditLogs />
-              </ProtectedRoute>
-            } 
-          />
         </Routes>
       </div>
     </CRMProvider>
@@ -56,6 +48,24 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             
+            <Route 
+              path="/admin/*" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              } 
+            >
+              <Route path="overview" element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="approvals" element={<AdminApprovals />} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
+              <Route path="master-data" element={<AdminMasterData />} />
+              <Route path="ownership" element={<AdminOwnership />} />
+              <Route path="roles" element={<AdminRoles />} />
+              <Route path="*" element={<Navigate to="overview" replace />} />
+            </Route>
+
             <Route 
               path="/*" 
               element={

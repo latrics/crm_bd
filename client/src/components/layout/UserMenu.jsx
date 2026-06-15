@@ -70,7 +70,7 @@ export default function UserMenu() {
 
           <div className="p-2 flex flex-col gap-1">
             {(user.role === 'admin' || user.role === 'super_admin') && (
-              <button onClick={() => navigate('/admin/users')} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
+              <button onClick={() => window.open('/admin/overview', '_blank')} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
                 <span className="text-lg opacity-60">🛡️</span> Admin Dashboard
               </button>
             )}

@@ -23,8 +23,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['"DM Sans"', 'sans-serif'],
-        serif: ['"Playfair Display"', 'serif'],
+        sans: ['"Montserrat"', 'sans-serif'],
+        serif: ['"Montserrat"', 'serif'],
       },
       borderRadius: {
         crm: '12px',
