@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 
 export default function AdminAuditLogs() {
   const [expandedRows, setExpandedRows] = useState({});
@@ -8,14 +9,19 @@ export default function AdminAuditLogs() {
   };
 
   const logs = [
-    { id: 1, timestamp: '2026-06-12 10:30 AM', user: 'Alice Smith', action: 'Update', module: 'Leads', details: { before: 'Stage: New', after: 'Stage: Qualified' }, ip: '192.168.1.10' },
-    { id: 2, timestamp: '2026-06-12 09:15 AM', user: 'Bob Jones', action: 'Create', module: 'Deals', details: { after: 'Deal Name: Project Apollo, Value: 50000' }, ip: '10.0.0.5' },
-    { id: 3, timestamp: '2026-06-11 04:45 PM', user: 'Alice Smith', action: 'Login', module: 'System', details: { after: 'Successful login' }, ip: '192.168.1.10' },
+    { id: 1, timestamp: '2026-06-12 10:30 AM', user: 'balaji.nagarajan@latrics.com', action: 'Update', module: 'Leads', details: { before: 'Stage: New', after: 'Stage: Qualified' }, ip: '192.168.1.10' },
+    { id: 2, timestamp: '2026-06-11 04:45 PM', user: 'balaji.nagarajan@latrics.com', action: 'Login', module: 'System', details: { after: 'Successful console developer login' }, ip: '192.168.1.10' },
+  ];
+
+  const guideSteps = [
+    "Audit trails trace mutations made to Lead, Deal, and Tender pipelines.",
+    "Click the toggle arrow on any row to expand and view precise changes in state.",
+    "Use the export CSV option to download logs for external security reports."
   ];
 
   return (
-    <div className="max-w-6xl">
-      <div className="flex justify-between items-end mb-8">
+    <div className="max-w-6xl space-y-6">
+      <div className="flex justify-between items-end mb-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Audit Logs</h1>
           <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Track user activity • data modifications • logins</p>
@@ -25,17 +31,20 @@ export default function AdminAuditLogs() {
         </button>
       </div>
 
+      <DeveloperGuide 
+        title="Security Audit Guide"
+        description="Verify system compliance, database queries, and administrative commands. Audit logs record absolute snapshots of data changes."
+        steps={guideSteps}
+      />
+
       <div className="flex gap-4 mb-6">
         <select className="border border-gray-200 rounded-xl px-4 py-2 text-sm text-brand-charcoal focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] bg-white font-medium cursor-pointer transition-all">
           <option>All Time</option>
           <option>This Month</option>
           <option>Last Month</option>
-          <option>Custom Range...</option>
         </select>
         <select className="border border-gray-200 rounded-xl px-4 py-2 text-sm text-brand-charcoal focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] bg-white font-medium cursor-pointer transition-all">
-          <option>All Users</option>
-          <option>Alice Smith</option>
-          <option>Bob Jones</option>
+          <option>Balaji Nagarajan</option>
         </select>
         <select className="border border-gray-200 rounded-xl px-4 py-2 text-sm text-brand-charcoal focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] bg-white font-medium cursor-pointer transition-all">
           <option>All Modules</option>
@@ -107,4 +116,3 @@ export default function AdminAuditLogs() {
     </div>
   );
 }
-

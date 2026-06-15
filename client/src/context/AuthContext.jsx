@@ -8,7 +8,7 @@ const initialState = {
   // user: null,
   // isAuthenticated: false,
   // loading: true,
-  user: { _id: "662a6e60b1341a001c900000", name: "Presenter", email: "admin@latrics.com", role: "super_admin" },
+  user: { _id: "662a6e60b1341a001c900000", name: "Balaji Nagarajan", email: "balaji.nagarajan@latrics.com", role: "super_admin" },
   isAuthenticated: true,
   loading: false,
   // ------------------------------------------------

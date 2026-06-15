@@ -1,4 +1,5 @@
 import React from 'react';
+import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 
 export default function AdminRoles() {
   const roles = ['Super Admin', 'Admin', 'Manager', 'Member'];
@@ -25,12 +26,24 @@ export default function AdminRoles() {
     ]}
   ];
 
+  const guideSteps = [
+    "Select checkboxes on a permission matrix to adjust granular access.",
+    "Click the save button at the bottom of the table to persist changes to the role database.",
+    "System security tokens refresh immediately upon updating any role template."
+  ];
+
   return (
-    <div className="max-w-5xl">
-      <div className="mb-8">
+    <div className="max-w-5xl space-y-6">
+      <div className="mb-4">
         <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Roles & Permissions</h1>
         <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Reference matrix for system access levels</p>
       </div>
+
+      <DeveloperGuide 
+        title="Role Access Guide"
+        description="Verify system access levels, check RBAC inheritance, and configure functional permissions for different roles."
+        steps={guideSteps}
+      />
 
       <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
         <div className="p-5 border-b border-gray-100 bg-gray-50/30 flex justify-between items-center">
@@ -65,7 +78,7 @@ export default function AdminRoles() {
                     {action.rights.map((hasRight, k) => (
                       <td key={k} className="px-6 py-3 text-center">
                         {hasRight ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs font-bold">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">
                             ✓
                           </span>
                         ) : (
@@ -85,4 +98,3 @@ export default function AdminRoles() {
     </div>
   );
 }
-

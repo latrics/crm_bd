@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 
 export default function AdminMasterData() {
   const [activeTab, setActiveTab] = useState('Pipeline Stages');
@@ -13,12 +14,24 @@ export default function AdminMasterData() {
 
   const activeItems = data[activeTab];
 
+  const guideSteps = [
+    "Navigate between different CRM dropdown modules using the tabs above.",
+    "Drag and drop stages (represented by ☰) to adjust order of pipeline stages.",
+    "Add new configuration entries using the + button at the bottom."
+  ];
+
   return (
-    <div className="max-w-4xl">
-      <div className="mb-8">
+    <div className="max-w-4xl space-y-6">
+      <div className="mb-4">
         <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Master Data Configuration</h1>
         <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Manage stages • statuses • sectors</p>
       </div>
+
+      <DeveloperGuide 
+        title="Master Data Configuration Guide"
+        description="Configure lookup fields, dropdown choices, status stages, and sectors used throughout lead acquisition and contract generation."
+        steps={guideSteps}
+      />
 
       <div className="flex border-b border-gray-200 mb-8">
         {tabs.map(tab => (
@@ -68,4 +81,3 @@ export default function AdminMasterData() {
     </div>
   );
 }
-

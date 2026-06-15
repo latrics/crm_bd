@@ -1,15 +1,20 @@
 import { useState } from 'react';
+import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 
 export default function AdminUsers() {
   const [users] = useState([
-    { id: 1, name: 'Alice Smith', email: 'alice@latrics.com', role: 'Super Admin', manager: '-', isActive: true, lastLogin: '2026-06-12' },
-    { id: 2, name: 'Bob Jones', email: 'bob@latrics.com', role: 'Manager', manager: 'Alice Smith', isActive: true, lastLogin: '2026-06-10' },
-    { id: 3, name: 'Charlie Brown', email: 'charlie@latrics.com', role: 'Member', manager: 'Bob Jones', isActive: false, lastLogin: '2026-05-20' },
+    { id: 1, name: 'Balaji Nagarajan', email: 'balaji.nagarajan@latrics.com', role: 'Super Admin', manager: '-', isActive: true, lastLogin: '2026-06-12' }
   ]);
 
+  const guideSteps = [
+    "This list displays all registered system users and their active credentials.",
+    "Click suspend or deactivate to temporarily freeze access for any specific user.",
+    "Use the Add User button in the header to register new team members manually."
+  ];
+
   return (
-    <div className="max-w-6xl">
-      <div className="flex justify-between items-end mb-8">
+    <div className="max-w-6xl space-y-6">
+      <div className="flex justify-between items-end mb-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">User Management</h1>
           <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Manage accounts • roles • reporting structures</p>
@@ -25,6 +30,12 @@ export default function AdminUsers() {
           </button>
         </div>
       </div>
+
+      <DeveloperGuide 
+        title="User Accounts Guide"
+        description="Verify system access privileges, check reporting relationships, and perform user account lifecycle actions."
+        steps={guideSteps}
+      />
 
       <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
         <table className="w-full text-left border-collapse">
@@ -48,7 +59,6 @@ export default function AdminUsers() {
                 <td className="px-6 py-4">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
                     user.role === 'Super Admin' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                    user.role === 'Manager' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                     'bg-gray-50 text-gray-600 border-gray-100'
                   }`}>
                     {user.role}
@@ -89,5 +99,3 @@ export default function AdminUsers() {
     </div>
   );
 }
-
-

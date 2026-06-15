@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import AdminStatCard from '../../components/admin/AdminStatCard.jsx';
+import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 
 export default function AdminOverview() {
   const stats = [
-    { label: 'Total Users', value: 12, icon: '👥' },
-    { label: 'Active Now', value: 3, icon: '🟢' },
-    { label: 'Pending Approvals', value: 5, icon: '⏳', badgeCount: 5 },
-    { label: 'Open Escalations', value: 2, icon: '🔥', badgeCount: 2 },
+    { label: 'Total Users', value: 1, icon: '👥' },
+    { label: 'Active Now', value: 1, icon: '🟢' },
+    { label: 'Pending Approvals', value: 0, icon: '⏳', badgeCount: 0 },
+    { label: 'Open Escalations', value: 0, icon: '🔥', badgeCount: 0 },
   ];
 
   const [members, setMembers] = useState([
     {
       id: 1,
       name: 'Balaji Nagarajan',
-      email: 'balaji@latrics.com',
+      email: 'balaji.nagarajan@latrics.com',
       role: 'SUPER ADMIN',
       roleColor: 'bg-red-50 text-red-600 border-red-100',
       access: 'Full Access',
@@ -22,45 +23,6 @@ export default function AdminOverview() {
       lastActive: 'Today, 10:15 AM',
       avatarBg: 'bg-red-100 text-red-700',
       initials: 'BN'
-    },
-    {
-      id: 2,
-      name: 'Sivaram B',
-      email: 'sivaram@latrics.com',
-      role: 'SALES MANAGER',
-      roleColor: 'bg-blue-50 text-blue-600 border-blue-100',
-      access: 'Leads + Deals',
-      status: 'Active',
-      statusColor: 'bg-green-500',
-      lastActive: 'Today, 09:42 AM',
-      avatarBg: 'bg-blue-100 text-blue-700',
-      initials: 'SB'
-    },
-    {
-      id: 3,
-      name: 'Sureka Suresh',
-      email: 'sureka@latrics.com',
-      role: 'SALES EXECUTIVE',
-      roleColor: 'bg-purple-50 text-purple-600 border-purple-100',
-      access: 'Leads',
-      status: 'Active',
-      statusColor: 'bg-green-500',
-      lastActive: 'Yesterday, 06:35 PM',
-      avatarBg: 'bg-purple-100 text-purple-700',
-      initials: 'SS'
-    },
-    {
-      id: 4,
-      name: 'Pranav R',
-      email: 'pranav.r@latrics.com',
-      role: 'SALES EXECUTIVE',
-      roleColor: 'bg-purple-50 text-purple-600 border-purple-100',
-      access: 'Leads',
-      status: 'Pending Invite',
-      statusColor: 'bg-yellow-500',
-      lastActive: '—',
-      avatarBg: 'bg-yellow-100 text-yellow-700',
-      initials: 'PR'
     }
   ]);
 
@@ -76,20 +38,35 @@ export default function AdminOverview() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const guideSteps = [
+    "Navigate between different sections (Users, Approvals, Audit Logs) using the Admin Sidebar.",
+    "Search or filter the Team list on this page to quickly verify search functionality.",
+    "Click Quick Actions to simulate administrative operations in the CRM console."
+  ];
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Top Header Section */}
-      <div className="flex items-center gap-3">
-        <div className="bg-red-50 text-brand-red text-xs font-bold px-3 py-1.5 rounded-full border border-red-100 uppercase tracking-wider">
-          SUPER ADMIN
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="bg-red-50 text-brand-red text-xs font-bold px-3 py-1.5 rounded-full border border-red-100 uppercase tracking-wider">
+            SUPER ADMIN
+          </div>
+          <button className="flex items-center gap-2 border border-gray-300 bg-white text-brand-charcoal text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:bg-gray-50 transition-colors">
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Balaji Nagarajan
+          </button>
         </div>
-        <button className="flex items-center gap-2 border border-gray-300 bg-white text-brand-charcoal text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:bg-gray-50 transition-colors">
-          <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          Balaji Nagarajan
-        </button>
       </div>
+
+      {/* Reusable Developer/Admin Guide */}
+      <DeveloperGuide 
+        title="Admin Console Overview" 
+        description="This console provides a central interface for managing CRM systems, user roles, security audits, and records. It is currently configured in Super Admin viewpoint with mock telemetry reflecting active developer status."
+        steps={guideSteps}
+      />
 
       {/* Stats Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -106,52 +83,52 @@ export default function AdminOverview() {
           
           {/* Team & Access Panel */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col gap-3 mb-6">
               <h2 className="font-serif text-xl font-bold text-brand-charcoal">Team & Access</h2>
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Search box */}
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-4.5 w-4.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </span>
+              <div className="flex flex-row justify-between items-center gap-4 overflow-x-auto pb-2">
+                {/* Search box (Left-aligned) */}
+                <div className="relative shrink-0">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search members..."
-                    className="border border-gray-200 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] min-w-[180px] sm:min-w-[200px] transition-all bg-white text-brand-charcoal"
+                    className="border border-gray-200 rounded-xl pl-4 pr-9 py-2 text-xs focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] w-[220px] transition-all bg-white text-brand-charcoal shrink-0"
                   />
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg className="h-4.5 w-4.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </span>
                 </div>
 
-                {/* Role Filter */}
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-red/50 bg-white text-brand-charcoal font-semibold cursor-pointer"
-                >
-                  <option value="All">All Roles</option>
-                  <option value="SUPER ADMIN">Super Admin</option>
-                  <option value="SALES MANAGER">Sales Manager</option>
-                  <option value="SALES EXECUTIVE">Sales Executive</option>
-                </select>
+                {/* Filters & Buttons (Right-aligned) */}
+                <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                  {/* Role Filter */}
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-red/50 bg-white text-brand-charcoal font-semibold cursor-pointer shrink-0"
+                  >
+                    <option value="All">All Roles</option>
+                    <option value="SUPER ADMIN">Super Admin</option>
+                  </select>
 
-                {/* Status Filter */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-red/50 bg-white text-brand-charcoal font-semibold cursor-pointer"
-                >
-                  <option value="All">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Pending Invite">Pending Invite</option>
-                </select>
+                  {/* Status Filter */}
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-red/50 bg-white text-brand-charcoal font-semibold cursor-pointer shrink-0"
+                  >
+                    <option value="All">All Status</option>
+                    <option value="Active">Active</option>
+                  </select>
 
-                {/* Invite Button */}
-                <button className="bg-[#DA291C] hover:bg-[#C22419] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-[0_4px_12px_rgba(218,41,28,0.15)] flex items-center gap-1.5">
-                  + Invite Member
-                </button>
+                  {/* Invite Button */}
+                  <button className="bg-[#DA291C] hover:bg-[#C22419] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-[0_4px_12px_rgba(218,41,28,0.15)] flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                    + Invite Member
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -191,11 +168,7 @@ export default function AdminOverview() {
                         {member.access}
                       </td>
                       <td className="py-3.5">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                          member.status === 'Active' 
-                            ? 'bg-green-50 text-green-700 border border-green-100' 
-                            : 'bg-yellow-50 text-yellow-700 border border-yellow-100'
-                        }`}>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                           <span className={`w-1.5 h-1.5 rounded-full ${member.statusColor}`}></span>
                           {member.status}
                         </span>
@@ -257,32 +230,6 @@ export default function AdminOverview() {
                     <td className="py-4 text-center">
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">✓</span>
                     </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50 transition-colors text-sm font-semibold">
-                    <td className="py-4 text-blue-600">Sales Manager</td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">✓</span>
-                    </td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">✓</span>
-                    </td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">✓</span>
-                    </td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">✓</span>
-                    </td>
-                    <td className="py-4 text-center text-gray-300 font-normal">—</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50 transition-colors text-sm font-semibold">
-                    <td className="py-4 text-purple-600">Sales Executive</td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">✓</span>
-                    </td>
-                    <td className="py-4 text-center text-gray-300 font-normal">—</td>
-                    <td className="py-4 text-center text-gray-300 font-normal">—</td>
-                    <td className="py-4 text-center text-gray-300 font-normal">—</td>
-                    <td className="py-4 text-center text-gray-300 font-normal">—</td>
                   </tr>
                 </tbody>
               </table>
@@ -355,35 +302,14 @@ export default function AdminOverview() {
               {[
                 {
                   time: 'Today, 10:15 AM',
-                  user: 'Balaji',
+                  user: 'Balaji Nagarajan',
                   userColor: 'text-brand-red font-bold',
-                  action: 'invited a new member (pranav.r@latrics.com)',
+                  action: 'logged into the system console',
                   dotColor: 'bg-brand-red'
                 },
                 {
-                  time: 'Today, 09:48 AM',
-                  user: 'Role permissions',
-                  userColor: 'text-brand-charcoal font-semibold',
-                  action: 'updated for ',
-                  actionBold: 'Sales Manager',
-                  actionBoldColor: 'text-blue-600 font-bold',
-                  dotColor: 'bg-gray-400'
-                },
-                {
-                  time: 'Yesterday, 06:40 PM',
-                  action: 'CSV export completed (Tenders)',
-                  dotColor: 'bg-gray-400'
-                },
-                {
-                  time: 'Yesterday, 06:35 PM',
-                  user: 'Sureka Suresh',
-                  userColor: 'text-purple-600 font-bold',
-                  action: 'updated a lead (latrics)',
-                  dotColor: 'bg-purple-600'
-                },
-                {
                   time: 'May 11, 08:22 PM',
-                  action: 'Backup completed successfully',
+                  action: 'Database maintenance & check completed successfully',
                   dotColor: 'bg-gray-400'
                 }
               ].map((activity, i) => (
