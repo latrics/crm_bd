@@ -8,9 +8,6 @@ axios.defaults.withCredentials = true;
 export const login = async (email, password) => {
   try {
     const res = await axios.post(`${API_URL}/login`, { email, password });
-    if (res.data.accessToken) {
-      localStorage.setItem('accessToken', res.data.accessToken);
-    }
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -20,7 +17,6 @@ export const login = async (email, password) => {
 export const logout = async () => {
   try {
     await axios.post(`${API_URL}/logout`);
-    localStorage.removeItem('accessToken');
   } catch (err) {
     console.error('Logout error:', err);
   }
@@ -29,9 +25,6 @@ export const logout = async () => {
 export const refresh = async () => {
   try {
     const res = await axios.post(`${API_URL}/refresh`);
-    if (res.data.accessToken) {
-      localStorage.setItem('accessToken', res.data.accessToken);
-    }
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -40,9 +33,34 @@ export const refresh = async () => {
 
 export const getMe = async () => {
   try {
-    const res = await axios.get(`${API_URL}/me`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-    });
+    const res = await axios.get(`${API_URL}/me`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
+export const verifyInvite = async (token) => {
+  try {
+    const res = await axios.get(`${API_URL}/verify-invite?token=${token}`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
+export const acceptInvite = async (token, name, password) => {
+  try {
+    const res = await axios.post(`${API_URL}/accept-invite`, { token, name, password });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
+export const updatePassword = async (currentPassword, newPassword) => {
+  try {
+    const res = await axios.put(`${API_URL}/update-password`, { currentPassword, newPassword });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;

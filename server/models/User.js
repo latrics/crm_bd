@@ -1,71 +1,47 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const userSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Please add a name'],
+    required: true,
     trim: true
   },
   email: {
     type: String,
-    required: [true, 'Please add an email'],
+    required: true,
     unique: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Please add a valid email'
-    ],
     lowercase: true,
     trim: true
   },
   password: {
     type: String,
-    required: [true, 'Please add a password'],
-    minlength: 6,
+    required: true,
     select: false
   },
   role: {
     type: String,
-    enum: ['employee', 'manager', 'admin', 'super_admin'],
-    default: 'employee'
+    enum: ['superadmin', 'admin', 'member'],
+    required: true
   },
-  permissions: [{
-    type: String
-  }],
-  team: String,
-  department: String,
   isActive: {
     type: Boolean,
     default: true
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  lastLogin: Date,
-  loginHistory: [{
-    timestamp: Date,
-    ip: String,
-    device: String
-  }],
-  resetPasswordToken: String,
-  resetPasswordExpire: Date
-}, {
-  timestamps: true
-});
+  }
+}, { timestamps: true });
 
-// Encrypt password using bcrypt
-userSchema.pre('save', async function(next) {
+// Encrypt password using bcryptjs on save
+UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     return next();
   }
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Match user entered password to hashed password in database
-userSchema.methods.matchPassword = async function(enteredPassword) {
+// Compare password helper
+UserSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-export default mongoose.model('User', userSchema);
+export default mongoose.model('User', UserSchema);

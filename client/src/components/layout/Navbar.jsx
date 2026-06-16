@@ -64,6 +64,9 @@ export default function Navbar() {
                 <>Tender <span className={badgeClass(isActive)}>{state.tenders.length}</span></>
               )}
             </NavLink>
+            {user && ['superadmin', 'admin', 'super_admin'].includes(user.role?.toLowerCase()) && (
+              <NavLink to="/admin/overview" className={navClass}>Admin Panel</NavLink>
+            )}
           </div>
         </div>
         

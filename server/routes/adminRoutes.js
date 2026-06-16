@@ -6,6 +6,7 @@ import {
   updateUser, 
   deleteUser 
 } from '../controllers/userController.js';
+import { createInvite } from '../controllers/inviteController.js';
 import AuditLog from '../models/AuditLog.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
@@ -17,7 +18,9 @@ const router = express.Router();
 
 // All routes here require being logged in and having admin/super_admin role
 router.use(protect);
-router.use(authorize('admin', 'super_admin'));
+router.use(authorize('admin', 'superadmin'));
+
+router.post('/invite', checkPermission('users.create'), logActivity('Invite', 'CREATE'), createInvite);
 
 router.route('/users')
   .get(checkPermission('users.view'), getUsers)

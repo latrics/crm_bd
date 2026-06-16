@@ -1,18 +1,16 @@
-import jwt from 'jsonwebtoken';
 import asyncHandler from '../utils/asyncHandler.js';
 import User from '../models/User.js';
-import { verifyAccessToken } from '../utils/tokenUtils.js';
+import { verifyAuthToken } from '../utils/authToken.js';
 
-// Protect routes
 export const protect = asyncHandler(async (req, res, next) => {
-  // ---- AUTHENTICATION PAUSED FOR PRESENTATION ----
-  req.user = { _id: "662a6e60b1341a001c900000", name: "Presenter", role: "super_admin", isActive: true };
-  return next();
-  // ------------------------------------------------
-  /*
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // 1. Check cookies first
+  if (req.cookies && req.cookies.access_token) {
+    token = req.cookies.access_token;
+  }
+  // 2. Fallback to authorization header
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
@@ -21,41 +19,38 @@ export const protect = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Verify token
-    const decoded = verifyAccessToken(token);
-
-    // Get user from token
-    req.user = await User.findById(decoded.id);
-
-    if (!req.user) {
+    const decoded = verifyAuthToken(token);
+    const userId = decoded.id || decoded.userId;
+    
+    const user = await User.findById(userId);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'User not found' });
     }
 
-    if (!req.user.isActive) {
-      return res.status(403).json({ success: false, message: 'User account is deactivated' });
+    if (!user.isActive) {
+      return res.status(403).json({ success: false, message: 'User account is not active' });
     }
 
+    req.user = user;
+    req.user.id = user._id.toString();
+    req.user.userId = user._id.toString(); // helper property matching spec controllers
     next();
   } catch (err) {
     return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
   }
-  */
 });
 
-// Grant access to specific roles
+// Grant access to specific roles middleware
 export const authorize = (...roles) => {
+  const normalizedRoles = roles.map(r => r.replace('_', '').toLowerCase());
   return (req, res, next) => {
-    // ---- AUTHENTICATION PAUSED FOR PRESENTATION ----
-    return next();
-    // ------------------------------------------------
-    /*
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user && req.user.role ? req.user.role.replace('_', '').toLowerCase() : 'guest';
+    if (!req.user || !normalizedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: `User role ${req.user.role} is not authorized to access this route`
+        message: `User role ${req.user ? req.user.role : 'Guest'} is not authorized to access this route`
       });
     }
     next();
-    */
   };
 };

@@ -4,14 +4,9 @@ import * as authApi from '../api/authApi.js';
 const AuthContext = createContext();
 
 const initialState = {
-  // ---- AUTHENTICATION PAUSED FOR PRESENTATION ----
-  // user: null,
-  // isAuthenticated: false,
-  // loading: true,
-  user: { _id: "662a6e60b1341a001c900000", name: "Balaji Nagarajan", email: "balaji.nagarajan@latrics.com", role: "super_admin" },
-  isAuthenticated: true,
-  loading: false,
-  // ------------------------------------------------
+  user: null,
+  isAuthenticated: false,
+  loading: true,
   error: null
 };
 
@@ -34,33 +29,16 @@ export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    // ---- AUTHENTICATION PAUSED FOR PRESENTATION ----
-    /*
     async function loadUser() {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        dispatch({ type: 'SET_LOADING', payload: false });
-        return;
-      }
-
       try {
         const res = await authApi.getMe();
         dispatch({ type: 'LOGIN_SUCCESS', payload: res.data });
       } catch (err) {
-        // Try refresh
-        try {
-          const refreshRes = await authApi.refresh();
-          const userRes = await authApi.getMe();
-          dispatch({ type: 'LOGIN_SUCCESS', payload: userRes.data });
-        } catch (refreshErr) {
-          localStorage.removeItem('accessToken');
-          dispatch({ type: 'AUTH_ERROR', payload: null });
-        }
+        // Not authenticated
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     }
     loadUser();
-    */
-    // ------------------------------------------------
   }, []);
 
   const login = async (email, password) => {

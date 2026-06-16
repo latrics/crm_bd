@@ -57,7 +57,15 @@ export default function UserMenu() {
                      {user.role}
                    </div>
                   <button className="text-[11px] font-bold text-blue-600 hover:underline text-left">View account</button>
-                  <button className="text-[11px] font-bold text-blue-600 hover:underline text-left">Profile settings</button>
+                  <button 
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate('/profile');
+                    }}
+                    className="text-[11px] font-bold text-blue-600 hover:underline text-left"
+                  >
+                    Profile settings
+                  </button>
                 </div>
               </div>
               <div className="self-center">
@@ -69,8 +77,14 @@ export default function UserMenu() {
           </div>
 
           <div className="p-2 flex flex-col gap-1">
-            {(user.role === 'admin' || user.role === 'super_admin') && (
-              <button onClick={() => window.open('/admin/overview', '_blank')} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
+            {['admin', 'superadmin', 'super_admin'].includes((user.role || '').toLowerCase()) && (
+              <button 
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/admin/overview');
+                }} 
+                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left"
+              >
                 <span className="text-lg opacity-60">🛡️</span> Admin Dashboard
               </button>
             )}

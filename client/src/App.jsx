@@ -12,6 +12,7 @@ import UserManagement from './pages/UserManagement.jsx';
 import AuditLogs from './pages/AuditLogs.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import Toast from './components/common/Toast.jsx';
+import ProfileSettings from './pages/ProfileSettings.jsx';
 
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -21,6 +22,7 @@ import AdminAuditLogs from './pages/admin/AdminAuditLogs.jsx';
 import AdminMasterData from './pages/admin/AdminMasterData.jsx';
 import AdminOwnership from './pages/admin/AdminOwnership.jsx';
 import AdminRoles from './pages/admin/AdminRoles.jsx';
+import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 
 function AppLayout() {
   return (
@@ -33,6 +35,7 @@ function AppLayout() {
           <Route path="/leads" element={<LeadsPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/tenders" element={<TenderPage />} />
+          <Route path="/profile" element={<ProfileSettings />} />
         </Routes>
       </div>
     </CRMProvider>
@@ -46,12 +49,13 @@ export default function App() {
         <div className="min-h-screen bg-brand-bg font-sans text-brand-text">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/accept-invite" element={<AcceptInvitePage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             
             <Route 
               path="/admin/*" 
               element={
-                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN', 'admin', 'super_admin', 'superadmin', 'SUPERADMIN']}>
                   <AdminLayout />
                 </ProtectedRoute>
               } 

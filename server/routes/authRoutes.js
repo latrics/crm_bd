@@ -1,12 +1,22 @@
 import express from 'express';
-import { login, refresh, logout, getMe } from '../controllers/authController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { 
+  login, 
+  logout, 
+  getMe, 
+  verifyInvite, 
+  acceptInvite,
+  updatePassword
+} from '../controllers/authController.js';
+import { loginRateLimiter } from '../middleware/rateLimiter.js';
+import authenticate from '../middleware/authenticate.js';
 
 const router = express.Router();
 
-router.post('/login', login);
-router.post('/refresh', refresh);
+router.post('/login', loginRateLimiter, login);
 router.post('/logout', logout);
-router.get('/me', protect, getMe);
+router.get('/verify-invite', verifyInvite);
+router.post('/accept-invite', acceptInvite);
+router.get('/me', authenticate, getMe);
+router.put('/update-password', authenticate, updatePassword);
 
 export default router;

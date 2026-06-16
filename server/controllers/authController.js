@@ -1,118 +1,144 @@
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import User from '../models/User.js';
-import Session from '../models/Session.js';
+import Invite from '../models/Invite.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/tokenUtils.js';
+import { log as auditLog } from '../utils/auditLog.js';
+import { hashToken } from '../utils/inviteToken.js';
+import { generateAuthToken, setAuthCookie, clearAuthCookie } from '../utils/authToken.js';
 
 // @desc    Login user
 // @route   POST /api/v1/auth/login
 // @access  Public
 export const login = asyncHandler(async (req, res) => {
-  const email = req.body.email?.trim();
+  const email = req.body.email?.trim().toLowerCase();
   const password = req.body.password?.trim();
 
-  // Check if email and password are provided
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Please provide an email and password' });
+    return res.status(400).json({ success: false, message: 'Email and password required' });
   }
 
-  // Check for user
-  console.log(`Login attempt for: ${email}`);
-  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-
-  if (!user) {
-    console.log(`User not found: ${email}`);
-    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  // Find user and explicitly select password field
+  const user = await User.findOne({ email }).select('+password');
+  if (!user || !user.isActive) {
+    // Return generic error message to prevent account fishing
+    return res.status(401).json({ success: false, message: 'Invalid email or password' });
   }
 
-  const isMatch = await user.matchPassword(password);
-  console.log(`Password match for ${email}: ${isMatch}`);
-
-  if (!isMatch) {
-    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  const passwordMatch = await user.matchPassword(password);
+  if (!passwordMatch) {
+    return res.status(401).json({ success: false, message: 'Invalid email or password' });
   }
 
-  if (!user.isActive) {
-    return res.status(403).json({ success: false, message: 'Account is deactivated' });
-  }
+  // Generate auth token and set in cookie
+  const token = generateAuthToken({ id: user._id, role: user.role });
+  setAuthCookie(res, token);
 
-  // Create tokens
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
-
-  // Store session
-  await Session.create({
-    user: user._id,
-    refreshToken,
-    userAgent: req.headers['user-agent'],
-    ipAddress: req.ip,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-  });
-
-  // Update last login
-  user.lastLogin = Date.now();
-  user.loginHistory.push({
-    timestamp: Date.now(),
+  // Log audit
+  await auditLog({
+    userId: user._id,
+    action: 'LOGIN',
+    entity: 'User',
+    entityId: user._id.toString(),
     ip: req.ip,
-    device: req.headers['user-agent']
-  });
-  await user.save();
-
-  // Send tokens in HTTP-only cookies
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000
   });
 
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
-    accessToken,
+    message: 'Login successful',
+    role: user.role,
     user: {
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      permissions: user.permissions
     }
   });
 });
 
-// @desc    Refresh Token
-// @route   POST /api/v1/auth/refresh
+// @desc    Verify Invite Token
+// @route   GET /api/v1/auth/verify-invite
 // @access  Public
-export const refresh = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
-
-  if (!refreshToken) {
-    return res.status(401).json({ success: false, message: 'No refresh token provided' });
+export const verifyInvite = asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Token is required' });
   }
 
-  // Verify refresh token
-  let decoded;
-  try {
-    decoded = verifyRefreshToken(refreshToken);
-  } catch (err) {
-    return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+  const tokenHash = hashToken(token);
+  const invite = await Invite.findOne({ tokenHash, used: false });
+
+  if (!invite) {
+    return res.status(404).json({ success: false, message: 'Invitation not found or already used' });
   }
 
-  // Check if session exists in DB
-  const session = await Session.findOne({ refreshToken, isValid: true });
-  if (!session) {
-    return res.status(401).json({ success: false, message: 'Session expired or invalid' });
+  if (invite.expiresAt < new Date()) {
+    return res.status(400).json({ success: false, message: 'Invitation has expired' });
   }
 
-  const user = await User.findById(decoded.id);
-  if (!user || !user.isActive) {
-    return res.status(401).json({ success: false, message: 'User not found or inactive' });
-  }
-
-  // Generate new access token
-  const accessToken = generateAccessToken(user);
-
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
-    accessToken
+    message: 'Invitation is valid',
+    data: {
+      email: invite.email,
+      role: invite.role
+    }
+  });
+});
+
+// @desc    Accept Invitation and Setup Password
+// @route   POST /api/v1/auth/accept-invite
+// @access  Public
+export const acceptInvite = asyncHandler(async (req, res) => {
+  const { token, name, password } = req.body;
+
+  if (!token || !name || !password) {
+    return res.status(400).json({ success: false, message: 'Token, name, and password are required' });
+  }
+
+  const tokenHash = hashToken(token);
+  const invite = await Invite.findOne({ tokenHash, used: false });
+
+  if (!invite) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired invitation token' });
+  }
+
+  if (invite.expiresAt < new Date()) {
+    return res.status(400).json({ success: false, message: 'Invitation has expired' });
+  }
+
+  // Check if a user with that email already exists (safety check)
+  const existingUser = await User.findOne({ email: invite.email });
+  if (existingUser) {
+    return res.status(400).json({ success: false, message: 'User with this email already exists' });
+  }
+
+  // Create new user (role is taken from the invite)
+  // Pre-save hook in User model will handle password hashing with bcryptjs (salt cost 12)
+  const user = await User.create({
+    name: name.trim(),
+    email: invite.email,
+    password: password.trim(),
+    role: invite.role,
+    isActive: true
+  });
+
+  // Mark invite as used
+  invite.used = true;
+  await invite.save();
+
+  // Audit log
+  await auditLog({
+    userId: user._id,
+    action: 'ACCEPT_INVITE',
+    entity: 'User',
+    entityId: user._id.toString(),
+    ip: req.ip,
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: 'Account created successfully. You can now log in.'
   });
 });
 
@@ -120,24 +146,75 @@ export const refresh = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/auth/logout
 // @access  Private
 export const logout = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
-
-  if (refreshToken) {
-    // Invalidate session in DB
-    await Session.findOneAndUpdate({ refreshToken }, { isValid: false });
+  if (req.user && req.user.id) {
+    await auditLog({
+      userId: req.user.id,
+      action: 'LOGOUT',
+      entity: 'User',
+      ip: req.ip,
+    });
   }
 
-  res.clearCookie('refreshToken');
-  res.status(200).json({ success: true, message: 'Logged out successfully' });
+  clearAuthCookie(res);
+  return res.status(200).json({ success: true, message: 'Logged out successfully' });
 });
 
-// @desc    Get current logged in user
+// @desc    Get current logged in user info
 // @route   GET /api/v1/auth/me
 // @access  Private
 export const getMe = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id);
-  res.status(200).json({
+  const user = await User.findById(req.user.id || req.user._id);
+  if (!user || !user.isActive) {
+    return res.status(404).json({ success: false, message: 'User not found or inactive' });
+  }
+  return res.status(200).json({
     success: true,
-    data: user
+    data: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    }
+  });
+});
+
+// @desc    Update password
+// @route   PUT /api/v1/auth/update-password
+// @access  Private
+export const updatePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Please provide current and new password' });
+  }
+
+  // Find user and explicitly select password field
+  const user = await User.findById(req.user.id || req.user._id).select('+password');
+  if (!user || !user.isActive) {
+    return res.status(404).json({ success: false, message: 'User not found or inactive' });
+  }
+
+  // Check if current password is correct
+  const passwordMatch = await user.matchPassword(currentPassword);
+  if (!passwordMatch) {
+    return res.status(401).json({ success: false, message: 'Invalid current password' });
+  }
+
+  // Update password (pre-save hook will hash it)
+  user.password = newPassword;
+  await user.save();
+
+  // Audit log
+  await auditLog({
+    userId: user._id,
+    action: 'UPDATE_PASSWORD',
+    entity: 'User',
+    entityId: user._id.toString(),
+    ip: req.ip,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: 'Password updated successfully'
   });
 });

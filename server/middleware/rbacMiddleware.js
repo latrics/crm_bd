@@ -4,14 +4,31 @@ import asyncHandler from '../utils/asyncHandler.js';
 // Hierarchy: super_admin has '*' which matches everything
 export const checkPermission = (permission) => {
   return asyncHandler(async (req, res, next) => {
-    const userPermissions = req.user.permissions || [];
+    const userRole = req.user.role?.toLowerCase() || '';
 
     // Super Admin has all permissions
-    if (req.user.role === 'super_admin' || userPermissions.includes('*')) {
+    if (['super_admin', 'superadmin'].includes(userRole)) {
       return next();
     }
 
-    if (!userPermissions.includes(permission)) {
+    // Define fixed permissions per role
+    const rolePermissions = {
+      admin: [
+        'leads.view', 'leads.create', 'leads.edit', 'leads.delete',
+        'deals.view', 'deals.create', 'deals.edit', 'deals.delete',
+        'tenders.view', 'tenders.create', 'tenders.edit', 'tenders.delete',
+        'exports.view', 'exports.create'
+      ],
+      member: [
+        'leads.view', 'leads.create', 'leads.edit', // Can't delete
+        'deals.view', 'deals.create', 'deals.edit',
+        'tenders.view', 'tenders.create', 'tenders.edit'
+      ]
+    };
+
+    const allowedPermissions = rolePermissions[userRole] || [];
+
+    if (!allowedPermissions.includes(permission)) {
       return res.status(403).json({
         success: false,
         message: `You do not have permission: ${permission}`
@@ -25,14 +42,16 @@ export const checkPermission = (permission) => {
 // Check if user is higher in hierarchy than target user
 export const checkHierarchy = asyncHandler(async (req, res, next) => {
   const roleHierarchy = {
+    'superadmin': 0,
     'super_admin': 0,
     'admin': 1,
     'manager': 2,
     'employee': 3
   };
 
-  // If user is super_admin, they can bypass hierarchy checks for everyone except other super_admins (handled in logic)
-  if (req.user.role === 'super_admin') {
+  // If user is superadmin, they can bypass hierarchy checks
+  const userRole = req.user.role?.toLowerCase() || '';
+  if (['super_admin', 'superadmin'].includes(userRole)) {
     return next();
   }
 

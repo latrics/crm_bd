@@ -64,7 +64,7 @@ export default function UserManagement() {
                   </td>
                   <td className="px-6 py-5">
                     <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-tight ${
-                      user.role === 'super_admin' ? 'bg-purple-100 text-purple-700' :
+                      ['super_admin', 'superadmin'].includes(user.role) ? 'bg-purple-100 text-purple-700' :
                       user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
                       user.role === 'manager' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                     }`}>

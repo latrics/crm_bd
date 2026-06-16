@@ -18,8 +18,12 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles.length > 0) {
+    const userRoleNorm = (user?.role || '').replace('_', '').toLowerCase();
+    const allowedRolesNorm = allowedRoles.map(r => r.replace('_', '').toLowerCase());
+    if (!allowedRolesNorm.includes(userRoleNorm)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return children;
