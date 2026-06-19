@@ -66,3 +66,12 @@ export const updatePassword = async (currentPassword, newPassword) => {
     throw err.response?.data || err;
   }
 };
+
+export const register = async (userData) => {
+  try {
+    const res = await axios.post(`${API_URL}/register`, userData);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};

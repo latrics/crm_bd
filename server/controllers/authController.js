@@ -14,19 +14,66 @@ export const login = asyncHandler(async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   const password = req.body.password?.trim();
 
+  console.log(`[LOGIN ATTEMPT] Email: '${email}'`);
+  console.log(`[LOGIN ATTEMPT] Password length:`, password?.length);
+
   if (!email || !password) {
+    console.log(`[LOGIN FAILED] Missing email or password`);
     return res.status(400).json({ success: false, message: 'Email and password required' });
   }
 
   // Find user and explicitly select password field
   const user = await User.findOne({ email }).select('+password');
-  if (!user || !user.isActive) {
-    // Return generic error message to prevent account fishing
+  if (!user) {
+    console.log(`[LOGIN FAILED] User not found for email: ${email}`);
+    await auditLog({
+      userId: null,
+      action: 'LOGIN_FAILURE',
+      entity: 'Security',
+      ip: req.ip,
+      meta: {
+        message: `Failed login attempt for ${email} (User not found)`,
+        email
+      },
+      severity: 'critical'
+    });
+    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+  }
+  
+  if (!user.isActive) {
+    console.log(`[LOGIN FAILED] User is inactive: ${email}`);
+    await auditLog({
+      userId: user._id,
+      action: 'LOGIN_FAILURE',
+      entity: 'Security',
+      entityId: user._id.toString(),
+      ip: req.ip,
+      meta: {
+        message: `Failed login attempt for ${email} (User inactive)`,
+        email
+      },
+      severity: 'critical'
+    });
     return res.status(401).json({ success: false, message: 'Invalid email or password' });
   }
 
   const passwordMatch = await user.matchPassword(password);
+  console.log(`[LOGIN ATTEMPT] Password match result: ${passwordMatch}`);
+
   if (!passwordMatch) {
+    console.log(`[LOGIN FAILED] Password mismatch for: ${email}`);
+    await auditLog({
+      userId: user._id,
+      action: 'LOGIN_FAILURE',
+      entity: 'Security',
+      entityId: user._id.toString(),
+      ip: req.ip,
+      meta: {
+        message: `Failed login attempt for ${email} (Password mismatch)`,
+        email
+      },
+      severity: 'critical'
+    });
     return res.status(401).json({ success: false, message: 'Invalid email or password' });
   }
 
@@ -41,6 +88,10 @@ export const login = asyncHandler(async (req, res) => {
     entity: 'User',
     entityId: user._id.toString(),
     ip: req.ip,
+    meta: {
+      message: `${user.role === 'superadmin' ? 'Super Admin' : user.role.charAt(0).toUpperCase() + user.role.slice(1)} ${user.name} logged in`
+    },
+    severity: 'info'
   });
 
   return res.status(200).json({
@@ -152,6 +203,10 @@ export const logout = asyncHandler(async (req, res) => {
       action: 'LOGOUT',
       entity: 'User',
       ip: req.ip,
+      meta: {
+        message: `${req.user.role === 'superadmin' ? 'Super Admin' : req.user.role.charAt(0).toUpperCase() + req.user.role.slice(1)} ${req.user.name} logged out`
+      },
+      severity: 'info'
     });
   }
 
@@ -182,7 +237,8 @@ export const getMe = asyncHandler(async (req, res) => {
 // @route   PUT /api/v1/auth/update-password
 // @access  Private
 export const updatePassword = asyncHandler(async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
+  const currentPassword = req.body.currentPassword?.trim();
+  const newPassword = req.body.newPassword?.trim();
 
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ success: false, message: 'Please provide current and new password' });

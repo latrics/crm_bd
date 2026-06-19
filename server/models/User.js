@@ -14,6 +14,14 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  company: {
+    type: String,
+    trim: true
+  },
+  phone: {
+    type: String,
+    trim: true
+  },
   password: {
     type: String,
     required: true,
@@ -21,12 +29,15 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['superadmin', 'admin', 'member'],
+    enum: ['superadmin', 'admin', 'manager', 'member'],
     required: true
   },
   isActive: {
     type: Boolean,
     default: true
+  },
+  lastActiveAt: {
+    type: Date
   }
 }, { timestamps: true });
 

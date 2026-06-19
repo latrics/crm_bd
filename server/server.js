@@ -28,7 +28,7 @@ app.use(xss());
 
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 mins
-  max: 100
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000
 });
 app.use('/api/', limiter);
 

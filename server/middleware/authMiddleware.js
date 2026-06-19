@@ -31,6 +31,13 @@ export const protect = asyncHandler(async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'User account is not active' });
     }
 
+    // Update lastActiveAt if it has been more than 10 seconds since the last update
+    const now = new Date();
+    if (!user.lastActiveAt || (now - new Date(user.lastActiveAt)) > 10000) {
+      user.lastActiveAt = now;
+      await user.save({ validateBeforeSave: false });
+    }
+
     req.user = user;
     req.user.id = user._id.toString();
     req.user.userId = user._id.toString(); // helper property matching spec controllers

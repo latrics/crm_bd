@@ -4,26 +4,70 @@ import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 export default function AdminRoles() {
   const roles = ['Super Admin', 'Admin', 'Manager', 'Member'];
   const permissions = [
-    { module: 'Leads', actions: [
-      { name: 'View All', rights: [true, true, false, false] },
-      { name: 'View Own/Team', rights: [true, true, true, true] },
-      { name: 'Create', rights: [true, true, true, true] },
-      { name: 'Edit', rights: [true, true, true, true] },
-      { name: 'Delete', rights: [true, true, false, false] },
-    ]},
-    { module: 'Deals', actions: [
-      { name: 'View All', rights: [true, true, false, false] },
-      { name: 'View Own/Team', rights: [true, true, true, true] },
-      { name: 'Create', rights: [true, true, true, true] },
-      { name: 'Edit', rights: [true, true, true, true] },
-      { name: 'Delete', rights: [true, false, false, false] },
-    ]},
-    { module: 'System Admin', actions: [
-      { name: 'Manage Users', rights: [true, true, false, false] },
-      { name: 'View Audit Logs', rights: [true, true, false, false] },
-      { name: 'Master Data Config', rights: [true, false, false, false] },
-      { name: 'Bulk Reassign', rights: [true, false, false, false] },
-    ]}
+    {
+      module: 'System & Administration',
+      actions: [
+        { name: 'Access CRM Dashboard', rights: [true, true, true, true] },
+        { name: 'Access Admin Dashboard', rights: [true, true, false, false] },
+        { name: 'View Audit Logs', rights: [true, true, false, false] },
+        { name: 'Export Audit Logs', rights: [true, false, false, false] },
+        { name: 'Access Security Center', rights: [true, true, false, false] },
+        { name: 'Access System Settings', rights: [true, 'Limited', false, false] },
+        { name: 'Override Any Action', rights: [true, false, false, false] },
+      ]
+    },
+    {
+      module: 'User Management',
+      actions: [
+        { name: 'Create Admin', rights: [true, false, false, false] },
+        { name: 'Create Manager', rights: [true, true, false, false] },
+        { name: 'Create Member', rights: [true, true, false, false] },
+        { name: 'Edit User Details', rights: [true, true, false, false] },
+        { name: 'Disable User Account', rights: [true, true, false, false] },
+        { name: 'View All Users', rights: [true, true, false, false] },
+        { name: 'Reset User Passwords', rights: [true, true, false, false] },
+        { name: 'Force Logout Users', rights: [true, true, false, false] },
+      ]
+    },
+    {
+      module: 'Lead Management',
+      actions: [
+        { name: 'View All Leads', rights: [true, true, 'Assigned / Authorized Records', 'Assigned Records'] },
+        { name: 'Create Lead', rights: [true, true, true, false] },
+        { name: 'Edit Lead Details', rights: [true, true, 'As Assigned by Admin', 'Limited Notes/Data'] },
+        { name: 'Update Lead Pipeline Status', rights: [true, true, true, false] },
+        { name: 'Assign Leads', rights: [true, true, false, false] },
+        { name: 'Reassign Leads', rights: [true, true, false, false] },
+      ]
+    },
+    {
+      module: 'Tender Management',
+      actions: [
+        { name: 'View All Tenders', rights: [true, true, 'Assigned / Authorized Records', 'Assigned Records'] },
+        { name: 'Create Tender', rights: [true, true, true, false] },
+        { name: 'Edit Tender Details', rights: [true, true, 'As Assigned by Admin', false] },
+        { name: 'Update Tender Status', rights: [true, true, true, false] },
+        { name: 'Assign Tenders', rights: [true, true, false, false] },
+      ]
+    },
+    {
+      module: 'Document Operations',
+      actions: [
+        { name: 'Upload Documents', rights: [true, true, true, true] },
+        { name: 'Download Documents', rights: [true, true, true, 'Approval Required'] },
+      ]
+    },
+    {
+      module: 'Record Deletion & Approvals',
+      actions: [
+        { name: 'Delete Normal Records', rights: [true, true, false, false] },
+        { name: 'Delete Sensitive Records', rights: [true, 'Super Admin Approval Required', false, false] },
+        { name: 'Raise Deletion Request', rights: [true, true, true, false] },
+        { name: 'Approve Manager Requests', rights: [true, true, false, false] },
+        { name: 'Approve Sensitive Deletions', rights: [true, false, false, false] },
+        { name: 'View Approval Queue', rights: [true, true, false, false] },
+      ]
+    }
   ];
 
   const guideSteps = [
@@ -66,28 +110,50 @@ export default function AdminRoles() {
             {permissions.map((group, i) => (
               <React.Fragment key={i}>
                 <tr className="bg-gray-50/30">
-                  <td colSpan={roles.length + 1} className="px-6 py-3 text-xs font-semibold text-brand-charcoal uppercase tracking-wider">
+                  <td colSpan={roles.length + 1} className="px-6 py-3.5 text-xs font-black text-brand-charcoal uppercase tracking-widest border-y border-gray-100">
                     {group.module}
                   </td>
                 </tr>
                 {group.actions.map((action, j) => (
-                  <tr key={j} className="hover:bg-gray-50/20 transition-colors">
-                    <td className="px-6 py-3 text-sm font-medium text-brand-charcoal border-r border-gray-100 pl-10">
+                  <tr key={j} className="hover:bg-gray-50/10 transition-colors">
+                    <td className="px-6 py-3.5 text-xs font-semibold text-brand-charcoal border-r border-gray-100 pl-10">
                       {action.name}
                     </td>
-                    {action.rights.map((hasRight, k) => (
-                      <td key={k} className="px-6 py-3 text-center">
-                        {hasRight ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-50 text-red-500 border border-red-100/30 text-xs opacity-50">
-                            ✕
-                          </span>
-                        )}
-                      </td>
-                    ))}
+                    {action.rights.map((right, k) => {
+                      if (right === true) {
+                        return (
+                          <td key={k} className="px-4 py-3.5 text-center">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-50 text-green-600 border border-green-100 text-xs">
+                              ✓
+                            </span>
+                          </td>
+                        );
+                      } else if (right === false) {
+                        return (
+                          <td key={k} className="px-4 py-3.5 text-center">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-50 text-red-500 border border-red-100/30 text-xs opacity-50">
+                              ✕
+                            </span>
+                          </td>
+                        );
+                      } else {
+                        let badgeStyle = "bg-blue-50 text-blue-700 border-blue-100";
+                        if (right.includes("Approval")) {
+                          badgeStyle = "bg-amber-50 text-amber-700 border-amber-100";
+                        } else if (right.includes("Assigned")) {
+                          badgeStyle = "bg-purple-50 text-purple-700 border-purple-100";
+                        } else if (right.includes("Limited")) {
+                          badgeStyle = "bg-gray-50 text-gray-700 border-gray-200";
+                        }
+                        return (
+                          <td key={k} className="px-4 py-3.5 text-center">
+                            <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold border leading-tight ${badgeStyle} max-w-[140px] text-center`}>
+                              {right}
+                            </span>
+                          </td>
+                        );
+                      }
+                    })}
                   </tr>
                 ))}
               </React.Fragment>

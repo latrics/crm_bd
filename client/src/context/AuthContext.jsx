@@ -48,7 +48,8 @@ export function AuthProvider({ children }) {
       dispatch({ type: 'LOGIN_SUCCESS', payload: res.user });
       return res;
     } catch (err) {
-      dispatch({ type: 'AUTH_ERROR', payload: err.message });
+      const errorMessage = typeof err === 'string' ? err : err.message;
+      dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw err;
     }
   };

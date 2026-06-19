@@ -17,12 +17,23 @@ export const checkPermission = (permission) => {
         'leads.view', 'leads.create', 'leads.edit', 'leads.delete',
         'deals.view', 'deals.create', 'deals.edit', 'deals.delete',
         'tenders.view', 'tenders.create', 'tenders.edit', 'tenders.delete',
+        'docs.view', 'docs.create', 'docs.delete',
+        'exports.view', 'exports.create',
+        'users.view', 'users.create', 'users.edit', 'users.delete',
+        'audit.view'
+      ],
+      manager: [
+        'leads.view', 'leads.create', 'leads.edit', 'leads.delete',
+        'deals.view', 'deals.create', 'deals.edit', 'deals.delete',
+        'tenders.view', 'tenders.create', 'tenders.edit', 'tenders.delete',
+        'docs.view', 'docs.create', 'docs.delete',
         'exports.view', 'exports.create'
       ],
       member: [
         'leads.view', 'leads.create', 'leads.edit', // Can't delete
         'deals.view', 'deals.create', 'deals.edit',
-        'tenders.view', 'tenders.create', 'tenders.edit'
+        'tenders.view', 'tenders.create', 'tenders.edit',
+        'docs.view', 'docs.create'
       ]
     };
 

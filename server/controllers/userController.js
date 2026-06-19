@@ -37,19 +37,24 @@ export const createUser = asyncHandler(async (req, res) => {
 // @route   PUT /api/v1/users/:id
 // @access  Private/Admin
 export const updateUser = asyncHandler(async (req, res) => {
-  let user = await User.findById(req.params.id);
+  const user = await User.findById(req.params.id);
   
   if (!user) {
     return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  // Hierarchy check: cannot update someone higher or equal unless super_admin
-  // To be refined in rbacMiddleware hierarchy check
-  
-  user = await User.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true
+  // If password is included in request, assign it to trigger pre-save hashing hook
+  if (req.body.password) {
+    user.password = req.body.password;
+    delete req.body.password;
+  }
+
+  // Assign other fields
+  Object.keys(req.body).forEach(key => {
+    user[key] = req.body[key];
   });
+
+  await user.save();
 
   res.status(200).json({ success: true, data: user });
 });

@@ -19,8 +19,8 @@ export const createInvite = asyncHandler(async (req, res) => {
   const cleanRole = role.trim().toLowerCase();
 
   // Validate role
-  if (!['admin', 'member'].includes(cleanRole)) {
-    return res.status(400).json({ success: false, message: 'Only admin or member roles can be invited' });
+  if (!['admin', 'manager', 'member'].includes(cleanRole)) {
+    return res.status(400).json({ success: false, message: 'Only admin, manager, or member roles can be invited' });
   }
 
   // Check if an active user already exists with this email
@@ -54,7 +54,7 @@ export const createInvite = asyncHandler(async (req, res) => {
 
   // Send the invitation email
   try {
-    await sendInviteEmail(cleanEmail, inviteUrl);
+    await sendInviteEmail(cleanEmail, cleanRole, inviteUrl);
   } catch (error) {
     console.error('Failed to send invite email:', error);
     // Continue anyway so they can still copy the link manually

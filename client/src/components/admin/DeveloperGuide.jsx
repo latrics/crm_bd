@@ -25,9 +25,6 @@ export default function DeveloperGuide({ title, description, steps = [] }) {
         <div className="flex items-center gap-2 text-brand-charcoal">
           <span className="text-lg">🛡️</span>
           <h3 className="font-serif text-base font-bold tracking-tight">{title}</h3>
-          <span className="bg-brand-redLight text-brand-red text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded">
-            SuperAdmin Dev Mode
-          </span>
         </div>
         <button 
           onClick={() => setIsOpen(false)}

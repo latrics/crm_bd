@@ -95,15 +95,6 @@ export default function UserMenu() {
               <span className="text-lg opacity-60">🎨</span> Theme Setup
             </button>
           </div>
-
-          <div className="p-2 border-t border-brand-border bg-brand-surfaceAlt/20">
-             <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-brand-border">
-                <div className="w-6 h-6 rounded-full border border-brand-border flex items-center justify-center bg-white text-[10px]">
-                  +
-                </div>
-                Sign in with a different account
-             </button>
-          </div>
         </div>
       )}
     </div>

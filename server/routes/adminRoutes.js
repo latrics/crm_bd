@@ -34,8 +34,8 @@ router.route('/users/:id')
 // Audit Logs Route
 router.get('/audit-logs', checkPermission('audit.view'), asyncHandler(async (req, res) => {
   const logs = await AuditLog.find()
-    .populate('user', 'name email')
-    .sort('-timestamp')
+    .populate('user_id', 'name email role')
+    .sort('-createdAt')
     .limit(100);
   res.status(200).json({ success: true, count: logs.length, data: logs });
 }));
