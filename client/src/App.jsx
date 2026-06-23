@@ -48,8 +48,8 @@ export default function App() {
       <AuthProvider>
         <div className="min-h-screen bg-brand-bg font-sans text-brand-text">
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/accept-invite" element={<AcceptInvitePage />} />
+            <Route path="/login/*" element={<LoginPage />} />
+            <Route path="/accept-invite/*" element={<AcceptInvitePage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             
             <Route 

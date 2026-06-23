@@ -9,7 +9,11 @@ Chart.register(...registerables);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ClerkProvider afterSignOutUrl="/">
+    <ClerkProvider
+      afterSignOutUrl="/login"
+      signInUrl="/login"
+      signUpUrl="/accept-invite"
+    >
       <App />
     </ClerkProvider>
   </React.StrictMode>,

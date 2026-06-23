@@ -46,6 +46,8 @@ export default function AcceptInvitePage() {
       {/* Right Pane - Clerk SignUp */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
         <SignUp 
+          routing="path"
+          path="/accept-invite"
           fallbackRedirectUrl="/dashboard" 
           signInUrl="/login" 
           initialValues={{ emailAddress: email }}
