@@ -23,6 +23,7 @@ import AdminMasterData from './pages/admin/AdminMasterData.jsx';
 import AdminOwnership from './pages/admin/AdminOwnership.jsx';
 import AdminRoles from './pages/admin/AdminRoles.jsx';
 import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
+import SyncAuthPage from './pages/SyncAuthPage.jsx';
 
 function AppLayout() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
           <Routes>
             <Route path="/login/*" element={<LoginPage />} />
             <Route path="/accept-invite/*" element={<AcceptInvitePage />} />
+            <Route path="/sync-auth" element={<SyncAuthPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             
             <Route 

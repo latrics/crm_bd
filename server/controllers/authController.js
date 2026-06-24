@@ -151,7 +151,7 @@ export const syncUser = asyncHandler(async (req, res) => {
       user.clerkId = clerkId;
       isUpdated = true;
     }
-    user.lastLogin = new Date();
+    user.lastActiveAt = new Date();
     await user.save();
   }
 
