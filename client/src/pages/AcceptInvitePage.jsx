@@ -1,11 +1,63 @@
-import React from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, Navigate } from 'react-router-dom';
 import { SignUp } from '@clerk/react';
+import { verifyInvite } from '../api/authApi.js';
 import loginBg from '../assets/images/signup_login_img.jpeg';
 
 export default function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get('email') || '';
+  const token = searchParams.get('token');
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+
+  useEffect(() => {
+    async function validateToken() {
+      if (!token) {
+        setError('No invitation token provided.');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const res = await verifyInvite(token);
+        if (res.success && res.data?.email) {
+          setInviteEmail(res.data.email);
+        } else {
+          setError('Failed to extract email from invitation.');
+        }
+      } catch (err) {
+        setError(err.message || 'Invalid or expired invitation link.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    validateToken();
+  }, [token]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfcfc]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-red"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#fcfcfc] p-4">
+        <div className="max-w-md w-full bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl text-center shadow-sm">
+          <h2 className="text-lg font-bold mb-2">Invitation Error</h2>
+          <p className="text-sm font-medium">{error}</p>
+          <a href="/login" className="mt-6 inline-block text-brand-red font-bold hover:underline">
+            Return to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex w-full bg-[#fcfcfc]">
@@ -50,7 +102,7 @@ export default function AcceptInvitePage() {
           path="/accept-invite"
           fallbackRedirectUrl="/dashboard" 
           signInUrl="/login" 
-          initialValues={{ emailAddress: email }}
+          initialValues={{ emailAddress: inviteEmail }}
         />
       </div>
     </div>

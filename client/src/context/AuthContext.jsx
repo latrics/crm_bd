@@ -2,6 +2,7 @@ import React, { createContext, useReducer, useEffect, useContext, useRef } from 
 import * as authApi from '../api/authApi.js';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/react';
 import axios from 'axios';
+import api from '../api/axiosInstance.js';
 
 const AuthContext = createContext();
 
@@ -35,7 +36,7 @@ export function AuthProvider({ children }) {
 
   // Set up axios request interceptor to automatically attach Clerk session token
   useEffect(() => {
-    const interceptor = axios.interceptors.request.use(async (config) => {
+    const attachToken = async (config) => {
       if (isSignedIn) {
         try {
           const token = await getToken();
@@ -47,10 +48,14 @@ export function AuthProvider({ children }) {
         }
       }
       return config;
-    });
+    };
+
+    const interceptorGlobal = axios.interceptors.request.use(attachToken);
+    const interceptorApi = api.interceptors.request.use(attachToken);
 
     return () => {
-      axios.interceptors.request.eject(interceptor);
+      axios.interceptors.request.eject(interceptorGlobal);
+      api.interceptors.request.eject(interceptorApi);
     };
   }, [isSignedIn, getToken]);
 
@@ -66,12 +71,15 @@ export function AuthProvider({ children }) {
       }
 
       if (isSignedIn && clerkUser) {
-        console.log('User is signed in to Clerk, fetching backend user');
+        console.log('User is signed in to Clerk, syncing with backend');
         dispatch({ type: 'SET_LOADING', payload: true });
         try {
-          const res = await authApi.getMe();
-          console.log('Backend user fetch success:', res.data);
-          dispatch({ type: 'LOGIN_SUCCESS', payload: res.data });
+          const email = clerkUser.primaryEmailAddress?.emailAddress;
+          const name = clerkUser.fullName || clerkUser.firstName || '';
+          
+          const res = await authApi.syncUser(clerkUser.id, email, name);
+          console.log('Backend user sync success:', res.user);
+          dispatch({ type: 'LOGIN_SUCCESS', payload: res.user });
         } catch (err) {
           console.error('Failed to load user from backend:', err);
           const errorMessage = err?.message || 'Your email is not authorized to access this system.';

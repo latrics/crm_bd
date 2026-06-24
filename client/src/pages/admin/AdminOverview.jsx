@@ -101,7 +101,7 @@ export default function AdminOverview() {
         });
         setInviteEmail('');
         // Refresh the member list to show new pending status or similar (once activated, they appear)
-        fetchUsers();
+        fetchData();
       } else {
         setInviteError(response.message || 'Failed to send invitation');
       }
@@ -315,7 +315,9 @@ Building Better Tomorrow
                         roleStr.toLowerCase() === roleFilter.toLowerCase().replace(' ', '');
     
     const matchesStatus = statusFilter === 'All' || 
-                          (statusFilter === 'Active' ? member.isActive : !member.isActive);
+                          (statusFilter === 'Active' ? member.isActive && !member.isInvite : false) ||
+                          (statusFilter === 'Inactive' ? !member.isActive && !member.isInvite : false) ||
+                          (statusFilter === 'Pending' ? member.isInvite : false);
                           
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -409,6 +411,7 @@ Building Better Tomorrow
                     <option value="All">All Status</option>
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
+                    <option value="Pending">Pending Invite</option>
                   </select>
 
                   {/* Invite Button */}
@@ -476,10 +479,17 @@ Building Better Tomorrow
                             {getRoleAccessDescription(member.role)}
                           </td>
                           <td className="py-3.5">
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${online ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                              {online ? 'Active' : 'Inactive'}
-                            </span>
+                            {member.isInvite ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                {member.inviteStatus === 'opened' ? 'Opened' : 'Pending'}
+                              </span>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${online ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                {online ? 'Active' : 'Inactive'}
+                              </span>
+                            )}
                           </td>
                           <td className="py-3.5 text-right">
                             {member.role?.toLowerCase() !== 'superadmin' && (
@@ -609,6 +619,31 @@ Building Better Tomorrow
           <div className="bg-white rounded-xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-5">
             <h2 className="font-serif text-xl font-bold text-brand-charcoal mb-4">Quick Actions</h2>
             <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  setStatusFilter('Pending');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="w-full flex items-center justify-between p-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left text-sm font-semibold text-brand-charcoal bg-white"
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  View pending invites
+                </div>
+                <div className="flex items-center gap-2">
+                  {members.filter(m => m.isInvite).length > 0 && (
+                    <span className="bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                      {members.filter(m => m.isInvite).length}
+                    </span>
+                  )}
+                  <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+
               <button
                 onClick={() => {
                   setInviteSuccess(null);

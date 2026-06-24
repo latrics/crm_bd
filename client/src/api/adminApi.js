@@ -62,4 +62,20 @@ export const updateUser = async (id, userData) => {
     throw err.response?.data || err;
   }
 };
+export const revokeInvite = async (id) => {
+  try {
+    const res = await axios.delete(`${API_URL}/invite/${id}`, getHeaders());
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
 
+export const resendInvite = async (id) => {
+  try {
+    const res = await axios.post(`${API_URL}/invite/${id}/resend`, {}, getHeaders());
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};

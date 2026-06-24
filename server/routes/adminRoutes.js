@@ -6,7 +6,7 @@ import {
   updateUser, 
   deleteUser 
 } from '../controllers/userController.js';
-import { createInvite } from '../controllers/inviteController.js';
+import { createInvite, revokeInvite, resendInvite } from '../controllers/inviteController.js';
 import AuditLog from '../models/AuditLog.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
@@ -21,6 +21,8 @@ router.use(protect);
 router.use(authorize('admin', 'superadmin'));
 
 router.post('/invite', checkPermission('users.create'), logActivity('Invite', 'CREATE'), createInvite);
+router.delete('/invite/:id', checkPermission('users.delete'), logActivity('Invite', 'DELETE'), revokeInvite);
+router.post('/invite/:id/resend', checkPermission('users.create'), logActivity('Invite', 'UPDATE'), resendInvite);
 
 router.route('/users')
   .get(checkPermission('users.view'), getUsers)

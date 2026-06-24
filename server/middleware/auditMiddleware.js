@@ -4,7 +4,6 @@ import Tender from '../models/Tender.js';
 import User from '../models/User.js';
 import Doc from '../models/Doc.js';
 import Deal from '../models/Deal.js';
-import Invite from '../models/Invite.js';
 
 const getModel = (moduleName) => {
   switch (moduleName) {
@@ -13,7 +12,6 @@ const getModel = (moduleName) => {
     case 'Users': return User;
     case 'Documents': return Doc;
     case 'Deals': return Deal;
-    case 'Invite': return Invite;
     default: return null;
   }
 };
