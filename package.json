@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "description": "Root package for Latrics CRM",
   "scripts": {
-    "client-install": "npm install --prefix client",
-    "server-install": "npm install --prefix server",
-    "install-all": "npm run client-install && npm run server-install",
-    "client": "npm run dev --prefix client",
-    "server": "npm run dev --prefix server",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "npm run server-install && npm install --prefix client && npm run build --prefix client"
+    "client-install": "npm.cmd install --prefix client",
+    "server-install": "npm.cmd install --prefix server",
+    "install-all": "npm.cmd run client-install && npm.cmd run server-install",
+    "client": "npm.cmd run dev --prefix client",
+    "server": "npm.cmd run dev --prefix server",
+    "dev": "concurrently \"npm.cmd run server\" \"npm.cmd run client\""
   },
   "devDependencies": {
     "concurrently": "^8.2.1"
