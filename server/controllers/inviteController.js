@@ -70,7 +70,8 @@ export const createInvite = asyncHandler(async (req, res) => {
   }
 
   // Build the setup URL - Points to our custom sign-up page
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const proto = req.get('x-forwarded-proto') || req.protocol;
+  const clientOrigin = process.env.CLIENT_ORIGIN || `${proto}://${req.get('host')}`;
   const inviteUrl = `${clientOrigin}/accept-invite?token=${token}`;
 
   // Send the invitation email
@@ -132,7 +133,8 @@ export const resendInvite = asyncHandler(async (req, res) => {
   invitation.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await invitation.save();
 
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const proto = req.get('x-forwarded-proto') || req.protocol;
+  const clientOrigin = process.env.CLIENT_ORIGIN || `${proto}://${req.get('host')}`;
   const inviteUrl = `${clientOrigin}/accept-invite?token=${token}`;
 
   try {

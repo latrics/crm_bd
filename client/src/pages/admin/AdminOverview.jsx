@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import AdminStatCard from '../../components/admin/AdminStatCard.jsx';
 import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
-import { getUsers, inviteUser, deleteUser, getAuditLogs } from '../../api/adminApi.js';
+import { getUsers, inviteUser, deleteUser, getAuditLogs, revokeInvite } from '../../api/adminApi.js';
 import { format, isToday, isYesterday } from 'date-fns';
 
 export default function AdminOverview() {
@@ -116,14 +116,16 @@ export default function AdminOverview() {
     if (!userToDelete) return;
     setDeleteSubmitting(true);
     try {
-      const response = await deleteUser(userToDelete._id);
+      const response = userToDelete.isInvite
+        ? await revokeInvite(userToDelete._id)
+        : await deleteUser(userToDelete._id);
       if (response.success) {
         setMembers(members.filter(m => m._id !== userToDelete._id));
         setUserToDelete(null);
         fetchData();
       }
     } catch (err) {
-      alert(err.message || 'Failed to delete user');
+      alert(err.message || (userToDelete.isInvite ? 'Failed to revoke invitation' : 'Failed to delete user'));
     } finally {
       setDeleteSubmitting(false);
     }
@@ -497,7 +499,7 @@ Building Better Tomorrow
                                 onClick={() => setUserToDelete(member)}
                                 className="text-red-500 hover:text-red-700 transition-colors p-1.5 text-xs font-bold hover:underline"
                               >
-                                Remove
+                                {member.isInvite ? 'Revoke' : 'Remove'}
                               </button>
                             )}
                           </td>
@@ -1009,7 +1011,7 @@ Building Better Tomorrow
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete/Revoke Confirmation Modal */}
       {userToDelete && (
         <div className="fixed inset-0 bg-brand-charcoal/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 text-center space-y-4">
@@ -1017,9 +1019,15 @@ Building Better Tomorrow
               ⚠️
             </div>
             <div>
-              <h3 className="font-serif text-lg font-bold text-brand-charcoal">Remove User Access</h3>
+              <h3 className="font-serif text-lg font-bold text-brand-charcoal">
+                {userToDelete.isInvite ? 'Revoke Invitation' : 'Remove User Access'}
+              </h3>
               <p className="text-xs text-brand-silver mt-1.5 leading-relaxed">
-                Are you sure you want to remove <span className="font-bold text-brand-charcoal">{userToDelete.name}</span> ({userToDelete.email})? This action is permanent and revokes all CRM access immediately.
+                {userToDelete.isInvite ? (
+                  <>Are you sure you want to revoke the invitation for <span className="font-bold text-brand-charcoal">{userToDelete.email}</span>? This will deactivate the setup link.</>
+                ) : (
+                  <>Are you sure you want to remove <span className="font-bold text-brand-charcoal">{userToDelete.name}</span> ({userToDelete.email})? This action is permanent and revokes all CRM access immediately.</>
+                )}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -1034,7 +1042,10 @@ Building Better Tomorrow
                 disabled={deleteSubmitting}
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded-xl text-xs font-semibold text-white transition-all shadow-md"
               >
-                {deleteSubmitting ? 'Removing...' : 'Yes, Remove'}
+                {deleteSubmitting 
+                  ? (userToDelete.isInvite ? 'Revoking...' : 'Removing...') 
+                  : (userToDelete.isInvite ? 'Yes, Revoke' : 'Yes, Remove')
+                }
               </button>
             </div>
           </div>
