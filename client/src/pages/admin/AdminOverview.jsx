@@ -140,19 +140,19 @@ export default function AdminOverview() {
 <meta charset="UTF-8">
 <title>Latrics CRM Invitation</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f6f8;font-family:Poppins,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 0;">
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Poppins,Arial,sans-serif;">
+<table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f8" style="background-color:#f4f6f8;padding:40px 0;">
 <tr>
 <td align="center">
-<table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
+<table border="0" width="620" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
 <!-- Top Brand Bar -->
 <tr>
-<td style="height:6px;background:#DA291C;"></td>
+<td height="6" bgcolor="#DA291C" style="height:6px;background-color:#DA291C;font-size:0;line-height:0;">&nbsp;</td>
 </tr>
 <!-- Header -->
 <tr>
 <td align="center" style="padding:40px 40px 20px;">
-<img src="https://ui-avatars.com/api/?name=L&color=DA291C&background=fef2f2" width="40" alt="Latrics CRM">
+<img src="https://i.postimg.cc/latrics-logo.png" width="180" alt="Latrics CRM" style="display:block;border:none;">
 <p style="margin-top:8px;color:#8A8D8F;font-size:14px;">
 Building Better Tomorrow
 </p>
@@ -180,20 +180,28 @@ Create your account credentials and activate your profile using the secure link 
 <!-- CTA -->
 <tr>
 <td align="center" style="padding:35px 50px;">
-<a href="${link}" style="background:#DA291C;color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:10px;font-size:16px;font-weight:600;display:inline-block;">
-Activate Account
-</a>
+  <table border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center" bgcolor="#DA291C" style="border-radius:10px;">
+        <a href="${link}" target="_blank" style="font-size:16px;font-family:Poppins,Arial,sans-serif;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 36px;border:1px solid #DA291C;display:inline-block;font-weight:600;">Activate Account</a>
+      </td>
+    </tr>
+  </table>
 </td>
 </tr>
 <!-- Security Box -->
 <tr>
 <td style="padding:0 50px 30px;">
-<div style="background:#F7F8F9;border-left:4px solid #DA291C;padding:20px;border-radius:10px;">
-<p style="margin:0;font-size:14px;line-height:24px;color:#54585A;">
-🔒 This invitation link will expire in
-<strong>24 hours</strong>.
-</p>
-</div>
+  <table border="0" cellspacing="0" cellpadding="0" width="100%" bgcolor="#F7F8F9" style="background-color:#F7F8F9;border-radius:10px;">
+    <tr>
+      <td width="4" bgcolor="#DA291C" style="background-color:#DA291C;border-top-left-radius:10px;border-bottom-left-radius:10px;font-size:0;line-height:0;">&nbsp;</td>
+      <td style="padding:20px;">
+        <p style="margin:0;font-size:14px;line-height:24px;color:#54585A;">
+          &#128274; This invitation link will expire in <strong>24 hours</strong>.
+        </p>
+      </td>
+    </tr>
+  </table>
 </td>
 </tr>
 <!-- Link -->
@@ -203,13 +211,13 @@ Activate Account
 If the button does not work, use the link below:
 </p>
 <p style="word-break:break-all;font-size:13px;color:#DA291C;">
-${link}
+<a href="${link}" style="color:#DA291C;">${link}</a>
 </p>
 </td>
 </tr>
 <!-- Footer -->
 <tr>
-<td style="background:#54585A;padding:30px;text-align:center;">
+<td bgcolor="#54585A" style="background-color:#54585A;padding:30px;text-align:center;">
 <p style="margin:0;color:#ffffff;font-size:14px;font-weight:600;">
 Latrics System Operations Team
 </p>

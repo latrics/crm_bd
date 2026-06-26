@@ -49,69 +49,104 @@ Please click the link below to set up your password and access your account:
 ${inviteUrl}
 
 This invitation link will expire in 24 hours.`,
-    html: `
-<div style="font-family: 'Inter', Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-  <!-- Top Red Border -->
-  <div style="height: 6px; background-color: #DA291C; width: 100%;"></div>
-  
-  <!-- Header / Logo -->
-  <div style="text-align: center; padding: 30px 20px 20px;">
-    <img src="https://ui-avatars.com/api/?name=L&color=DA291C&background=fef2f2" alt="Latrics Logo" style="width: 40px; height: 40px; margin-bottom: 10px; border-radius: 4px;" />
-    <p style="margin: 0; color: #888; font-size: 13px; font-weight: 500;">Building Better Tomorrow</p>
-  </div>
-
-  <!-- Main Content -->
-  <div style="padding: 0 30px 30px;">
-    <h1 style="color: #4b5563; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 30px; letter-spacing: -0.5px;">
-      You're Invited to Join Latrics CRM
-    </h1>
-    
-    <p style="color: #4b5563; font-size: 15px; margin-bottom: 20px;">
-      Hello <strong>${username}</strong>,
-    </p>
-    
-    <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
-      You have been invited to join the <strong>Latrics CRM Platform</strong> as an <strong>${displayRole}</strong>.
-    </p>
-
-    <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin-bottom: 30px;">
-      Create your account credentials and activate your profile using the secure link below.
-    </p>
-
-    <!-- Call to Action Button -->
-    <div style="text-align: center; margin-bottom: 35px;">
-      <a href="${inviteUrl}" style="background-color: #DA291C; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 4px rgba(218,41,28,0.2);">
-        Activate Account
-      </a>
-    </div>
-
-    <!-- Security Notice -->
-    <div style="background-color: #f9fafb; border-left: 4px solid #DA291C; padding: 16px 20px; border-radius: 4px; margin-bottom: 30px;">
-      <p style="margin: 0; color: #4b5563; font-size: 14px;">
-        🔒 This invitation link will expire in <strong>24 hours</strong>.
-      </p>
-    </div>
-
-    <!-- Fallback Link -->
-    <p style="color: #6b7280; font-size: 13px; margin-bottom: 8px;">
-      If the button does not work, use the link below:
-    </p>
-    <a href="${inviteUrl}" style="color: #DA291C; font-size: 13px; word-break: break-all;">
-      ${inviteUrl}
-    </a>
-  </div>
-
-  <!-- Footer -->
-  <div style="background-color: #4b5563; padding: 24px 30px; text-align: center;">
-    <p style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 6px;">
-      Latrics System Operations Team
-    </p>
-    <p style="margin: 0; color: #d1d5db; font-size: 12px;">
-      Building Better Tomorrow
-    </p>
-  </div>
-</div>
-    `
+    html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Latrics CRM Invitation</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Poppins,Arial,sans-serif;">
+<table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f8" style="background-color:#f4f6f8;padding:40px 0;">
+<tr>
+<td align="center">
+<table border="0" width="620" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
+<!-- Top Brand Bar -->
+<tr>
+<td height="6" bgcolor="#DA291C" style="height:6px;background-color:#DA291C;font-size:0;line-height:0;">&nbsp;</td>
+</tr>
+<!-- Header -->
+<tr>
+<td align="center" style="padding:40px 40px 20px;">
+<img src="${process.env.CLIENT_ORIGIN || 'http://localhost:5173'}/latrics_logo.png" width="180" alt="Latrics CRM" style="display:block;border:none;">
+<p style="margin-top:8px;color:#8A8D8F;font-size:14px;">
+Building Better Tomorrow
+</p>
+</td>
+</tr>
+<!-- Hero -->
+<tr>
+<td style="padding:0 50px;">
+<h1 style="margin:0;font-size:32px;color:#54585A;font-weight:700;">
+You're Invited to Join Latrics CRM
+</h1>
+<p style="margin-top:24px;font-size:16px;line-height:28px;color:#54585A;">
+Hello <strong>${username}</strong>,
+</p>
+<p style="font-size:16px;line-height:28px;color:#54585A;">
+You have been invited to join the
+<strong>Latrics CRM Platform</strong>
+as an <strong>${displayRole}</strong>.
+</p>
+<p style="font-size:16px;line-height:28px;color:#54585A;">
+Create your account credentials and activate your profile using the secure link below.
+</p>
+</td>
+</tr>
+<!-- CTA -->
+<tr>
+<td align="center" style="padding:35px 50px;">
+  <table border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center" bgcolor="#DA291C" style="border-radius:10px;">
+        <a href="${inviteUrl}" target="_blank" style="font-size:16px;font-family:Poppins,Arial,sans-serif;color:#ffffff;text-decoration:none;border-radius:10px;padding:16px 36px;border:1px solid #DA291C;display:inline-block;font-weight:600;">Activate Account</a>
+      </td>
+    </tr>
+  </table>
+</td>
+</tr>
+<!-- Security Box -->
+<tr>
+<td style="padding:0 50px 30px;">
+  <table border="0" cellspacing="0" cellpadding="0" width="100%" bgcolor="#F7F8F9" style="background-color:#F7F8F9;border-radius:10px;">
+    <tr>
+      <td width="4" bgcolor="#DA291C" style="background-color:#DA291C;border-top-left-radius:10px;border-bottom-left-radius:10px;font-size:0;line-height:0;">&nbsp;</td>
+      <td style="padding:20px;">
+        <p style="margin:0;font-size:14px;line-height:24px;color:#54585A;">
+          &#128274; This invitation link will expire in <strong>24 hours</strong>.
+        </p>
+      </td>
+    </tr>
+  </table>
+</td>
+</tr>
+<!-- Link -->
+<tr>
+<td style="padding:0 50px 40px;">
+<p style="font-size:14px;color:#8A8D8F;">
+If the button does not work, use the link below:
+</p>
+<p style="word-break:break-all;font-size:13px;color:#DA291C;">
+<a href="${inviteUrl}" style="color:#DA291C;">${inviteUrl}</a>
+</p>
+</td>
+</tr>
+<!-- Footer -->
+<tr>
+<td bgcolor="#54585A" style="background-color:#54585A;padding:30px;text-align:center;">
+<p style="margin:0;color:#ffffff;font-size:14px;font-weight:600;">
+Latrics System Operations Team
+</p>
+<p style="margin-top:8px;color:#C7C9C7;font-size:12px;">
+Building Better Tomorrow
+</p>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>`
   };
 
   await transporter.sendMail(mailOptions);
