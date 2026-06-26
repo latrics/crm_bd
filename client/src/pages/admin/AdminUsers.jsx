@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
-import { getUsers, createUser, updateUser } from '../../api/adminApi.js';
+import { getUsers, createUser, updateUser, resendInvite, revokeInvite } from '../../api/adminApi.js';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -137,6 +137,30 @@ export default function AdminUsers() {
     }
   };
 
+  const handleResendInvite = async (id) => {
+    try {
+      const res = await resendInvite(id);
+      if (res.success) {
+        alert('Invitation resent successfully!');
+        fetchUsers();
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to resend invitation');
+    }
+  };
+
+  const handleRevokeInvite = async (id) => {
+    if (!window.confirm('Are you sure you want to revoke this invitation?')) return;
+    try {
+      const res = await revokeInvite(id);
+      if (res.success) {
+        fetchUsers();
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to revoke invitation');
+    }
+  };
+
   // Helper styles
   const getRoleBadgeStyle = (role) => {
     switch (role?.toLowerCase()) {
@@ -267,52 +291,80 @@ export default function AdminUsers() {
                        user.role?.toLowerCase() === 'admin' ? 'Super Admin' : '-'}
                     </td>
                     <td className="px-6 py-4">
-                      <button 
-                        onClick={() => handleToggleActive(user)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors border ${
-                          online 
-                            ? 'bg-green-50 text-green-700 border-green-100/50 hover:bg-green-100/80' 
-                            : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                        {online ? 'Active' : 'Inactive'}
-                      </button>
+                      {user.isInvite ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                          {user.inviteStatus === 'opened' ? 'Opened' : 'Pending'}
+                        </span>
+                      ) : (
+                        <button 
+                          onClick={() => handleToggleActive(user)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors border ${
+                            online 
+                              ? 'bg-green-50 text-green-700 border-green-100/50 hover:bg-green-100/80' 
+                              : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                          {online ? 'Active' : 'Inactive'}
+                        </button>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-xs text-brand-silver font-medium tracking-wide">
                       {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 text-right flex justify-end gap-2">
-                      <button 
-                        onClick={() => {
-                          setFormError('');
-                          setEditForm({ id: user._id, name: user.name, email: user.email, role: user.role });
-                          setShowEditModal(true);
-                        }}
-                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleToggleActive(user)}
-                        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all ${
-                          user.isActive 
-                            ? 'text-brand-red hover:bg-red-50/50' 
-                            : 'text-green-600 hover:bg-green-50/50'
-                        }`}
-                      >
-                        {user.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setFormError('');
-                          setResetForm({ id: user._id, name: user.name, password: '', confirmPassword: '' });
-                          setShowResetModal(true);
-                        }}
-                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg text-brand-silver hover:bg-gray-50 transition-all"
-                      >
-                        Reset Pwd
-                      </button>
+                      {user.isInvite ? (
+                        <>
+                          <button 
+                            onClick={() => handleResendInvite(user._id)}
+                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
+                            title="Resend Invitation"
+                          >
+                            Resend
+                          </button>
+                          <button 
+                            onClick={() => handleRevokeInvite(user._id)}
+                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-red hover:bg-red-50/50 transition-all"
+                            title="Revoke Invitation"
+                          >
+                            Revoke
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setFormError('');
+                              setEditForm({ id: user._id, name: user.name, email: user.email, role: user.role });
+                              setShowEditModal(true);
+                            }}
+                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleToggleActive(user)}
+                            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg transition-all ${
+                              user.isActive 
+                                ? 'text-brand-red hover:bg-red-50/50' 
+                                : 'text-green-600 hover:bg-green-50/50'
+                            }`}
+                          >
+                            {user.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setFormError('');
+                              setResetForm({ id: user._id, name: user.name, password: '', confirmPassword: '' });
+                              setShowResetModal(true);
+                            }}
+                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-silver hover:bg-gray-50 transition-all"
+                          >
+                            Reset Pwd
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 );

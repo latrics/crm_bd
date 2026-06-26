@@ -5,17 +5,21 @@ import { SignIn } from '@clerk/react';
 import loginBg from '../assets/images/signup_login_img.jpeg';
 
 export default function LoginPage() {
-  const { isAuthenticated, error } = useAuth();
+  const { isAuthenticated, user, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/dashboard";
-
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    if (isAuthenticated && user) {
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/' && from !== '/login') {
+        navigate(from, { replace: true });
+      } else {
+        const isAdmin = ['superadmin', 'admin'].includes(user.role?.toLowerCase());
+        navigate(isAdmin ? '/admin/overview' : '/dashboard', { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, user, navigate, location]);
 
   return (
     <div className="min-h-screen flex w-full bg-[#fcfcfc]">
@@ -60,7 +64,7 @@ export default function LoginPage() {
             ⚠️ {error}
           </div>
         )}
-        <SignIn routing="path" path="/login" fallbackRedirectUrl={from} signUpUrl="/accept-invite" />
+        <SignIn routing="path" path="/login" fallbackRedirectUrl="/dashboard" signUpUrl="/accept-invite" />
       </div>
     </div>
   );

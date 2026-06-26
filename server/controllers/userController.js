@@ -6,8 +6,26 @@ import asyncHandler from '../utils/asyncHandler.js';
 // @route   GET /api/v1/users
 // @access  Private/Admin
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().sort('-createdAt');
-  res.status(200).json({ success: true, count: users.length, data: users });
+  const users = await User.find().sort('-createdAt').lean();
+
+  // Also fetch active invitations
+  const Invitation = (await import('../models/Invitation.js')).default;
+  const invites = await Invitation.find({ status: { $in: ['pending', 'opened'] } }).sort('-createdAt').lean();
+
+  // Format invites to match user shape for the frontend
+  const formattedInvites = invites.map(inv => ({
+    _id: inv._id,
+    name: inv.email.split('@')[0], // placeholder name
+    email: inv.email,
+    role: inv.role,
+    isActive: false,
+    isInvite: true,
+    inviteStatus: inv.status, // 'pending' or 'opened'
+    createdAt: inv.createdAt
+  }));
+
+  const combined = [...formattedInvites, ...users];
+  res.status(200).json({ success: true, count: combined.length, data: combined });
 });
 
 // @desc    Get single user

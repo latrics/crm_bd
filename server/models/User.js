@@ -14,6 +14,10 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  clerkId: {
+    type: String,
+    default: null
+  },
   company: {
     type: String,
     trim: true
@@ -24,7 +28,7 @@ const UserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: false,
     select: false
   },
   role: {
@@ -42,7 +46,7 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Encrypt password using bcryptjs on save
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
@@ -51,7 +55,7 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Compare password helper
-UserSchema.methods.matchPassword = async function(enteredPassword) {
+UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

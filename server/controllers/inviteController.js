@@ -1,7 +1,7 @@
-import Invite from '../models/Invite.js';
+import crypto from 'crypto';
 import User from '../models/User.js';
+import Invitation from '../models/Invitation.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import { generateRawToken, hashToken } from '../utils/inviteToken.js';
 import { sendInviteEmail } from '../utils/email.js';
 import { log as auditLog } from '../utils/auditLog.js';
 
@@ -29,28 +29,50 @@ export const createInvite = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: 'User with this email already exists' });
   }
 
-  // Clean up any existing unused invites for this email
-  await Invite.deleteMany({ email: cleanEmail, used: false });
-
-  // Generate cryptographically secure invite token
-  const rawToken = generateRawToken();
-  const tokenHash = hashToken(rawToken);
-
-  // Set expiration (24 hours)
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  // Create invite record
-  const invite = await Invite.create({
-    email: cleanEmail,
-    role: cleanRole,
-    tokenHash,
-    expiresAt,
-    invitedBy: req.user.id || req.user._id // from protect middleware
+  // Check for an existing pending or opened invitation
+  let invitation = await Invitation.findOne({ 
+    email: cleanEmail, 
+    status: { $in: ['pending', 'opened'] } 
   });
 
-  // Build the setup URL
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-  const inviteUrl = `${clientOrigin}/accept-invite?token=${rawToken}`;
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  const inviterId = typeof req.auth === 'function' ? req.auth().userId : (req.auth?.userId || req.user?.id || req.user?._id);
+
+  if (inviterId && typeof inviterId === 'string' && inviterId.startsWith('user_')) {
+    // We need the MongoDB User ID of the inviter, not the clerkId!
+    const inviter = await User.findOne({ clerkId: inviterId });
+    if (!inviter) {
+      return res.status(401).json({ success: false, message: 'Inviter not found in DB' });
+    }
+    var dbInviterId = inviter._id;
+  } else {
+    var dbInviterId = inviterId;
+  }
+
+  if (invitation) {
+    // Update existing invitation
+    invitation.role = cleanRole;
+    invitation.token = token;
+    invitation.invitedBy = dbInviterId;
+    invitation.expiresAt = expiresAt;
+    await invitation.save();
+  } else {
+    // Create new invitation
+    invitation = await Invitation.create({
+      email: cleanEmail,
+      role: cleanRole,
+      token,
+      invitedBy: dbInviterId,
+      expiresAt
+    });
+  }
+
+  // Build the setup URL - Points to our custom sign-up page
+  const proto = req.get('x-forwarded-proto') || req.protocol;
+  const clientOrigin = process.env.CLIENT_ORIGIN || `${proto}://${req.get('host')}`;
+  const inviteUrl = `${clientOrigin}/accept-invite?token=${token}`;
 
   // Send the invitation email
   try {
@@ -62,10 +84,10 @@ export const createInvite = asyncHandler(async (req, res) => {
 
   // Audit log the action
   await auditLog({
-    userId: req.user.id || req.user._id,
+    userId: dbInviterId,
     action: 'INVITE_USER',
-    entity: 'Invite',
-    entityId: invite._id.toString(),
+    entity: 'Invitation',
+    entityId: invitation._id.toString(),
     ip: req.ip,
   });
 
@@ -75,8 +97,52 @@ export const createInvite = asyncHandler(async (req, res) => {
     data: {
       email: cleanEmail,
       role: cleanRole,
-      expiresAt,
       link: inviteUrl
     }
   });
+});
+
+// @desc    Revoke an invitation
+// @route   DELETE /api/v1/admin/invite/:id
+// @access  Private/Admin
+export const revokeInvite = asyncHandler(async (req, res) => {
+  const invitation = await Invitation.findById(req.params.id);
+
+  if (!invitation) {
+    return res.status(404).json({ success: false, message: 'Invitation not found' });
+  }
+
+  await invitation.deleteOne();
+
+  res.status(200).json({ success: true, message: 'Invitation revoked successfully' });
+});
+
+// @desc    Resend an invitation
+// @route   POST /api/v1/admin/invite/:id/resend
+// @access  Private/Admin
+export const resendInvite = asyncHandler(async (req, res) => {
+  const invitation = await Invitation.findById(req.params.id);
+
+  if (!invitation) {
+    return res.status(404).json({ success: false, message: 'Invitation not found' });
+  }
+
+  // Generate a new token and extend expiration
+  const token = crypto.randomBytes(32).toString('hex');
+  invitation.token = token;
+  invitation.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await invitation.save();
+
+  const proto = req.get('x-forwarded-proto') || req.protocol;
+  const clientOrigin = process.env.CLIENT_ORIGIN || `${proto}://${req.get('host')}`;
+  const inviteUrl = `${clientOrigin}/accept-invite?token=${token}`;
+
+  try {
+    await sendInviteEmail(invitation.email, invitation.role, inviteUrl);
+  } catch (error) {
+    console.error('Failed to resend invite email:', error);
+    return res.status(500).json({ success: false, message: 'Failed to send email' });
+  }
+
+  res.status(200).json({ success: true, message: 'Invitation resent successfully' });
 });

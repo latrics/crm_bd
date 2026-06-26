@@ -40,6 +40,15 @@ export const getMe = async () => {
   }
 };
 
+export const syncUser = async (clerkId, email, name) => {
+  try {
+    const res = await axios.post(`${API_URL}/sync-user`, { clerkId, email, name });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
 export const verifyInvite = async (token) => {
   try {
     const res = await axios.get(`${API_URL}/verify-invite?token=${token}`);
