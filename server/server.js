@@ -51,6 +51,10 @@ app.use('/api/v1/deals', dealRoutes);
 app.use('/api/v1/docs', docRoutes);
 app.use('/api/v1/tenders', tenderRoutes);
 
+app.get('/', (req, res) => {
+  res.json({ message: "CRM API is running successfully!" });
+});
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
