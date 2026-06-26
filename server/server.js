@@ -8,6 +8,7 @@ import xss from 'xss-clean';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 import connectDB from './config/db.js';
 import leadRoutes from './routes/leadRoutes.js';
@@ -56,9 +57,9 @@ app.use('/api/v1/deals', dealRoutes);
 app.use('/api/v1/docs', docRoutes);
 app.use('/api/v1/tenders', tenderRoutes);
 
-// Serve static frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../client/dist');
+// Serve static frontend if it has been built
+const clientBuildPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
   app.use(express.static(clientBuildPath));
   
   // Wildcard handler for SPAs
@@ -67,7 +68,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 } else {
   app.get('/', (req, res) => {
-    res.json({ message: "CRM API is running successfully!" });
+    res.json({ message: "CRM API is running successfully (Frontend build folder not found)!" });
   });
 }
 
