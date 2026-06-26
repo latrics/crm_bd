@@ -6,6 +6,8 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import connectDB from './config/db.js';
 import leadRoutes from './routes/leadRoutes.js';
@@ -16,6 +18,9 @@ import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { clerkMiddleware } from '@clerk/express';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 connectDB();
@@ -51,9 +56,20 @@ app.use('/api/v1/deals', dealRoutes);
 app.use('/api/v1/docs', docRoutes);
 app.use('/api/v1/tenders', tenderRoutes);
 
-app.get('/', (req, res) => {
-  res.json({ message: "CRM API is running successfully!" });
-});
+// Serve static frontend in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../client/dist');
+  app.use(express.static(clientBuildPath));
+  
+  // Wildcard handler for SPAs
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({ message: "CRM API is running successfully!" });
+  });
+}
 
 app.use(errorHandler);
 
