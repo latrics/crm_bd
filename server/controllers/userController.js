@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Role from '../models/Role.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { clerkClient } from '@clerk/express';
 
 // @desc    Get all users
 // @route   GET /api/v1/users
@@ -85,6 +86,17 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
   if (!user) {
     return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  // Delete user from Clerk if they have a clerkId
+  if (user.clerkId) {
+    try {
+      await clerkClient.users.deleteUser(user.clerkId);
+      console.log(`Successfully deleted Clerk user ${user.clerkId} for ${user.email}`);
+    } catch (clerkErr) {
+      console.error(`Failed to delete Clerk user ${user.clerkId}:`, clerkErr.message);
+      // Continue deleting from MongoDB even if Clerk deletion fails
+    }
   }
 
   await user.deleteOne();

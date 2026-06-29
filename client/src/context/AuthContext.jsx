@@ -21,6 +21,8 @@ function authReducer(state, action) {
       return { ...state, user: null, isAuthenticated: false, loading: false, error: null };
     case 'AUTH_ERROR':
       return { ...state, user: null, isAuthenticated: false, loading: false, error: action.payload };
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
     default:
@@ -120,11 +122,15 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'LOGOUT' });
   };
 
+  const clearError = () => {
+    dispatch({ type: 'CLEAR_ERROR' });
+  };
+
   const loadingState = !isClerkAuthLoaded || !isClerkUserLoaded || state.loading;
   console.log('AuthContext render state:', { loadingState, stateLoading: state.loading, isClerkAuthLoaded, isClerkUserLoaded, isAuthenticated: state.isAuthenticated, error: state.error });
 
   return (
-    <AuthContext.Provider value={{ ...state, loading: loadingState, login, logout }}>
+    <AuthContext.Provider value={{ ...state, loading: loadingState, login, logout, clearError }}>
       {children}
     </AuthContext.Provider>
   );
