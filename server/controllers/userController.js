@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Role from '../models/Role.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { clerkClient } from '@clerk/express';
+import { log as auditLog } from '../utils/auditLog.js';
 
 // @desc    Get all users
 // @route   GET /api/v1/users
@@ -98,6 +99,22 @@ export const deleteUser = asyncHandler(async (req, res) => {
       // Continue deleting from MongoDB even if Clerk deletion fails
     }
   }
+
+  // Log the action before deleting
+  await auditLog({
+    userId: req.user.id,
+    action: req.user.id === user._id.toString() ? 'USER_LEAVE' : 'DELETE_USER',
+    entity: 'User',
+    entityId: user._id.toString(),
+    ip: req.ip,
+    meta: {
+      deletedUserEmail: user.email,
+      deletedUserName: user.name,
+      message: req.user.id === user._id.toString() 
+        ? `User ${user.name} (${user.email}) voluntarily left the workspace` 
+        : `Admin ${req.user.name} removed user ${user.name} (${user.email})`
+    }
+  });
 
   await user.deleteOne();
 
