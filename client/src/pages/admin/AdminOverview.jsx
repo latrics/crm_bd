@@ -7,7 +7,7 @@ import { getUsers, inviteUser, deleteUser, getAuditLogs, revokeInvite } from '..
 import { format, isToday, isYesterday } from 'date-fns';
 
 export default function AdminOverview() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -120,6 +120,11 @@ export default function AdminOverview() {
         ? await revokeInvite(userToDelete._id)
         : await deleteUser(userToDelete._id);
       if (response.success) {
+        if (user && !userToDelete.isInvite && (user.id === userToDelete._id || user._id === userToDelete._id)) {
+          await logout();
+          navigate('/login');
+          return;
+        }
         setMembers(members.filter(m => m._id !== userToDelete._id));
         setUserToDelete(null);
         fetchData();
@@ -507,7 +512,7 @@ Building Better Tomorrow
                                 onClick={() => setUserToDelete(member)}
                                 className="text-red-500 hover:text-red-700 transition-colors p-1.5 text-xs font-bold hover:underline"
                               >
-                                {member.isInvite ? 'Revoke' : 'Remove'}
+                                {member.isInvite ? 'Revoke' : (user && (user.id === member._id || user._id === member._id) ? 'Leave' : 'Remove')}
                               </button>
                             )}
                           </td>
@@ -1028,13 +1033,17 @@ Building Better Tomorrow
             </div>
             <div>
               <h3 className="font-serif text-lg font-bold text-brand-charcoal">
-                {userToDelete.isInvite ? 'Revoke Invitation' : 'Remove User Access'}
+                {userToDelete.isInvite ? 'Revoke Invitation' : (user && (user.id === userToDelete._id || user._id === userToDelete._id) ? 'Leave Workspace' : 'Remove User Access')}
               </h3>
               <p className="text-xs text-brand-silver mt-1.5 leading-relaxed">
                 {userToDelete.isInvite ? (
                   <>Are you sure you want to revoke the invitation for <span className="font-bold text-brand-charcoal">{userToDelete.email}</span>? This will deactivate the setup link.</>
                 ) : (
-                  <>Are you sure you want to remove <span className="font-bold text-brand-charcoal">{userToDelete.name}</span> ({userToDelete.email})? This action is permanent and revokes all CRM access immediately.</>
+                  user && (user.id === userToDelete._id || user._id === userToDelete._id) ? (
+                    <>Are you sure you want to leave this workspace? This action is permanent and you will lose all CRM access immediately.</>
+                  ) : (
+                    <>Are you sure you want to remove <span className="font-bold text-brand-charcoal">{userToDelete.name}</span> ({userToDelete.email})? This action is permanent and revokes all CRM access immediately.</>
+                  )
                 )}
               </p>
             </div>
@@ -1051,8 +1060,8 @@ Building Better Tomorrow
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded-xl text-xs font-semibold text-white transition-all shadow-md"
               >
                 {deleteSubmitting 
-                  ? (userToDelete.isInvite ? 'Revoking...' : 'Removing...') 
-                  : (userToDelete.isInvite ? 'Yes, Revoke' : 'Yes, Remove')
+                  ? (userToDelete.isInvite ? 'Revoking...' : (user && (user.id === userToDelete._id || user._id === userToDelete._id) ? 'Leaving...' : 'Removing...')) 
+                  : (userToDelete.isInvite ? 'Yes, Revoke' : (user && (user.id === userToDelete._id || user._id === userToDelete._id) ? 'Yes, Leave' : 'Yes, Remove'))
                 }
               </button>
             </div>

@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useUser } from '@clerk/react';
+import { useUser, useClerk } from '@clerk/react';
 import { useNavigate } from 'react-router-dom';
 import { syncUser as syncUserApi } from '../api/authApi.js';
 
 export default function SyncAuthPage() {
   const { isLoaded, user } = useUser();
+  const { signOut } = useClerk();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const syncAttempted = useRef(false);
@@ -24,8 +25,13 @@ export default function SyncAuthPage() {
       const data = await syncUserApi(user.id, email, name);
 
       if (data.success) {
-        // Redirect to dashboard on success
-        navigate('/dashboard');
+        // Log out of Clerk so the user has to login with their password
+        await signOut();
+        // Redirect to login with success message
+        navigate('/login', { 
+          replace: true, 
+          state: { message: 'Your account has been successfully verified and created! Please log in.' } 
+        });
       } else {
         setError(data.message || 'Failed to sync user');
       }

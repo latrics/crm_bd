@@ -12,7 +12,7 @@ export const createInvite = asyncHandler(async (req, res) => {
   const { email, role } = req.body;
 
   if (!email || !role) {
-    return res.status(400).json({ success: false, message: 'Email and role are required' });
+    return res.status(400).json({ success: false, message: 'Please provide both an email address and a role for the invitation.' });
   }
 
   const cleanEmail = email.trim().toLowerCase();
@@ -20,13 +20,13 @@ export const createInvite = asyncHandler(async (req, res) => {
 
   // Validate role
   if (!['admin', 'manager', 'member'].includes(cleanRole)) {
-    return res.status(400).json({ success: false, message: 'Only admin, manager, or member roles can be invited' });
+    return res.status(400).json({ success: false, message: 'Invalid role specified. Only Admin, Manager, or Member roles can be invited.' });
   }
 
   // Check if an active user already exists with this email
   const existingUser = await User.findOne({ email: cleanEmail });
   if (existingUser) {
-    return res.status(400).json({ success: false, message: 'User with this email already exists' });
+    return res.status(400).json({ success: false, message: 'A user with this email address already exists in the workspace.' });
   }
 
   // Check for an existing pending or opened invitation
@@ -44,7 +44,7 @@ export const createInvite = asyncHandler(async (req, res) => {
     // We need the MongoDB User ID of the inviter, not the clerkId!
     const inviter = await User.findOne({ clerkId: inviterId });
     if (!inviter) {
-      return res.status(401).json({ success: false, message: 'Inviter not found in DB' });
+      return res.status(401).json({ success: false, message: 'We could not verify your identity to send this invitation.' });
     }
     var dbInviterId = inviter._id;
   } else {
@@ -93,7 +93,7 @@ export const createInvite = asyncHandler(async (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: 'Invitation generated successfully',
+    message: 'The invitation was generated and sent successfully.',
     data: {
       email: cleanEmail,
       role: cleanRole,
@@ -109,12 +109,12 @@ export const revokeInvite = asyncHandler(async (req, res) => {
   const invitation = await Invitation.findById(req.params.id);
 
   if (!invitation) {
-    return res.status(404).json({ success: false, message: 'Invitation not found' });
+    return res.status(404).json({ success: false, message: 'The specified invitation could not be found.' });
   }
 
   await invitation.deleteOne();
 
-  res.status(200).json({ success: true, message: 'Invitation revoked successfully' });
+  res.status(200).json({ success: true, message: 'The invitation has been successfully revoked.' });
 });
 
 // @desc    Resend an invitation
@@ -124,7 +124,7 @@ export const resendInvite = asyncHandler(async (req, res) => {
   const invitation = await Invitation.findById(req.params.id);
 
   if (!invitation) {
-    return res.status(404).json({ success: false, message: 'Invitation not found' });
+    return res.status(404).json({ success: false, message: 'The specified invitation could not be found.' });
   }
 
   // Generate a new token and extend expiration
@@ -141,8 +141,8 @@ export const resendInvite = asyncHandler(async (req, res) => {
     await sendInviteEmail(invitation.email, invitation.role, inviteUrl);
   } catch (error) {
     console.error('Failed to resend invite email:', error);
-    return res.status(500).json({ success: false, message: 'Failed to send email' });
+    return res.status(500).json({ success: false, message: 'We encountered an error while trying to resend the invitation email. Please try again later.' });
   }
 
-  res.status(200).json({ success: true, message: 'Invitation resent successfully' });
+  res.status(200).json({ success: true, message: 'The invitation has been successfully resent.' });
 });

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Navigate } from 'react-router-dom';
-import { SignUp, useAuth, useClerk } from '@clerk/react';
+import { useSearchParams, useNavigate, Navigate } from 'react-router-dom';
+import { SignUp, useAuth as useClerkAuth, useClerk } from '@clerk/react';
 import { verifyInvite } from '../api/authApi.js';
+import { useAuth as useAppAuth } from '../context/AuthContext.jsx';
 import loginBg from '../assets/images/signup_login_img.jpeg';
 
 export default function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
   const urlToken = searchParams.get('token');
-  const { userId } = useAuth();
+  const { userId } = useClerkAuth();
   const { signOut } = useClerk();
+  const { isAuthenticated } = useAppAuth();
+  const navigate = useNavigate();
   
   // Clerk changes the URL during signup (e.g., /accept-invite/verify). 
   // This drops query params. We must persist the token so the page doesn't crash.
@@ -24,6 +27,13 @@ export default function AcceptInvitePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inviteEmail, setInviteEmail] = useState('');
+
+  // Handle redirect if user signed up/in on Clerk but is not yet synced in the app
+  useEffect(() => {
+    if (userId && !isAuthenticated) {
+      navigate('/sync-auth', { replace: true });
+    }
+  }, [userId, isAuthenticated, navigate]);
 
   useEffect(() => {
     async function validateToken() {
@@ -110,7 +120,7 @@ export default function AcceptInvitePage() {
 
       {/* Right Pane - Standard Clerk SignUp */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
-        {userId ? (
+        {userId && isAuthenticated ? (
           <div className="max-w-md w-full bg-blue-50 border border-blue-200 text-blue-800 p-8 rounded-xl text-center shadow-sm">
             <h2 className="text-2xl font-bold mb-4">You are already logged in!</h2>
             <p className="text-sm mb-6">

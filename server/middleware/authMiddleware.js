@@ -12,7 +12,7 @@ export const protect = asyncHandler(async (req, res, next) => {
   // 1. Clerk provides Identity (Session)
   if (!authState || !authState.userId) {
     console.log(`[PROTECT] Rejecting: No Clerk session!`);
-    return res.status(401).json({ success: false, message: 'Not authorized, no Clerk session' });
+    return res.status(401).json({ success: false, message: 'You must be logged in to perform this action. Please log in and try again.' });
   }
 
   try {
@@ -25,11 +25,11 @@ export const protect = asyncHandler(async (req, res, next) => {
     if (!user) {
       // If no matching clerkId, it might be their very first request or an uninvited user.
       // We return 403. The frontend should handle 403 or ensure /sync-user is called on login.
-      return res.status(403).json({ success: false, message: 'User not found in system or not invited' });
+      return res.status(403).json({ success: false, message: 'Your account was not found or you have not been invited to this workspace.' });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ success: false, message: 'User account is not active' });
+      return res.status(403).json({ success: false, message: 'Your account has been deactivated. Please contact your administrator.' });
     }
 
     // Attach user for downstream authorize middleware
@@ -39,7 +39,7 @@ export const protect = asyncHandler(async (req, res, next) => {
     return next();
   } catch (err) {
     console.error('Auth error in protect middleware:', err);
-    return res.status(500).json({ success: false, message: 'Server error during authentication' });
+    return res.status(500).json({ success: false, message: 'An unexpected error occurred during authentication. Please try again later.' });
   }
 });
 
@@ -51,7 +51,7 @@ export const authorize = (...roles) => {
     if (!req.user || !normalizedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: `User role ${req.user ? req.user.role : 'Guest'} is not authorized to access this route`
+        message: `You do not have the required permissions (${req.user ? req.user.role : 'Guest'}) to perform this action.`
       });
     }
     next();

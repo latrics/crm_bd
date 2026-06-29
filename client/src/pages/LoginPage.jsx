@@ -5,9 +5,16 @@ import { SignIn } from '@clerk/react';
 import loginBg from '../assets/images/signup_login_img.jpeg';
 
 export default function LoginPage() {
-  const { isAuthenticated, user, error } = useAuth();
+  const { isAuthenticated, user, error, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Clear previous errors when visiting the login page
+  useEffect(() => {
+    if (clearError) {
+      clearError();
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -59,6 +66,11 @@ export default function LoginPage() {
 
       {/* Right Pane - Clerk SignIn */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 sm:p-12">
+        {location.state?.message && (
+          <div className="max-w-md w-full mb-4 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm font-semibold text-center">
+            ✅ {location.state.message}
+          </div>
+        )}
         {error && (
           <div className="max-w-md w-full mb-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-semibold text-center">
             ⚠️ {error}
