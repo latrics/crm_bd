@@ -102,38 +102,12 @@ export const createInvite = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Revoke an invitation
-// @route   DELETE /api/v1/admin/invite/:id
-// @access  Private/Admin
 export const revokeInvite = asyncHandler(async (req, res) => {
   const invitation = await Invitation.findById(req.params.id);
 
   if (!invitation) {
     return res.status(404).json({ success: false, message: 'The specified invitation could not be found.' });
   }
-
-  const inviterId = typeof req.auth === 'function' ? req.auth().userId : (req.auth?.userId || req.user?.id || req.user?._id);
-  let dbInviterId = inviterId;
-  if (inviterId && typeof inviterId === 'string' && inviterId.startsWith('user_')) {
-    const inviter = await User.findOne({ clerkId: inviterId });
-    if (inviter) {
-      dbInviterId = inviter._id;
-    }
-  }
-
-  // Audit log the action before deleting
-  await auditLog({
-    userId: dbInviterId,
-    action: 'REVOKE_INVITE',
-    entity: 'Invitation',
-    entityId: invitation._id.toString(),
-    ip: req.ip,
-    meta: {
-      email: invitation.email,
-      role: invitation.role,
-      message: `Invitation for ${invitation.email} (Role: ${invitation.role}) was revoked`
-    }
-  });
 
   await invitation.deleteOne();
 
@@ -160,35 +134,12 @@ export const resendInvite = asyncHandler(async (req, res) => {
   const clientOrigin = process.env.CLIENT_ORIGIN || `${proto}://${req.get('host')}`;
   const inviteUrl = `${clientOrigin}/accept-invite?token=${token}`;
 
-  const inviterId = typeof req.auth === 'function' ? req.auth().userId : (req.auth?.userId || req.user?.id || req.user?._id);
-  let dbInviterId = inviterId;
-  if (inviterId && typeof inviterId === 'string' && inviterId.startsWith('user_')) {
-    const inviter = await User.findOne({ clerkId: inviterId });
-    if (inviter) {
-      dbInviterId = inviter._id;
-    }
-  }
-
   try {
     await sendInviteEmail(invitation.email, invitation.role, inviteUrl);
   } catch (error) {
     console.error('Failed to resend invite email:', error);
     return res.status(500).json({ success: false, message: 'We encountered an error while trying to resend the invitation email. Please try again later.' });
   }
-
-  // Audit log the action
-  await auditLog({
-    userId: dbInviterId,
-    action: 'RESEND_INVITE',
-    entity: 'Invitation',
-    entityId: invitation._id.toString(),
-    ip: req.ip,
-    meta: {
-      email: invitation.email,
-      role: invitation.role,
-      message: `Invitation for ${invitation.email} (Role: ${invitation.role}) was resent`
-    }
-  });
 
   res.status(200).json({ success: true, message: 'The invitation has been successfully resent.' });
 });

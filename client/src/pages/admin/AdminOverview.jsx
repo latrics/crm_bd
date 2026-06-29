@@ -485,17 +485,24 @@ Building Better Tomorrow
                           <td className="py-3.5 text-sm font-medium text-brand-charcoal">
                             {getRoleAccessDescription(member.role)}
                           </td>
-                          <td className="py-3.5">
+                          <td className="py-3.5 text-left">
                             {member.isInvite ? (
                               <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                                 {member.inviteStatus === 'opened' ? 'Opened' : 'Pending'}
                               </span>
                             ) : (
-                              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${online ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                                {online ? 'Active' : 'Inactive'}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${online ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-500 border border-gray-200'} w-fit`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                  {online ? 'Active' : 'Inactive'}
+                                </span>
+                                {!online && member.lastActiveAt && (
+                                  <span className="text-[10px] text-brand-silver font-medium ml-1">
+                                    Last active: {new Date(member.lastActiveAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </td>
                           <td className="py-3.5 text-right">

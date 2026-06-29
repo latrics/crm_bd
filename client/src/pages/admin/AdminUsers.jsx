@@ -311,7 +311,7 @@ export default function AdminUsers() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-xs text-brand-silver font-medium tracking-wide">
-                      {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : '-'}
+                      {user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-right flex justify-end gap-2">
                       {user.isInvite ? (

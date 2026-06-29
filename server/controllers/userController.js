@@ -100,22 +100,6 @@ export const deleteUser = asyncHandler(async (req, res) => {
     }
   }
 
-  // Log the action before deleting
-  await auditLog({
-    userId: req.user.id,
-    action: req.user.id === user._id.toString() ? 'USER_LEAVE' : 'DELETE_USER',
-    entity: 'User',
-    entityId: user._id.toString(),
-    ip: req.ip,
-    meta: {
-      deletedUserEmail: user.email,
-      deletedUserName: user.name,
-      message: req.user.id === user._id.toString() 
-        ? `User ${user.name} (${user.email}) voluntarily left the workspace` 
-        : `Admin ${req.user.name} removed user ${user.name} (${user.email})`
-    }
-  });
-
   await user.deleteOne();
 
   res.status(200).json({ success: true, data: {} });

@@ -4,6 +4,7 @@ import Tender from '../models/Tender.js';
 import User from '../models/User.js';
 import Doc from '../models/Doc.js';
 import Deal from '../models/Deal.js';
+import Invitation from '../models/Invitation.js';
 
 const getModel = (moduleName) => {
   switch (moduleName) {
@@ -12,6 +13,7 @@ const getModel = (moduleName) => {
     case 'Users': return User;
     case 'Documents': return Doc;
     case 'Deals': return Deal;
+    case 'Invite': return Invitation;
     default: return null;
   }
 };
@@ -152,6 +154,9 @@ export const logActivity = (module, action) => {
             if (module === 'Users') {
               const createdUser = afterData || data?.data || data;
               displayMessage = `${actorRole} ${actorName} created ${displayRoleStr(createdUser?.role)} ${createdUser?.name || ''}`;
+            } else if (module === 'Invite') {
+              const invite = afterData || data?.data || data;
+              displayMessage = `${actorName} invited ${invite?.email || ''}`;
             } else if (module === 'Leads') {
               const createdLead = afterData || data?.data || data;
               displayMessage = `${actorRole} ${actorName} created Lead ${formatLead(createdLead)}`;
@@ -166,7 +171,13 @@ export const logActivity = (module, action) => {
             }
           } else if (act === 'DELETE' || req.method === 'DELETE') {
             if (module === 'Users') {
-              displayMessage = `${actorRole} ${actorName} removed user ${beforeData?.name || ''}`;
+              if (req.user && beforeData && req.user._id.toString() === beforeData._id.toString()) {
+                displayMessage = `${beforeData.name} left`;
+              } else {
+                displayMessage = `${actorName} removed ${beforeData?.name || ''}`;
+              }
+            } else if (module === 'Invite') {
+              displayMessage = `${actorName} revoked invitation for ${beforeData?.email || ''}`;
             } else if (module === 'Leads') {
               displayMessage = `${actorRole} ${actorName} deleted Lead ${formatLead(beforeData)}`;
             } else if (module === 'Tenders') {
@@ -190,6 +201,8 @@ export const logActivity = (module, action) => {
               } else {
                 displayMessage = `${actorRole} ${actorName} updated details for ${displayRoleStr(afterData?.role)} ${afterData?.name || ''}`;
               }
+            } else if (module === 'Invite') {
+              displayMessage = `${actorName} resent invitation to ${beforeData?.email || ''}`;
             } else if (module === 'Leads') {
               if (changes.owner) {
                 displayMessage = `${actorRole} ${actorName} reassigned Lead ${formatLead(afterData)} owner to ${afterData?.owner || ''}`;
