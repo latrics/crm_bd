@@ -16,7 +16,7 @@ export default function PipelineBySector({ leads = [], deals = [] }) {
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {SECTORS.map(sector => {
-          const leadsCount = leads.filter(l => l.sector === sector).length;
+          const leadsCount = leads.filter(l => l.industry === sector).length;
           const dealsCount = deals.filter(d => d.sector === sector).length;
           return (
             <div key={sector} className="flex-1 min-w-[120px] bg-brand-surfaceAlt border border-brand-border rounded p-3 flex flex-col items-center justify-center">

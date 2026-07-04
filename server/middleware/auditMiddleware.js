@@ -139,8 +139,8 @@ export const logActivity = (module, action) => {
 
           const formatLead = (doc) => {
             if (!doc) return '';
-            const code = doc._id ? ` #LD-${doc._id.toString().slice(-4).toUpperCase()}` : '';
-            return `${doc.name || ''}${code}`;
+            const code = doc.leadId ? ` #${doc.leadId}` : (doc._id ? ` #LD-${doc._id.toString().slice(-4).toUpperCase()}` : '');
+            return `${doc.decisionMaker || doc.name || ''}${code}`;
           };
 
           const formatTender = (doc) => {
@@ -169,6 +169,8 @@ export const logActivity = (module, action) => {
             } else {
               displayMessage = `${actorRole} ${actorName} created a new ${module.toLowerCase()}`;
             }
+          } else if (act === 'BULK_IMPORT') {
+            displayMessage = `${actorRole} ${actorName} imported ${data?.total || 0} Leads. Range: ${data?.leadIdRange || ''}`;
           } else if (act === 'DELETE' || req.method === 'DELETE') {
             if (module === 'Users') {
               if (req.user && beforeData && req.user._id.toString() === beforeData._id.toString()) {

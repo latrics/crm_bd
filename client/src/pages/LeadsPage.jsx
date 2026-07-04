@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import useCRM from '../hooks/useCRM.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import PageHeader from '../components/layout/PageHeader.jsx';
 import LeadsView from '../components/leads/LeadsView.jsx';
 import Modal from '../components/common/Modal.jsx';
@@ -7,23 +8,32 @@ import Field from '../components/common/Field.jsx';
 import BANTSection from '../components/leads/BANTSection.jsx';
 import DocsPanel from '../components/docs/DocsPanel.jsx';
 import Confirm from '../components/common/Confirm.jsx';
-import { createLead, updateLead, deleteLead, convertLead } from '../api/leadsApi.js';
+import ImportWizard from '../components/leads/ImportWizard.jsx';
+import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads } from '../api/leadsApi.js';
 import useToast from '../hooks/useToast.js';
 import { LEAD_STAGES, SOURCES, OWNERS, SECTORS, STG_COLORS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
 
 export default function LeadsPage() {
   const { state, dispatch } = useCRM();
+  const { user } = useAuth();
   const { addToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
+  const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedLeads, setSelectedLeads] = useState([]);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [activeStatusFilter, setActiveStatusFilter] = useState('all');
+  const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
+  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '' });
 
   const statusStats = LEAD_STAGES.map(stage => ({
+    key: stage,
     label: stage.toUpperCase(),
     count: state.leads.filter(l => l.status === stage).length,
     color: STG_COLORS[stage] || '#8A8D8F'
@@ -36,10 +46,12 @@ export default function LeadsPage() {
     { key: 'cold', label: 'Cold', color: 'bg-blue-100 text-blue-600' },
     { key: 'nurture', label: 'Nurture', color: 'bg-green-100 text-green-600' },
     { key: 'unscored', label: 'Unscored', color: 'bg-gray-100 text-gray-600' },
+    { key: 'unassigned', label: 'Unassigned', color: 'bg-purple-100 text-purple-600' },
   ];
 
   const getCount = (key) => {
     if (key === 'all') return state.leads.length;
+    if (key === 'unassigned') return state.leads.filter(l => !l || !l.owner).length;
     return state.leads.filter(l => {
       const score = bantScore(l);
       return bantCat(score).label.toLowerCase() === key;
@@ -48,7 +60,7 @@ export default function LeadsPage() {
 
   const openNew = () => {
     setSelectedLead(null);
-    setFormData({ name: '', company: '', email: '', phone: '', value: 0, status: 'Leads', source: 'LinkedIn', owner: 'Sivaram B', sector: 'Mining', notes: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0 });
+    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0 });
     setErrors({});
     setModalOpen(true);
   };
@@ -69,8 +81,8 @@ export default function LeadsPage() {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name?.trim()) newErrors.name = 'Full Name is required';
     if (!formData.company?.trim()) newErrors.company = 'Company is required';
+    if (!formData.email?.trim()) newErrors.email = 'Email is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -115,6 +127,80 @@ export default function LeadsPage() {
     setDeleteConfirm(true);
   };
 
+  const handleBulkDelete = async () => {
+    try {
+      await deleteMultipleLeads(selectedLeads);
+      // Dispatch could be modified to handle multiple, or just fetch again. 
+      // For now, let's dispatch multiple DELETE_LEAD or just reload.
+      selectedLeads.forEach(id => dispatch({ type: 'DELETE_LEAD', payload: id }));
+      addToast({ type: 'success', message: `${selectedLeads.length} leads deleted` });
+      setSelectedLeads([]);
+      setBulkDeleteConfirm(false);
+    } catch (err) {
+      addToast({ type: 'error', message: err.message || 'Error deleting leads' });
+    }
+  };
+
+  const handleResetCounter = async () => {
+    if (window.confirm("Are you sure you want to reset the Lead ID sequence back to 1? Only do this if you have deleted all existing leads.")) {
+      try {
+        await resetLeadCounter();
+        addToast({ type: 'success', message: 'Lead ID sequence reset to 1 successfully' });
+      } catch (err) {
+        addToast({ type: 'error', message: err.message || 'Error resetting sequence' });
+      }
+    }
+  };
+
+  const handleBulkUpdateSubmit = async () => {
+    try {
+      let finalData = {};
+      if (bulkUpdateData.status) finalData.status = bulkUpdateData.status;
+      if (bulkUpdateData.owner) finalData.owner = bulkUpdateData.owner;
+      if (bulkUpdateData.industry) finalData.industry = bulkUpdateData.industry;
+      
+      if (bulkUpdateData.outbound) {
+        if (bulkUpdateData.outbound === 'Others') {
+           if (bulkUpdateData.customOutbound) finalData.outbound = bulkUpdateData.customOutbound;
+        } else {
+           finalData.outbound = bulkUpdateData.outbound;
+        }
+      }
+
+      if (Object.keys(finalData).length === 0) {
+        addToast({ type: 'error', message: 'No fields selected to update' });
+        return;
+      }
+
+      await updateMultipleLeads(selectedLeads, finalData);
+      
+      selectedLeads.forEach(id => {
+         const lead = state.leads.find(l => l._id === id);
+         if (lead) dispatch({ type: 'UPDATE_LEAD', payload: { ...lead, ...finalData } });
+      });
+      addToast({ type: 'success', message: `${selectedLeads.length} leads updated` });
+      setSelectedLeads([]);
+      setBulkUpdateModalOpen(false);
+      setBulkUpdateData({ status: '', outbound: '', owner: '', industry: '', customOutbound: '' });
+    } catch (err) {
+      addToast({ type: 'error', message: err.message || 'Error updating leads' });
+    }
+  };
+
+  const toggleSelectAll = (filteredLeadsIds) => {
+    if (selectedLeads.length === filteredLeadsIds.length && filteredLeadsIds.length > 0) {
+      setSelectedLeads([]);
+    } else {
+      setSelectedLeads(filteredLeadsIds);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedLeads(prev => 
+      prev.includes(id) ? prev.filter(lId => lId !== id) : [...prev, id]
+    );
+  };
+
   const handleStageUpdate = async (lead, newStage) => {
     try {
       const res = await updateLead(lead._id, { ...lead, status: newStage });
@@ -146,7 +232,11 @@ export default function LeadsPage() {
 
       <div className="grid grid-cols-6 gap-0 border border-brand-border rounded-crm bg-white overflow-hidden mb-8 shadow-sm">
         {statusStats.map((stat, i) => (
-          <div key={stat.label} className={`p-6 text-center border-r border-brand-border last:border-0`}>
+          <div 
+            key={stat.label} 
+            onClick={() => setActiveStatusFilter(activeStatusFilter === stat.key ? 'all' : stat.key)}
+            className={`p-6 text-center border-r border-brand-border last:border-0 cursor-pointer transition-colors ${activeStatusFilter === stat.key ? 'bg-brand-redLight' : 'hover:bg-gray-50'}`}
+          >
             <div className="text-2xl font-serif font-black mb-1" style={{ color: i === 0 || i === 2 || i === 5 ? '#DA291C' : '#54585A' }}>
               {stat.count}
             </div>
@@ -171,7 +261,7 @@ export default function LeadsPage() {
         ))}
       </div>
 
-      <div className="flex gap-4 mb-10">
+      <div className="flex gap-4 mb-10 items-center">
         <div className="flex-1">
           <input 
             type="text" 
@@ -181,6 +271,31 @@ export default function LeadsPage() {
             className="w-full bg-white border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:border-brand-silver shadow-sm transition-all"
           />
         </div>
+        {selectedLeads.length > 0 && (
+          <>
+            {selectedLeads.length > 1 && (
+              <button onClick={() => setBulkUpdateModalOpen(true)} className="bg-brand-surfaceAlt border border-brand-border text-brand-text font-bold text-sm rounded-xl px-6 py-3 cursor-pointer hover:bg-gray-100 shadow-sm transition-all">
+                Update ({selectedLeads.length})
+              </button>
+            )}
+            <button onClick={() => setBulkDeleteConfirm(true)} className="bg-brand-redLight text-brand-red font-bold text-sm rounded-xl px-6 py-3 cursor-pointer hover:bg-red-100 shadow-sm border border-brand-red/20 transition-all flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              Delete ({selectedLeads.length})
+            </button>
+          </>
+        )}
+        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+          <button 
+            onClick={handleResetCounter} 
+            className="bg-brand-surfaceAlt border border-brand-border text-brand-silver font-bold text-sm rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-100 shadow-sm"
+            title="Reset Lead ID Sequence to 1"
+          >
+            Reset ID
+          </button>
+        )}
+        <button onClick={() => setImportWizardOpen(true)} className="bg-white border border-brand-border text-brand-text font-bold text-sm rounded-xl px-8 py-3 cursor-pointer hover:bg-gray-50 shadow-md">
+          Import Leads
+        </button>
         <button onClick={openNew} className="bg-brand-red text-white font-bold text-sm rounded-xl px-8 py-3 cursor-pointer hover:opacity-90 shadow-md">
           + Add Lead
         </button>
@@ -191,7 +306,11 @@ export default function LeadsPage() {
         onDeleteClick={handleDeleteClick}
         onStageUpdate={handleStageUpdate}
         activeTab={activeTab} 
+        activeStatusFilter={activeStatusFilter}
         search={search} 
+        selectedLeads={selectedLeads}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
       />
 
       {state.leads.length === 0 && (
@@ -207,17 +326,25 @@ export default function LeadsPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Full Name" value={formData.name} onChange={e => handleChange('name', e.target.value)} error={errors.name} required />
+            <Field label="Decision Maker" value={formData.decisionMaker} onChange={e => handleChange('decisionMaker', e.target.value)} error={errors.decisionMaker} />
+            <Field label="Title / Designation" value={formData.designation} onChange={e => handleChange('designation', e.target.value)} />
             <Field label="Company" value={formData.company} onChange={e => handleChange('company', e.target.value)} error={errors.company} required />
-            <Field label="Email" value={formData.email} onChange={e => handleChange('email', e.target.value)} />
+            <Field label="Email" value={formData.email} onChange={e => handleChange('email', e.target.value)} error={errors.email} required />
             <Field label="Phone" value={formData.phone} onChange={e => handleChange('phone', e.target.value)} />
+            <Field label="City" value={formData.city} onChange={e => handleChange('city', e.target.value)} />
+            <Field label="State" value={formData.state} onChange={e => handleChange('state', e.target.value)} />
             <Field label="Value (Rs.)" type="number" value={formData.value} onChange={e => handleChange('value', e.target.value)} />
             <Field label="Status" type="select" options={LEAD_STAGES} value={formData.status} onChange={e => handleChange('status', e.target.value)} />
-            <Field label="Source" type="select" options={SOURCES} value={formData.source} onChange={e => handleChange('source', e.target.value)} />
+            <div className="flex flex-col gap-2">
+              <Field label="Outbound (Source)" type="select" options={SOURCES} value={SOURCES.includes(formData.outbound) || !formData.outbound ? formData.outbound : 'Others'} onChange={e => handleChange('outbound', e.target.value)} />
+              {(formData.outbound === 'Others' || (formData.outbound && !SOURCES.includes(formData.outbound))) && (
+                <Field label="Custom Source" value={formData.outbound === 'Others' ? '' : formData.outbound} onChange={e => handleChange('outbound', e.target.value)} placeholder="Type custom source..." />
+              )}
+            </div>
             <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
+            <Field label="Industry" type="select" options={SECTORS} value={formData.industry} onChange={e => handleChange('industry', e.target.value)} />
           </div>
-          <Field label="Sector" type="select" options={SECTORS} value={formData.sector} onChange={e => handleChange('sector', e.target.value)} />
-          <Field label="Notes" type="textarea" value={formData.notes} onChange={e => handleChange('notes', e.target.value)} />
+          <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} />
 
           <BANTSection lead={formData} onChange={handleChange} />
 
@@ -236,6 +363,69 @@ export default function LeadsPage() {
         title="Delete Lead" 
         message="Are you sure you want to delete this lead? This action cannot be undone." 
       />
+      <Confirm 
+        isOpen={bulkDeleteConfirm} 
+        onClose={() => setBulkDeleteConfirm(false)} 
+        onConfirm={handleBulkDelete}
+        title={`Delete ${selectedLeads.length} Leads`} 
+        message={`Are you sure you want to delete ${selectedLeads.length} selected leads? This action cannot be undone.`} 
+      />
+
+      <Modal isOpen={bulkUpdateModalOpen} onClose={() => setBulkUpdateModalOpen(false)}>
+        <div className="mb-6">
+          <h2 className="text-xl font-serif font-bold text-brand-text">Bulk Update {selectedLeads.length} Leads</h2>
+          <p className="text-sm text-brand-silver mt-1">Select the fields you want to apply to all selected leads.</p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Field 
+            label="Status" 
+            type="select" 
+            options={LEAD_STAGES} 
+            value={bulkUpdateData.status} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, status: e.target.value })} 
+          />
+          <Field 
+            label="Owner" 
+            type="select" 
+            options={OWNERS} 
+            value={bulkUpdateData.owner} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, owner: e.target.value })} 
+          />
+          <Field 
+            label="Industry" 
+            type="select" 
+            options={SECTORS} 
+            value={bulkUpdateData.industry} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, industry: e.target.value })} 
+          />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Field 
+              label="Outbound (Source)" 
+              type="select" 
+              options={SOURCES} 
+              value={bulkUpdateData.outbound} 
+              onChange={e => setBulkUpdateData({ ...bulkUpdateData, outbound: e.target.value, customOutbound: '' })} 
+            />
+            {bulkUpdateData.outbound === 'Others' && (
+              <Field 
+                label="Custom Source" 
+                value={bulkUpdateData.customOutbound} 
+                onChange={e => setBulkUpdateData({ ...bulkUpdateData, customOutbound: e.target.value })} 
+                placeholder="Type source here..."
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-8">
+          <button onClick={() => setBulkUpdateModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2 hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleBulkUpdateSubmit} className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Apply Changes</button>
+        </div>
+      </Modal>
+
+      <ImportWizard isOpen={importWizardOpen} onClose={() => setImportWizardOpen(false)} />
     </div>
   );
 }

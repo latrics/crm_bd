@@ -24,6 +24,7 @@ import AdminOwnership from './pages/admin/AdminOwnership.jsx';
 import AdminRoles from './pages/admin/AdminRoles.jsx';
 import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 import SyncAuthPage from './pages/SyncAuthPage.jsx';
+import ReportBugWidget from './components/common/ReportBugWidget.jsx';
 
 function AppLayout() {
   return (
@@ -82,6 +83,7 @@ export default function App() {
             />
           </Routes>
           <Toast />
+          <ReportBugWidget />
         </div>
       </AuthProvider>
     </BrowserRouter>

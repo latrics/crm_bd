@@ -52,22 +52,20 @@ export const createInvite = asyncHandler(async (req, res) => {
   }
 
   if (invitation) {
-    // Update existing invitation
-    invitation.role = cleanRole;
-    invitation.token = token;
-    invitation.invitedBy = dbInviterId;
-    invitation.expiresAt = expiresAt;
-    await invitation.save();
-  } else {
-    // Create new invitation
-    invitation = await Invitation.create({
-      email: cleanEmail,
-      role: cleanRole,
-      token,
-      invitedBy: dbInviterId,
-      expiresAt
+    return res.status(400).json({
+      success: false,
+      message: `An active invitation already exists for ${cleanEmail}. You must revoke the existing invitation before generating a new one.`
     });
   }
+
+  // Create new invitation
+  invitation = await Invitation.create({
+    email: cleanEmail,
+    role: cleanRole,
+    token,
+    invitedBy: dbInviterId,
+    expiresAt
+  });
 
   // Build the setup URL - Points to our custom sign-up page
   const proto = req.get('x-forwarded-proto') || req.protocol;

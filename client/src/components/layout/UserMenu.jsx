@@ -94,6 +94,15 @@ export default function UserMenu() {
             <button className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
               <span className="text-lg opacity-60">🎨</span> Theme Setup
             </button>
+            <button 
+              onClick={() => {
+                setIsOpen(false);
+                window.dispatchEvent(new CustomEvent('open-bug-report-modal'));
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left border-none bg-transparent cursor-pointer"
+            >
+              <span className="text-lg opacity-60">🪲</span> Report Bug
+            </button>
           </div>
         </div>
       )}

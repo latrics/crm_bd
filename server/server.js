@@ -14,6 +14,7 @@ import docRoutes from './routes/docRoutes.js';
 import tenderRoutes from './routes/tenderRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import bugRoutes from './routes/bugRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { clerkMiddleware } from '@clerk/express';
 
@@ -50,6 +51,7 @@ app.use('/api/v1/leads', leadRoutes);
 app.use('/api/v1/deals', dealRoutes);
 app.use('/api/v1/docs', docRoutes);
 app.use('/api/v1/tenders', tenderRoutes);
+app.use('/api/v1/bugs', bugRoutes);
 
 app.use(errorHandler);
 

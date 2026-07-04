@@ -1,8 +1,8 @@
 export const LEAD_STAGES = ['Leads','Communicated','Discussion','Pricing / Quote','Demo','Closure'];
 export const DEAL_STAGES = ['Negotiation','Won','Lost'];
-export const SOURCES = ['LinkedIn','Referral','Website','Cold Email','Events'];
+export const SOURCES = ['LinkedIn','Referral','Website','Cold Email','Events','Others'];
 export const OWNERS = ['Sivaram B','Sureka Suresh','Rajib Saikia'];
-export const SECTORS = ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services'];
+export const SECTORS = ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','DPR'];
 export const DOC_TYPES = ['Quotation','Agreement','Purchase Order','Contract','Others'];
 export const T_STATUSES = ['New','Under Preparation','Submitted','Evaluation','Awarded','Won','Lost'];
 export const T_EMD = ['EMD Paid','EMD NA','EMD Exempted'];

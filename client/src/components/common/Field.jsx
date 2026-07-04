@@ -8,7 +8,7 @@ export default function Field({ label, type = 'text', value, onChange, options, 
       </label>
       {type === 'select' ? (
         <select className={inputClass} value={value} onChange={onChange}>
-          <option value="">{placeholder || '-- Select --'}</option>
+          <option value="">{placeholder || '-- To be assigned --'}</option>
           {options?.map(o => (
             <option key={o.v ?? o.value ?? o} value={o.v ?? o.value ?? o}>{o.l ?? o.label ?? o}</option>
           ))}

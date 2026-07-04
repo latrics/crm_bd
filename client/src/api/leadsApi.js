@@ -62,11 +62,47 @@ export const convertLead = async (id) => {
       setLocal('leads', leads);
       // Also add to deals
       const deals = getLocal('deals');
-      const newDeal = { ...lead, _id: 'deal_' + Date.now(), stage: 'Negotiation', title: lead.name };
+      const newDeal = { ...lead, _id: 'deal_' + Date.now(), stage: 'Negotiation', title: lead.decisionMaker || 'Lead' };
       deals.unshift(newDeal);
       setLocal('deals', deals);
       return { success: true, data: { lead, deal: newDeal } };
     }
+    throw err;
+  }
+};
+
+export const importLeads = async (data) => {
+  try {
+    return await api.post('/leads/import', data);
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const deleteMultipleLeads = async (ids) => {
+  try {
+    return await api.post('/leads/bulk-delete', { ids });
+  } catch (err) {
+    console.warn('Backend down, deleting from localStorage');
+    let leads = getLocal('leads');
+    leads = leads.filter(l => !ids.includes(l._id));
+    setLocal('leads', leads);
+    return { success: true };
+  }
+};
+
+export const resetLeadCounter = async () => {
+  try {
+    return await api.post('/leads/reset-counter');
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const updateMultipleLeads = async (ids, updateData) => {
+  try {
+    return await api.post('/leads/bulk-update', { ids, updateData });
+  } catch (err) {
     throw err;
   }
 };
