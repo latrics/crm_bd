@@ -41,14 +41,20 @@ export function CRMProvider({ children }) {
   useEffect(() => {
     async function loadAll() {
       try {
-        const [leadsRes, dealsRes, docsRes, tendersRes] = await Promise.all([
+        const results = await Promise.allSettled([
           getLeads(), getDeals(), getDocs(), getTenders()
         ]);
+        
+        const leadsData = results[0].status === 'fulfilled' ? results[0].value.data : [];
+        const dealsData = results[1].status === 'fulfilled' ? results[1].value.data : [];
+        const docsData = results[2].status === 'fulfilled' ? results[2].value.data : [];
+        const tendersData = results[3].status === 'fulfilled' ? results[3].value.data : [];
+
         dispatch({ type: 'SET_ALL', payload: {
-          leads: leadsRes.data || [],
-          deals: dealsRes.data || [],
-          docs: docsRes.data || [],
-          tenders: tendersRes.data || []
+          leads: leadsData || [],
+          deals: dealsData || [],
+          docs: docsData || [],
+          tenders: tendersData || []
         }});
       } catch (err) {
         console.error("Failed to load initial data", err);

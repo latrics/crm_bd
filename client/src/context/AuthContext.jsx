@@ -73,14 +73,23 @@ export function AuthProvider({ children }) {
       }
 
       if (isSignedIn && clerkUser) {
-        console.log('User is signed in to Clerk, syncing with backend');
-        dispatch({ type: 'SET_LOADING', payload: true });
+        // Prevent the entire app from unmounting (perceived as a page reload) 
+        // if Clerk is just doing a background session heartbeat/refresh.
+        const isReSync = state.isAuthenticated && state.user;
+        
+        if (!isReSync) {
+          console.log('User is signed in to Clerk, syncing with backend');
+          dispatch({ type: 'SET_LOADING', payload: true });
+        } else {
+          console.log('Clerk background sync triggered, updating silently without disrupting UI');
+        }
+
         try {
           const email = clerkUser.primaryEmailAddress?.emailAddress;
           const name = clerkUser.fullName || clerkUser.firstName || '';
           
           const res = await authApi.syncUser(clerkUser.id, email, name);
-          console.log('Backend user sync success:', res.user);
+          if (!isReSync) console.log('Backend user sync success:', res.user);
           dispatch({ type: 'LOGIN_SUCCESS', payload: res.user });
         } catch (err) {
           console.error('Failed to load user from backend:', err);

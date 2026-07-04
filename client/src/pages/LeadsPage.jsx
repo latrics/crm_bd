@@ -223,6 +223,22 @@ export default function LeadsPage() {
     }
   };
 
+  if (state.loading) {
+    return (
+      <div className="max-w-[1200px] mx-auto pb-12 px-6">
+        <PageHeader 
+          title="Lead Management" 
+          subtitle="BANT scoring • pipeline stages • auto-saved"
+        />
+        <div className="flex flex-col items-center justify-center py-20 mt-12 bg-white rounded-crm border border-brand-border shadow-sm">
+          <div className="w-12 h-12 border-4 border-brand-red border-t-transparent rounded-full animate-spin mb-4"></div>
+          <h3 className="text-lg font-bold text-brand-text mb-1">Loading Leads...</h3>
+          <p className="text-sm text-brand-silver">Syncing data from the server</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1200px] mx-auto pb-12 px-6">
       <PageHeader 
