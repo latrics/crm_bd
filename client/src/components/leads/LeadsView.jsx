@@ -76,6 +76,31 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
           if (!dateString) return '--';
           return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         };
+
+        const getShortName = (name) => {
+          if (!name) return '';
+          const parts = name.trim().split(/\s+/);
+          if (parts.length > 1) {
+            const firstName = parts[0];
+            const lastName = parts[parts.length - 1];
+            if (lastName.length === 1) return `${firstName} ${lastName}`;
+            return `${firstName} ${lastName.charAt(0)}.`;
+          }
+          return name;
+        };
+
+        const formatTimeLeft = (deadlineString) => {
+          if (!deadlineString) return '';
+          const diffMs = new Date(deadlineString) - new Date();
+          if (diffMs <= 0) return 'Overdue';
+          const diffHours = Math.round(diffMs / 3600000);
+          if (diffHours < 24) {
+            if (diffHours <= 0) return 'Due now';
+            return `${diffHours}h left`;
+          }
+          const diffDays = Math.round(diffMs / 86400000);
+          return `${diffDays} days left`;
+        };
         
         return (
           <div 
@@ -101,23 +126,35 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                     {(lead.decisionMaker || 'U').charAt(0)}{(lead.company || 'C').charAt(0)}
                   </div>
                   <div>
-                    <h4 className="font-serif text-base font-bold text-brand-text leading-tight">
-                      {lead.decisionMaker || 'Unnamed Lead'} {lead.leadId && <span className="text-xs font-normal text-brand-silver ml-2">#{lead.leadId}</span>}
+                    <h4 className="font-serif text-base font-bold text-brand-text leading-tight flex items-center">
+                      {lead.decisionMaker || 'Unnamed Lead'} {lead.leadId && <span className="bg-brand-surfaceAlt border border-brand-border text-brand-text px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ml-3">#{lead.leadId}</span>}
                     </h4>
                     <p className="text-xs text-brand-silver font-bold tracking-wider mt-0.5">{lead.company}</p>
-                    <p className="text-[10px] text-brand-silver mt-1">Added: {formatDate(lead.createdAt)}</p>
+                    <div className="text-[10px] text-brand-silver mt-1 flex items-center gap-2 flex-wrap">
+                      <span>Added: {formatDate(lead.createdAt)}</span>
+                      {lead.deadline && (
+                        <>
+                          <span className="text-gray-300">•</span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                            new Date(lead.deadline) - new Date() <= 24 * 60 * 60 * 1000
+                              ? 'bg-brand-redLight text-brand-red'
+                              : 'bg-amber-50 text-amber-600 border border-amber-200'
+                          }`}>
+                            ⏰ {formatTimeLeft(lead.deadline)}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Badge label={lead.status || 'Unassigned'} color={stgColor} />
-                  <span className="text-brand-silver">--</span>
                   {lead.owner && (
                     <div className="flex items-center gap-2">
                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-redLight">
-                         <span className="text-brand-red">{lead.owner.charAt(0)}</span>
+                          <span className="text-brand-red">{lead.owner.charAt(0)}</span>
                        </div>
-                       <span className="text-xs text-brand-silver font-bold">{lead.owner}</span>
+                       <span className="text-xs text-brand-silver font-bold">{getShortName(lead.owner)}</span>
                     </div>
                   )}
                   
@@ -160,8 +197,8 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                         />
                       ))}
                     </div>
-                    <div className="text-[10px] font-bold text-brand-silver mt-2 tracking-widest cursor-pointer hover:text-brand-text transition-colors">
-                       Click bar to move stage
+                    <div className="text-[10px] font-bold text-brand-silver mt-2 tracking-widest">
+                       Stage: <span className="text-brand-text font-black">{lead.status}</span>
                     </div>
                  </div>
                  

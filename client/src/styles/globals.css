@@ -15,3 +15,23 @@ body {
   margin: 0;
   min-height: 100vh;
 }
+
+/* Futuristic sleek scrollbar style */
+.sleek-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #E4E4E7 transparent;
+}
+.sleek-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.sleek-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sleek-scrollbar::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 9999px;
+}
+.sleek-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}

@@ -13,6 +13,7 @@ import AuditLogs from './pages/AuditLogs.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import Toast from './components/common/Toast.jsx';
 import ProfileSettings from './pages/ProfileSettings.jsx';
+import Notifications from './components/layout/Notifications.jsx';
 
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -40,6 +41,7 @@ function AppLayout() {
           <Route path="/profile" element={<ProfileSettings />} />
         </Routes>
       </div>
+      <Notifications />
     </CRMProvider>
   );
 }

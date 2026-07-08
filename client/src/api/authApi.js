@@ -45,7 +45,10 @@ export const syncUser = async (clerkId, email, name) => {
     const res = await axios.post(`${API_URL}/sync-user`, { clerkId, email, name });
     return res.data;
   } catch (err) {
-    throw err.response?.data || err;
+    if (err.response && typeof err.response.data === 'object') {
+      throw err.response.data;
+    }
+    throw err;
   }
 };
 

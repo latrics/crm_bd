@@ -1,7 +1,18 @@
 export const LEAD_STAGES = ['Leads','Communicated','Discussion','Pricing / Quote','Demo','Closure'];
 export const DEAL_STAGES = ['Negotiation','Won','Lost'];
-export const SOURCES = ['LinkedIn','Referral','Website','Cold Email','Events','Others'];
-export const OWNERS = ['Sivaram B','Sureka Suresh','Rajib Saikia'];
+export const SOURCES = [
+  { value: 'Inbound', label: 'Inbound' },
+  { group: true, label: 'Outbound', options: [
+    { value: 'LinkedIn', label: 'LinkedIn' },
+    { value: 'Referral', label: 'Referral' },
+    { value: 'Website', label: 'Website' },
+    { value: 'Cold Email', label: 'Cold Email' },
+    { value: 'Events', label: 'Events' },
+    { value: 'Others', label: 'Others' }
+  ]}
+];
+export const FLAT_SOURCES = ['Inbound', 'LinkedIn','Referral','Website','Cold Email','Events','Others'];
+export const OWNERS = ['Sivaram B','Sureka Suresh','Rajib Saikia','Snigdha Kundu'];
 export const SECTORS = ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','DPR'];
 export const DOC_TYPES = ['Quotation','Agreement','Purchase Order','Contract','Others'];
 export const T_STATUSES = ['New','Under Preparation','Submitted','Evaluation','Awarded','Won','Lost'];
@@ -19,7 +30,7 @@ export const STG_COLORS = {
 };
 
 export const DEAL_COLORS = { Negotiation:'#54585A', Won:'#DA291C', Lost:'#8A8D8F' };
-export const OWN_COLORS = { 'Sivaram B':'#DA291C','Sureka Suresh':'#54585A','Rajib Saikia':'#16a34a' };
+export const OWN_COLORS = { 'Sivaram B':'#DA291C','Sureka Suresh':'#54585A','Rajib Saikia':'#16a34a','Snigdha Kundu':'#2563eb' };
 
 export const BANT_TABS = [
   { key:'all',      label:'All Leads', range:null },

@@ -91,7 +91,12 @@ export default function DashboardPage() {
 
   const pipelineDistData = LEAD_STAGES.map(stage => leads.filter(l => l.stage === stage).length);
 
-  const leadsByOwner = OWNERS.map(owner => ({
+  const allUniqueOwners = Array.from(new Set([
+    ...OWNERS.filter(o => o !== 'Others'),
+    ...leads.map(l => l.owner).filter(Boolean)
+  ]));
+
+  const leadsByOwner = allUniqueOwners.map(owner => ({
     owner,
     count: leads.filter(l => l.owner === owner).length
   })).sort((a,b) => b.count - a.count);

@@ -11,7 +11,7 @@ const dealSchema = new mongoose.Schema({
   value:        { type: Number, default: 0 },
   probability:  { type: Number, default: 30, min: 0, max: 100 },
   close_date:   String,
-  owner:        { type: String, enum: ['Sivaram B','Sureka Suresh','Rajib Saikia'] },
+  owner:        { type: String },
   sector:       String,
   source:       String,
   notes:        String,

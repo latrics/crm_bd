@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import PageHeader from '../components/layout/PageHeader.jsx';
@@ -11,13 +12,14 @@ import Confirm from '../components/common/Confirm.jsx';
 import ImportWizard from '../components/leads/ImportWizard.jsx';
 import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads } from '../api/leadsApi.js';
 import useToast from '../hooks/useToast.js';
-import { LEAD_STAGES, SOURCES, OWNERS, SECTORS, STG_COLORS } from '../constants/index.js';
+import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
 
 export default function LeadsPage() {
   const { state, dispatch } = useCRM();
   const { user } = useAuth();
   const { addToast } = useToast();
+  const location = useLocation();
   const [modalOpen, setModalOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -30,7 +32,24 @@ export default function LeadsPage() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
-  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '' });
+  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadlineOption: '' });
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.highlightLeadId) {
+      const leadIdToEdit = location.state.highlightLeadId;
+      const lead = state.leads?.find(l => l._id === leadIdToEdit || l.leadId === leadIdToEdit);
+      if (lead) {
+        setSelectedLead(lead);
+        setFormData({ ...lead });
+        setErrors({});
+        setModalOpen(true);
+        // Clear location state to prevent repeating on refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location, state.leads]);
+
 
   const statusStats = LEAD_STAGES.map(stage => ({
     key: stage,
@@ -49,6 +68,43 @@ export default function LeadsPage() {
     { key: 'unassigned', label: 'Unassigned', color: 'bg-purple-100 text-purple-600' },
   ];
 
+  const handleExportCSV = () => {
+    if (state.leads.length === 0) return;
+    const headers = Object.keys(state.leads[0]).filter(k => k !== '__v');
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    state.leads.forEach(lead => {
+      const values = headers.map(header => {
+        let val = lead[header] === null || lead[header] === undefined ? '' : lead[header].toString();
+        val = val.replace(/"/g, '""');
+        return `"${val}"`;
+      });
+      csvRows.push(values.join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", url);
+    downloadAnchorNode.setAttribute("download", "leads_export.csv");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    setExportMenuOpen(false);
+  };
+
+  const handleExportJSON = () => {
+    if (state.leads.length === 0) return;
+    const blob = new Blob([JSON.stringify(state.leads, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", url);
+    downloadAnchorNode.setAttribute("download", "leads_export.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    setExportMenuOpen(false);
+  };
+
   const getCount = (key) => {
     if (key === 'all') return state.leads.length;
     if (key === 'unassigned') return state.leads.filter(l => !l || !l.owner).length;
@@ -58,16 +114,44 @@ export default function LeadsPage() {
     }).length;
   };
 
+  const calculateDeadlineDate = (option) => {
+    const now = new Date();
+    switch (option) {
+      case '1 week':
+        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      case '2 weeks':
+        return new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      case '3 weeks':
+        return new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000);
+      case '1 month':
+        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      default:
+        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
+  };
+
+  const formatTimeLeft = (deadlineString) => {
+    if (!deadlineString) return '';
+    const diffMs = new Date(deadlineString) - new Date();
+    if (diffMs <= 0) return 'Overdue';
+    const diffHours = Math.round(diffMs / 3600000);
+    if (diffHours < 24) {
+      return `${diffHours}h left`;
+    }
+    const diffDays = Math.round(diffMs / 86400000);
+    return `${diffDays} days left`;
+  };
+
   const openNew = () => {
     setSelectedLead(null);
-    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0 });
+    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadlineOption: '1 week' });
     setErrors({});
     setModalOpen(true);
   };
 
   const openEdit = (lead) => {
     setSelectedLead(lead);
-    setFormData({ ...lead });
+    setFormData({ ...lead, deadlineOption: 'Keep current deadline' });
     setErrors({});
     setModalOpen(true);
   };
@@ -95,12 +179,18 @@ export default function LeadsPage() {
     }
 
     try {
+      let finalData = { ...formData };
+      const option = formData.deadlineOption || (formData.deadline ? 'Keep current deadline' : '1 week');
+      if (option !== 'Keep current deadline') {
+        finalData.deadline = calculateDeadlineDate(option).toISOString();
+      }
+
       if (selectedLead) {
-        const res = await updateLead(selectedLead._id, formData);
+        const res = await updateLead(selectedLead._id, finalData);
         dispatch({ type: 'UPDATE_LEAD', payload: res.data });
         addToast({ type: 'success', message: 'Lead updated' });
       } else {
-        const res = await createLead(formData);
+        const res = await createLead(finalData);
         dispatch({ type: 'ADD_LEAD', payload: res.data });
         addToast({ type: 'success', message: 'Lead created' });
       }
@@ -167,6 +257,10 @@ export default function LeadsPage() {
         }
       }
 
+      if (bulkUpdateData.deadlineOption) {
+        finalData.deadline = calculateDeadlineDate(bulkUpdateData.deadlineOption).toISOString();
+      }
+
       if (Object.keys(finalData).length === 0) {
         addToast({ type: 'error', message: 'No fields selected to update' });
         return;
@@ -181,7 +275,7 @@ export default function LeadsPage() {
       addToast({ type: 'success', message: `${selectedLeads.length} leads updated` });
       setSelectedLeads([]);
       setBulkUpdateModalOpen(false);
-      setBulkUpdateData({ status: '', outbound: '', owner: '', industry: '', customOutbound: '' });
+      setBulkUpdateData({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadlineOption: '' });
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Error updating leads' });
     }
@@ -261,60 +355,126 @@ export default function LeadsPage() {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        {filterTabs.map(tab => (
-          <button 
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${activeTab === tab.key ? 'border-transparent ' + tab.color.replace('text-', 'border-').replace('bg-', 'bg-') : 'bg-white border-brand-border text-brand-silver'}`}
-            style={activeTab === tab.key && tab.key === 'all' ? { backgroundColor: '#DA291C', color: 'white' } : {}}
-          >
-            {tab.label}
-            <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab.key ? 'bg-white' : 'bg-brand-surfaceAlt'} ${tab.key === 'all' ? 'text-brand-red' : ''}`}>
-              {getCount(tab.key)}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* TOOLBAR SECTION */}
+      <div className="bg-white p-4 rounded-crm border border-brand-border shadow-sm mb-8 flex flex-col gap-4">
+        
+        {/* Main Controls Row */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          {/* Search and Filters */}
+          <div className="flex flex-1 w-full md:w-auto items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-brand-silver/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
+              <input 
+                type="text" 
+                placeholder="Search leads..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all"
+              />
+            </div>
+            
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
+              <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+              <span className="hidden sm:inline">Filters</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
+              <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+              <span className="hidden sm:inline">Sort</span>
+            </button>
+          </div>
 
-      <div className="flex gap-4 mb-10 items-center">
-        <div className="flex-1">
-          <input 
-            type="text" 
-            placeholder="Search leads..." 
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:border-brand-silver shadow-sm transition-all"
-          />
-        </div>
-        {selectedLeads.length > 0 && (
-          <>
-            {selectedLeads.length > 1 && (
-              <button onClick={() => setBulkUpdateModalOpen(true)} className="bg-brand-surfaceAlt border border-brand-border text-brand-text font-bold text-sm rounded-xl px-6 py-3 cursor-pointer hover:bg-gray-100 shadow-sm transition-all">
-                Update ({selectedLeads.length})
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              <button 
+                onClick={handleResetCounter} 
+                className="text-brand-silver hover:text-brand-text p-2 transition-colors" 
+                title="Reset Lead ID Sequence to 1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
               </button>
             )}
-            <button onClick={() => setBulkDeleteConfirm(true)} className="bg-brand-redLight text-brand-red font-bold text-sm rounded-xl px-6 py-3 cursor-pointer hover:bg-red-100 shadow-sm border border-brand-red/20 transition-all flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              Delete ({selectedLeads.length})
+            <button onClick={() => setImportWizardOpen(true)} className="px-5 py-2.5 bg-white border border-brand-border text-brand-text font-bold text-sm rounded-xl hover:bg-gray-50 transition-all shadow-sm">
+              Import
             </button>
-          </>
-        )}
-        {(user?.role === 'admin' || user?.role === 'superadmin') && (
-          <button 
-            onClick={handleResetCounter} 
-            className="bg-brand-surfaceAlt border border-brand-border text-brand-silver font-bold text-sm rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-100 shadow-sm"
-            title="Reset Lead ID Sequence to 1"
-          >
-            Reset ID
-          </button>
-        )}
-        <button onClick={() => setImportWizardOpen(true)} className="bg-white border border-brand-border text-brand-text font-bold text-sm rounded-xl px-8 py-3 cursor-pointer hover:bg-gray-50 shadow-md">
-          Import Leads
-        </button>
-        <button onClick={openNew} className="bg-brand-red text-white font-bold text-sm rounded-xl px-8 py-3 cursor-pointer hover:opacity-90 shadow-md">
-          + Add Lead
-        </button>
+            <button onClick={openNew} className="px-5 py-2.5 bg-brand-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md transition-all flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+              Add Lead
+            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setExportMenuOpen(!exportMenuOpen)} 
+                className="p-2.5 bg-white border border-brand-border text-brand-silver rounded-xl hover:bg-gray-50 hover:text-brand-text transition-all shadow-sm flex items-center justify-center"
+                title="Export Options"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              </button>
+              
+              {exportMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)}></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-brand-border z-20 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <button onClick={handleExportCSV} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                      Export as CSV
+                    </button>
+                    <button onClick={handleExportJSON} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50">
+                      <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                      Export as JSON
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <hr className="border-brand-border" />
+
+        {/* Secondary Row: BANT Tabs & Contextual Actions */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-h-[36px]">
+          {/* Quick Filter Tabs */}
+          <div className={`flex flex-wrap items-center gap-2 transition-opacity duration-200 ${selectedLeads.length > 0 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+            <span className="text-[11px] font-bold text-brand-silver uppercase tracking-wider mr-2 hidden sm:block">BANT:</span>
+            {filterTabs.map(tab => (
+              <button 
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border ${activeTab === tab.key ? 'border-transparent ' + tab.color.replace('text-', 'border-').replace('bg-', 'bg-') : 'bg-white border-brand-border text-brand-silver hover:border-gray-300'}`}
+                style={activeTab === tab.key && tab.key === 'all' ? { backgroundColor: '#DA291C', color: 'white' } : {}}
+              >
+                {tab.label}
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] leading-none ${activeTab === tab.key ? 'bg-white/90' : 'bg-brand-surfaceAlt'} ${tab.key === 'all' && activeTab === 'all' ? 'text-brand-red' : ''}`}>
+                  {getCount(tab.key)}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Contextual Action Bar (Shows when items are selected) */}
+          {selectedLeads.length > 0 && (
+            <div className="flex items-center gap-3 bg-brand-surfaceAlt px-4 py-2 rounded-xl border border-brand-border">
+              <span className="text-sm font-bold text-brand-text flex items-center gap-2 mr-2">
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-xs">{selectedLeads.length}</span>
+                Selected
+              </span>
+              
+              {selectedLeads.length > 1 && (
+                <button onClick={() => setBulkUpdateModalOpen(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-brand-border rounded-lg text-xs font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
+                  <svg className="w-3.5 h-3.5 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  Update
+                </button>
+              )}
+              
+              <button onClick={() => setBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-brand-redLight border border-brand-red/20 rounded-lg text-xs font-bold text-brand-red hover:bg-red-100 transition-all shadow-sm">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <LeadsView 
@@ -352,13 +512,27 @@ export default function LeadsPage() {
             <Field label="Value (Rs.)" type="number" value={formData.value} onChange={e => handleChange('value', e.target.value)} />
             <Field label="Status" type="select" options={LEAD_STAGES} value={formData.status} onChange={e => handleChange('status', e.target.value)} />
             <div className="flex flex-col gap-2">
-              <Field label="Outbound (Source)" type="select" options={SOURCES} value={SOURCES.includes(formData.outbound) || !formData.outbound ? formData.outbound : 'Others'} onChange={e => handleChange('outbound', e.target.value)} />
-              {(formData.outbound === 'Others' || (formData.outbound && !SOURCES.includes(formData.outbound))) && (
+              <Field label="Lead Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.outbound) || !formData.outbound ? formData.outbound : 'Others'} onChange={e => handleChange('outbound', e.target.value)} />
+              {(formData.outbound === 'Others' || (formData.outbound && !FLAT_SOURCES.includes(formData.outbound))) && (
                 <Field label="Custom Source" value={formData.outbound === 'Others' ? '' : formData.outbound} onChange={e => handleChange('outbound', e.target.value)} placeholder="Type custom source..." />
               )}
             </div>
             <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
             <Field label="Industry" type="select" options={SECTORS} value={formData.industry} onChange={e => handleChange('industry', e.target.value)} />
+            <div className="flex flex-col gap-1">
+              <Field 
+                label="Deadline" 
+                type="select" 
+                options={formData.deadline ? ['Keep current deadline', '1 week', '2 weeks', '3 weeks', '1 month'] : ['1 week', '2 weeks', '3 weeks', '1 month']} 
+                value={formData.deadlineOption || (formData.deadline ? 'Keep current deadline' : '1 week')} 
+                onChange={e => handleChange('deadlineOption', e.target.value)} 
+              />
+              {formData.deadline && (
+                <span className="text-[10px] font-bold text-brand-silver ml-1">
+                  Current: {new Date(formData.deadline).toLocaleDateString()} ({formatTimeLeft(formData.deadline)})
+                </span>
+              )}
+            </div>
           </div>
           <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} />
 
@@ -418,7 +592,7 @@ export default function LeadsPage() {
           
           <div className="grid grid-cols-2 gap-4">
             <Field 
-              label="Outbound (Source)" 
+              label="Lead Source" 
               type="select" 
               options={SOURCES} 
               value={bulkUpdateData.outbound} 
@@ -433,6 +607,14 @@ export default function LeadsPage() {
               />
             )}
           </div>
+          <Field 
+            label="Deadline" 
+            type="select" 
+            options={['1 week', '2 weeks', '3 weeks', '1 month']} 
+            value={bulkUpdateData.deadlineOption} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, deadlineOption: e.target.value })} 
+            placeholder="-- No change --"
+          />
         </div>
 
         <div className="flex justify-end gap-3 mt-8">

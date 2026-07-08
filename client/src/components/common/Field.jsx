@@ -9,9 +9,20 @@ export default function Field({ label, type = 'text', value, onChange, options, 
       {type === 'select' ? (
         <select className={inputClass} value={value} onChange={onChange}>
           <option value="">{placeholder || '-- To be assigned --'}</option>
-          {options?.map(o => (
-            <option key={o.v ?? o.value ?? o} value={o.v ?? o.value ?? o}>{o.l ?? o.label ?? o}</option>
-          ))}
+          {options?.map(o => {
+            if (o.group) {
+              return (
+                <optgroup key={o.label} label={o.label}>
+                  {o.options.map(sub => (
+                    <option key={sub.v ?? sub.value ?? sub} value={sub.v ?? sub.value ?? sub}>{sub.l ?? sub.label ?? sub}</option>
+                  ))}
+                </optgroup>
+              );
+            }
+            return (
+              <option key={o.v ?? o.value ?? o} value={o.v ?? o.value ?? o}>{o.l ?? o.label ?? o}</option>
+            );
+          })}
         </select>
       ) : type === 'textarea' ? (
         <textarea className={inputClass} value={value} onChange={onChange} rows={3} />

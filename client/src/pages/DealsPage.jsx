@@ -12,13 +12,51 @@ import useToast from '../hooks/useToast.js';
 import { DEAL_STAGES, OWNERS, SECTORS } from '../constants/index.js';
 
 export default function DealsPage() {
-  const { dispatch } = useCRM();
+  const { state, dispatch } = useCRM();
   const { addToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [formData, setFormData] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('kanban');
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  const handleExportCSV = () => {
+    if (!state.deals || state.deals.length === 0) return;
+    const headers = Object.keys(state.deals[0]).filter(k => k !== '__v');
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    state.deals.forEach(deal => {
+      const values = headers.map(header => {
+        let val = deal[header] === null || deal[header] === undefined ? '' : deal[header].toString();
+        val = val.replace(/"/g, '""');
+        return `"${val}"`;
+      });
+      csvRows.push(values.join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", url);
+    downloadAnchorNode.setAttribute("download", "deals_export.csv");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    setExportMenuOpen(false);
+  };
+
+  const handleExportJSON = () => {
+    if (!state.deals || state.deals.length === 0) return;
+    const blob = new Blob([JSON.stringify(state.deals, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", url);
+    downloadAnchorNode.setAttribute("download", "deals_export.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    setExportMenuOpen(false);
+  };
 
   const openNew = () => {
     setSelectedDeal(null);
@@ -91,9 +129,39 @@ export default function DealsPage() {
             List
           </button>
         </div>
-        <button onClick={openNew} className="bg-brand-red text-white font-bold text-sm rounded-xl px-6 py-2.5 cursor-pointer hover:opacity-90 shadow-md">
-          + Add Deal
-        </button>
+        
+        <div className="flex items-center gap-3">
+          <button onClick={openNew} className="bg-brand-red text-white font-bold text-sm rounded-xl px-6 py-2.5 cursor-pointer hover:opacity-90 shadow-md flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Deal
+          </button>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setExportMenuOpen(!exportMenuOpen)} 
+              className="p-2.5 bg-white border border-brand-border text-brand-silver rounded-xl hover:bg-gray-50 hover:text-brand-text transition-all shadow-sm flex items-center justify-center"
+              title="Export Options"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+            
+            {exportMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-brand-border z-20 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <button onClick={handleExportCSV} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Export as CSV
+                  </button>
+                  <button onClick={handleExportJSON} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50">
+                    <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Export as JSON
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {activeTab === 'kanban' ? (

@@ -10,17 +10,20 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   loading: true,
-  error: null
+  error: null,
+  connectionError: false
 };
 
 function authReducer(state, action) {
   switch (action.type) {
     case 'LOGIN_SUCCESS':
-      return { ...state, user: action.payload, isAuthenticated: true, loading: false, error: null };
+      return { ...state, user: action.payload, isAuthenticated: true, loading: false, error: null, connectionError: false };
     case 'LOGOUT':
-      return { ...state, user: null, isAuthenticated: false, loading: false, error: null };
+      return { ...state, user: null, isAuthenticated: false, loading: false, error: null, connectionError: false };
     case 'AUTH_ERROR':
-      return { ...state, user: null, isAuthenticated: false, loading: false, error: action.payload };
+      return { ...state, user: null, isAuthenticated: false, loading: false, error: action.payload, connectionError: false };
+    case 'CONNECTION_ERROR':
+      return { ...state, user: null, isAuthenticated: false, loading: false, connectionError: true };
     case 'CLEAR_ERROR':
       return { ...state, error: null };
     case 'SET_LOADING':
@@ -35,6 +38,7 @@ export function AuthProvider({ children }) {
   const { isLoaded: isClerkUserLoaded, user: clerkUser } = useClerkUser();
   const [state, dispatch] = useReducer(authReducer, initialState);
   const isSigningOut = useRef(false);
+  const hasSynced = useRef(false);
 
   // Set up axios request interceptor to automatically attach Clerk session token
   useEffect(() => {
@@ -73,11 +77,8 @@ export function AuthProvider({ children }) {
       }
 
       if (isSignedIn && clerkUser) {
-        // Prevent the entire app from unmounting (perceived as a page reload) 
-        // if Clerk is just doing a background session heartbeat/refresh.
-        const isReSync = state.isAuthenticated && state.user;
         
-        if (!isReSync) {
+        if (!hasSynced.current) {
           console.log('User is signed in to Clerk, syncing with backend');
           dispatch({ type: 'SET_LOADING', payload: true });
         } else {
@@ -89,10 +90,33 @@ export function AuthProvider({ children }) {
           const name = clerkUser.fullName || clerkUser.firstName || '';
           
           const res = await authApi.syncUser(clerkUser.id, email, name);
-          if (!isReSync) console.log('Backend user sync success:', res.user);
+          if (!hasSynced.current) console.log('Backend user sync success:', res.user);
+          hasSynced.current = true;
           dispatch({ type: 'LOGIN_SUCCESS', payload: res.user });
         } catch (err) {
           console.error('Failed to load user from backend:', err);
+          console.log('SYNC_USER_ERROR_DETAILS', { 
+            message: err?.message, 
+            code: err?.code, 
+            status: err?.response?.status, 
+            responseData: err?.response?.data, 
+            errType: typeof err, 
+            isAxiosError: !!err?.isAxiosError 
+          });
+          
+          // Determine if it's a network, proxy, or gateway connection error
+          const isNetworkError = 
+            !err.response || 
+            (err.response?.status >= 500 && err.response?.status <= 599) ||
+            err.message === 'Network Error' || 
+            err.code === 'ERR_NETWORK' ||
+            (typeof err === 'string' && (err.includes('<!DOCTYPE html>') || err.includes('Gateway') || err.includes('Bad Request') || err.includes('ECONNREFUSED')));
+
+          if (isNetworkError) {
+            dispatch({ type: 'CONNECTION_ERROR' });
+            return;
+          }
+
           const errorMessage = err?.message || 'Your email is not authorized to access this system.';
           
           // Sign out of Clerk since the backend rejected this user.
@@ -107,12 +131,14 @@ export function AuthProvider({ children }) {
             console.error('Error signing out of Clerk:', signOutErr);
           } finally {
             isSigningOut.current = false;
+            hasSynced.current = false;
             // Now that sign out is complete, we can show the error and redirect.
             dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
           }
         }
       } else {
         console.log('No Clerk session found, dispatching LOGOUT');
+        hasSynced.current = false;
         dispatch({ type: 'LOGOUT' });
       }
     }
@@ -128,6 +154,7 @@ export function AuthProvider({ children }) {
     if (signOut) {
       await signOut();
     }
+    hasSynced.current = false;
     dispatch({ type: 'LOGOUT' });
   };
 
@@ -136,7 +163,7 @@ export function AuthProvider({ children }) {
   };
 
   const loadingState = !isClerkAuthLoaded || !isClerkUserLoaded || state.loading;
-  console.log('AuthContext render state:', { loadingState, stateLoading: state.loading, isClerkAuthLoaded, isClerkUserLoaded, isAuthenticated: state.isAuthenticated, error: state.error });
+  console.log('AuthContext render state:', { loadingState, stateLoading: state.loading, isClerkAuthLoaded, isClerkUserLoaded, isAuthenticated: state.isAuthenticated, error: state.error, connectionError: state.connectionError });
 
   return (
     <AuthContext.Provider value={{ ...state, loading: loadingState, login, logout, clearError }}>

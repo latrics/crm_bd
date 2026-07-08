@@ -56,7 +56,15 @@ export default function UserMenu() {
                    <div className="text-[9px] font-black bg-brand-redLight text-brand-red px-1.5 py-0.5 rounded inline-block uppercase mb-2">
                      {user.role}
                    </div>
-                  <button className="text-[11px] font-bold text-blue-600 hover:underline text-left">View account</button>
+                  <button 
+                    onClick={() => {
+                      setIsOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-notifications-fullscreen'));
+                    }}
+                    className="text-[11px] font-bold text-blue-600 hover:underline text-left"
+                  >
+                    View account
+                  </button>
                   <button 
                     onClick={() => {
                       setIsOpen(false);
@@ -67,11 +75,6 @@ export default function UserMenu() {
                     Profile settings
                   </button>
                 </div>
-              </div>
-              <div className="self-center">
-                 <button className="p-1 hover:bg-brand-surfaceAlt rounded transition-colors">
-                    <svg className="w-5 h-5 text-brand-silver" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
-                 </button>
               </div>
             </div>
           </div>
@@ -88,6 +91,15 @@ export default function UserMenu() {
                 <span className="text-lg opacity-60">🛡️</span> Admin Dashboard
               </button>
             )}
+            <button 
+              onClick={() => {
+                setIsOpen(false);
+                window.dispatchEvent(new CustomEvent('toggle-notifications'));
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left"
+            >
+              <span className="text-lg opacity-60">🔔</span> Notifications
+            </button>
             <button className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
               <span className="text-lg opacity-60">⚙️</span> Settings
             </button>

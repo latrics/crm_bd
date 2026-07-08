@@ -9,7 +9,7 @@ const leadSchema = new mongoose.Schema({
   status:       { type: String, enum: ['Leads','Communicated','Discussion','Pricing / Quote','Demo','Closure', 'Converted'], default: 'Leads' },
   value:        { type: Number, default: 0 },
   outbound:     { type: String }, // Removed enum to support custom 'Others' sources
-  owner:        { type: String, enum: ['Sivaram B','Sureka Suresh','Rajib Saikia'] },
+  owner:        { type: String },
   industry:     { type: String, enum: ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','DPR'] },
   remarks:      String,
   city:         String,
@@ -19,6 +19,7 @@ const leadSchema = new mongoose.Schema({
   bant_a:   { type: Number, default: 0, min: 0, max: 5 },
   bant_n:   { type: Number, default: 0, min: 0, max: 5 },
   bant_t:   { type: Number, default: 0, min: 0, max: 5 },
+  deadline: { type: Date },
 }, { timestamps: true });
 
 export default mongoose.model('Lead', leadSchema);

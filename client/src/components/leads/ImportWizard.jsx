@@ -16,6 +16,7 @@ const CRM_FIELDS = [
   { key: 'city', label: 'City', aliases: ['city', 'location'] },
   { key: 'state', label: 'State', aliases: ['state', 'region'] },
   { key: 'designation', label: 'Title / Designation', aliases: ['title', 'designation', 'job title'] },
+  { key: 'outbound', label: 'Lead Source', aliases: ['lead source', 'source', 'outbound'] },
 ];
 
 export default function ImportWizard({ isOpen, onClose }) {
@@ -245,7 +246,7 @@ export default function ImportWizard({ isOpen, onClose }) {
       'Company': 'Acme Corp',
       'Email': 'john@acme.com',
       'Phone': '9876543210',
-      'outbound': 'Website',
+      'Lead Source': 'Website',
       'To be assigned': 'Sivaram B',
       'Industry': 'Mining',
       'Remarks': 'Sample note',
