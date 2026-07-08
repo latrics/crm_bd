@@ -55,11 +55,25 @@ export default function Notifications() {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [highlightedLeadId, setHighlightedLeadId] = useState(null);
+  const [selectedOwner, setSelectedOwner] = useState('');
   
   const { state, dispatch } = useCRM();
   const { user } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+
+  const isAdminOrSuperAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+  // Initialize selectedOwner on load or change
+  useEffect(() => {
+    if (user) {
+      if (isAdminOrSuperAdmin && OWNERS && OWNERS.length > 0) {
+        setSelectedOwner(OWNERS[0]);
+      } else {
+        setSelectedOwner(user.name);
+      }
+    }
+  }, [user]);
 
   // Track read notification IDs in localStorage
   const [readNotifications, setReadNotifications] = useState(() => {
@@ -98,8 +112,30 @@ export default function Notifications() {
     return name;
   };
 
+  // Calculate owner workload statistics (Admins / Super Admins only)
+  const ownerStats = {};
+  if (isAdminOrSuperAdmin && state.leads && OWNERS) {
+    OWNERS.forEach(owner => {
+      const ownerLeads = state.leads.filter(l => isMatch(l.owner, owner)) || [];
+      const pending = ownerLeads.filter(l => l.status === 'Leads').length;
+      const urgent = ownerLeads.filter(l => {
+        if (l.status === 'Closure' || l.status === 'Converted') return false;
+        if (!l.deadline) return false;
+        const timeLeft = new Date(l.deadline) - new Date();
+        return timeLeft <= 7 * 24 * 60 * 60 * 1000;
+      }).length;
+
+      ownerStats[owner] = {
+        assigned: ownerLeads.length,
+        pending,
+        urgent
+      };
+    });
+  }
+
   // Filter lists based on ownership
-  const assignedLeads = state.leads?.filter(l => isMatch(l.owner, user?.name)) || [];
+  const targetOwnerName = isAdminOrSuperAdmin ? selectedOwner : user?.name;
+  const assignedLeads = state.leads?.filter(l => isMatch(l.owner, targetOwnerName)) || [];
   
   // Yet to contact: status is 'Leads'
   const yetToContactLeads = assignedLeads.filter(l => l.status === 'Leads');
@@ -539,59 +575,101 @@ export default function Notifications() {
               </button>
 
               {/* Card 1: Assigned Leads */}
-              <div 
-                onClick={() => setActiveFilter('assigned')}
-                className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
-                  activeFilter === 'assigned' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                }`}
-              >
-                <div className="font-serif text-2xl font-black text-brand-charcoal mb-1">
-                  {assignedLeads.length}
+              {isAdminOrSuperAdmin ? (
+                <div className="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-1 sleek-scrollbar">
+                  <div className="text-[10px] text-brand-silver uppercase tracking-widest font-black mb-1 ml-1">Select Owner</div>
+                  {OWNERS.map(owner => (
+                    <button
+                      key={owner}
+                      onClick={() => {
+                        setSelectedOwner(owner);
+                        setActiveFilter('assigned');
+                      }}
+                      className={`w-full border rounded-crm p-3 flex flex-col gap-2 text-left transition-all ${
+                        selectedOwner === owner 
+                          ? 'border-brand-red ring-2 ring-brand-red/10 bg-brand-redLight/10' 
+                          : 'border-brand-border bg-white hover:border-brand-silver'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-brand-surfaceAlt flex items-center justify-center font-bold text-[10px] border border-brand-border text-brand-text shrink-0">
+                          {owner.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-black text-brand-text truncate">{getShortName(owner)}</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 text-[8px] font-bold text-center">
+                        <div className="bg-blue-50 text-blue-600 py-0.5 rounded" title="Assigned">
+                          A:{ownerStats[owner]?.assigned || 0}
+                        </div>
+                        <div className="bg-amber-50 text-amber-600 py-0.5 rounded" title="Pending">
+                          P:{ownerStats[owner]?.pending || 0}
+                        </div>
+                        <div className="bg-red-50 text-brand-red py-0.5 rounded" title="Urgent">
+                          U:{ownerStats[owner]?.urgent || 0}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Assigned Leads</div>
-              </div>
+              ) : (
+                <>
+                  <div 
+                    onClick={() => setActiveFilter('assigned')}
+                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
+                      activeFilter === 'assigned' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
+                    }`}
+                  >
+                    <div className="font-serif text-2xl font-black text-brand-charcoal mb-1">
+                      {assignedLeads.length}
+                    </div>
+                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Assigned Leads</div>
+                  </div>
 
-              {/* Card 2: Yet to Contact */}
-              <div 
-                onClick={() => setActiveFilter('pending')}
-                className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
-                  activeFilter === 'pending' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                }`}
-              >
-                <div className="font-serif text-2xl font-black text-brand-blue mb-1">
-                  {yetToContactLeads.length}
-                </div>
-                <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Yet to contact</div>
-              </div>
+                  {/* Card 2: Yet to Contact */}
+                  <div 
+                    onClick={() => setActiveFilter('pending')}
+                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
+                      activeFilter === 'pending' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
+                    }`}
+                  >
+                    <div className="font-serif text-2xl font-black text-brand-blue mb-1">
+                      {yetToContactLeads.length}
+                    </div>
+                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Yet to contact</div>
+                  </div>
 
-              {/* Card 3: Contacted */}
-              <div 
-                onClick={() => setActiveFilter('contacted')}
-                className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
-                  activeFilter === 'contacted' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                }`}
-              >
-                <div className="font-serif text-2xl font-black text-brand-charcoal mb-1">
-                  {contactedLeads.length}
-                </div>
-                <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Contacted</div>
-              </div>
+                  {/* Card 3: Contacted */}
+                  <div 
+                    onClick={() => setActiveFilter('contacted')}
+                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
+                      activeFilter === 'contacted' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
+                    }`}
+                  >
+                    <div className="font-serif text-2xl font-black text-brand-charcoal mb-1">
+                      {contactedLeads.length}
+                    </div>
+                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Contacted</div>
+                  </div>
 
-              {/* Card 4: Urgent This Week */}
-              <div 
-                onClick={() => setActiveFilter('urgent')}
-                className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md relative ${
-                  activeFilter === 'urgent' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                }`}
-              >
-                {urgentLeads.length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-red rounded-full border-2 border-white shadow-md animate-pulse z-10" />
-                )}
-                <div className="font-serif text-2xl font-black text-brand-red mb-1">
-                  {urgentLeads.length}
-                </div>
-                <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Urgent this week</div>
-              </div>
+                  {/* Card 4: Urgent This Week */}
+                  <div 
+                    onClick={() => setActiveFilter('urgent')}
+                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md relative ${
+                      activeFilter === 'urgent' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
+                    }`}
+                  >
+                    {urgentLeads.length > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-red rounded-full border-2 border-white shadow-md animate-pulse z-10" />
+                    )}
+                    <div className="font-serif text-2xl font-black text-brand-red mb-1">
+                      {urgentLeads.length}
+                    </div>
+                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Urgent this week</div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Center Column - Notifications / Leads List (width: 7/12) */}
@@ -600,6 +678,29 @@ export default function Notifications() {
                 <h2 className="font-serif text-xl font-black text-brand-text capitalize">
                   {activeFilter === 'all' ? 'All Notifications' : activeFilter === 'assigned' ? 'Assigned Leads' : activeFilter === 'pending' ? 'Yet to contact' : activeFilter === 'contacted' ? 'Contacted' : 'Urgent this week'}
                 </h2>
+                {isAdminOrSuperAdmin && (
+                  <div className="flex gap-1.5 mt-3 overflow-x-auto sleek-scrollbar pb-1">
+                    {[
+                      { key: 'all', label: `All Alerts (${unreadCount})` },
+                      { key: 'assigned', label: `Assigned (${assignedLeads.length})` },
+                      { key: 'pending', label: `Pending (${yetToContactLeads.length})` },
+                      { key: 'contacted', label: `Contacted (${contactedLeads.length})` },
+                      { key: 'urgent', label: `Urgent (${urgentLeads.length})` }
+                    ].map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveFilter(tab.key)}
+                        className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
+                          activeFilter === tab.key
+                            ? 'bg-brand-charcoal text-white border-brand-charcoal'
+                            : 'bg-brand-surfaceAlt text-brand-text border-brand-border hover:border-brand-silver'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* List */}
@@ -861,7 +962,7 @@ export default function Notifications() {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 bg-gray-50/50 sleek-scrollbar">
           {/* Banner */}
-          {showBanner && (
+          {showBanner && !isAdminOrSuperAdmin && (
             <div className="bg-brand-surfaceAlt border border-brand-border rounded-xl p-3 mb-6 flex justify-between items-start relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-red"></div>
               <div>
@@ -875,39 +976,83 @@ export default function Notifications() {
           )}
 
           <div className="text-center mb-6">
-            <h3 className="font-serif font-black text-xl text-brand-text mb-2">Weekly Overview</h3>
-            <p className="text-xs text-brand-silver">Here is your current workload.</p>
+            <h3 className="font-serif font-black text-xl text-brand-text mb-2">
+              {isAdminOrSuperAdmin ? 'Owners Workload' : 'Weekly Overview'}
+            </h3>
+            <p className="text-xs text-brand-silver">
+              {isAdminOrSuperAdmin ? 'Select an owner to view their alerts and leads.' : 'Here is your current workload.'}
+            </p>
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div 
-              onClick={() => openFullscreen('assigned')}
-              className="bg-white border border-brand-border rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-brand-silver hover:shadow-md transition-all"
-            >
-              <div className="text-2xl font-black text-brand-charcoal mb-1">{assignedLeads.length}</div>
-              <div className="text-[10px] font-bold text-brand-silver uppercase tracking-widest leading-tight">Assigned<br/>Leads</div>
+          {isAdminOrSuperAdmin ? (
+            <div className="flex flex-col gap-2.5 mb-6">
+              {OWNERS.map(owner => (
+                <button
+                  key={owner}
+                  onClick={() => {
+                    setSelectedOwner(owner);
+                    openFullscreen('assigned');
+                  }}
+                  className={`w-full border rounded-crm p-3.5 flex items-center justify-between text-left transition-all ${
+                    selectedOwner === owner 
+                      ? 'border-brand-red ring-2 ring-brand-red/10 bg-brand-redLight/10' 
+                      : 'border-brand-border bg-white hover:border-brand-silver'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-brand-surfaceAlt flex items-center justify-center font-bold text-xs border border-brand-border text-brand-text shrink-0">
+                      {owner.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-brand-text">{getShortName(owner)}</div>
+                      <div className="text-[10px] text-brand-silver font-bold">Owner</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 text-[10px] font-bold shrink-0">
+                    <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded" title="Assigned">
+                      A: {ownerStats[owner]?.assigned || 0}
+                    </span>
+                    <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded" title="Pending">
+                      P: {ownerStats[owner]?.pending || 0}
+                    </span>
+                    <span className="bg-red-50 text-brand-red px-1.5 py-0.5 rounded" title="Urgent">
+                      U: {ownerStats[owner]?.urgent || 0}
+                    </span>
+                  </div>
+                </button>
+              ))}
             </div>
-            
-            <div 
-              onClick={() => openFullscreen('pending')}
-              className="bg-white border border-brand-border rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-brand-silver hover:shadow-md transition-all"
-            >
-              <div className="text-2xl font-black text-blue-600 mb-1">{yetToContactLeads.length}</div>
-              <div className="text-[10px] font-bold text-brand-silver uppercase tracking-widest leading-tight">Yet to<br/>Contact</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div 
+                onClick={() => openFullscreen('assigned')}
+                className="bg-white border border-brand-border rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-brand-silver hover:shadow-md transition-all"
+              >
+                <div className="text-2xl font-black text-brand-charcoal mb-1">{assignedLeads.length}</div>
+                <div className="text-[10px] font-bold text-brand-silver uppercase tracking-widest leading-tight">Assigned<br/>Leads</div>
+              </div>
+              
+              <div 
+                onClick={() => openFullscreen('pending')}
+                className="bg-white border border-brand-border rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-brand-silver hover:shadow-md transition-all"
+              >
+                <div className="text-2xl font-black text-blue-600 mb-1">{yetToContactLeads.length}</div>
+                <div className="text-[10px] font-bold text-brand-silver uppercase tracking-widest leading-tight">Yet to<br/>Contact</div>
+              </div>
+              
+              <div 
+                onClick={() => openFullscreen('urgent')}
+                className="bg-white border border-brand-border rounded-xl p-3 text-center shadow-sm relative cursor-pointer hover:border-brand-silver hover:shadow-md transition-all"
+              >
+                {urgentLeads.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-red rounded-full border-2 border-white shadow-md animate-pulse z-10" />
+                )}
+                <div className="text-2xl font-black text-brand-red mb-1">{urgentLeads.length}</div>
+                <div className="text-[10px] font-bold text-brand-silver uppercase tracking-widest leading-tight">Urgent<br/>This Week</div>
+              </div>
             </div>
-            
-            <div 
-              onClick={() => openFullscreen('urgent')}
-              className="bg-white border border-brand-border rounded-xl p-3 text-center shadow-sm relative cursor-pointer hover:border-brand-silver hover:shadow-md transition-all"
-            >
-              {urgentLeads.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-red rounded-full border-2 border-white shadow-md animate-pulse z-10" />
-              )}
-              <div className="text-2xl font-black text-brand-red mb-1">{urgentLeads.length}</div>
-              <div className="text-[10px] font-bold text-brand-silver uppercase tracking-widest leading-tight">Urgent<br/>This Week</div>
-            </div>
-          </div>
+          )}
 
           <div className="flex items-center gap-4 mb-4">
             <div className="h-px bg-brand-border flex-1"></div>
