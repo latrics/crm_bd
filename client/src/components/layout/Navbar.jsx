@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import useCRM from '../../hooks/useCRM.js';
 import UserMenu from './UserMenu.jsx';
@@ -7,6 +8,17 @@ export default function Navbar() {
   const { state } = useCRM();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const handleUnreadUpdate = (e) => {
+      setUnreadCount(e.detail || 0);
+    };
+    window.addEventListener('notifications-unread-count', handleUnreadUpdate);
+    return () => {
+      window.removeEventListener('notifications-unread-count', handleUnreadUpdate);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -52,12 +64,13 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-notifications'))}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm"
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm relative cursor-pointer"
+            title="Notifications"
           >
-            <span className="text-brand-text font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-              Alerts
-            </span>
+            <svg className="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-brand-red rounded-full border border-white animate-pulse" />
+            )}
           </button>
           <UserMenu />
         </div>

@@ -6,6 +6,7 @@ import Badge from '../common/Badge.jsx';
 import DocsPanel from '../docs/DocsPanel.jsx';
 import Modal from '../common/Modal.jsx';
 import Field from '../common/Field.jsx';
+import UserMenu from './UserMenu.jsx';
 import BANTSection from '../leads/BANTSection.jsx';
 import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS } from '../../constants/index.js';
 import { updateLead, deleteLead } from '../../api/leadsApi.js';
@@ -203,6 +204,52 @@ export default function Notifications() {
   // Calculate unread notifications count
   const unreadNotifications = allNotifications.filter(n => !readNotifications.includes(n.id));
   const unreadCount = unreadNotifications.length;
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('notifications-unread-count', { detail: unreadCount }));
+  }, [unreadCount]);
+
+  // Get banner content to display conditionally
+  const getBannerContent = () => {
+    if (isAdminOrSuperAdmin) {
+      if (!OWNERS || !state.leads) return null;
+      const ownersWithUrgent = [];
+      OWNERS.forEach(owner => {
+        const ownerLeads = state.leads.filter(l => isMatch(l.owner, owner)) || [];
+        const hasUrgent = ownerLeads.some(l => {
+          if (l.status === 'Closure' || l.status === 'Converted') return false;
+          if (!l.deadline) return false;
+          const timeLeft = new Date(l.deadline) - new Date();
+          return timeLeft <= 24 * 60 * 60 * 1000;
+        });
+        if (hasUrgent) {
+          ownersWithUrgent.push(getShortName(owner));
+        }
+      });
+
+      if (ownersWithUrgent.length === 0) return null;
+      const listText = ownersWithUrgent.length === 1 
+        ? `${ownersWithUrgent[0]} has` 
+        : `${ownersWithUrgent.join(' & ')} have`;
+      return {
+        title: 'ALERT NOTIFICATION',
+        message: `${listText} pending leads with deadlines less than 24 hours.`
+      };
+    } else {
+      const hasLess24hDeadline = urgentLeads.some(l => {
+        if (!l.deadline) return false;
+        const timeLeft = new Date(l.deadline) - new Date();
+        return timeLeft <= 24 * 60 * 60 * 1000;
+      });
+      if (!hasLess24hDeadline) return null;
+      return {
+        title: 'REMINDER',
+        message: 'Please update the statuses of your pending leads for this week.'
+      };
+    }
+  };
+
+  const bannerContent = getBannerContent();
 
   // Get active items (leads or notifications) based on filter selection
   const getFilteredItems = () => {
@@ -529,7 +576,7 @@ export default function Notifications() {
                 LATRICS <span className="font-sans text-[10px] font-bold text-brand-silver tracking-normal ml-2">CRM</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-brand-silver uppercase tracking-wider">
-                <span>CRM</span>
+                <span onClick={closeFullscreen} className="cursor-pointer hover:text-brand-text transition-colors">CRM</span>
                 <span className="text-gray-300">/</span>
                 <span className="text-brand-text">notification</span>
               </div>
@@ -543,9 +590,7 @@ export default function Notifications() {
               >
                 Back to CRM
               </button>
-              <div className="w-8 h-8 rounded-full bg-brand-red text-white flex items-center justify-center font-bold text-sm shadow-sm select-none">
-                {(user?.name || 'A').charAt(0).toUpperCase()}
-              </div>
+              <UserMenu />
             </div>
           </div>
         </header>
@@ -962,12 +1007,12 @@ export default function Notifications() {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 bg-gray-50/50 sleek-scrollbar">
           {/* Banner */}
-          {showBanner && !isAdminOrSuperAdmin && (
+          {showBanner && bannerContent && (
             <div className="bg-brand-surfaceAlt border border-brand-border rounded-xl p-3 mb-6 flex justify-between items-start relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-red"></div>
               <div>
-                <p className="text-[10px] font-bold text-brand-silver uppercase tracking-widest mb-1">Reminder</p>
-                <p className="text-xs text-brand-text font-bold">Please update the statuses of your pending leads for this week.</p>
+                <p className="text-[10px] font-bold text-brand-silver uppercase tracking-widest mb-1">{bannerContent.title}</p>
+                <p className="text-xs text-brand-text font-bold leading-normal">{bannerContent.message}</p>
               </div>
               <button onClick={() => setShowBanner(false)} className="text-brand-silver hover:text-brand-text">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -1054,86 +1099,90 @@ export default function Notifications() {
             </div>
           )}
 
-          <div className="flex items-center gap-4 mb-4">
-            <div className="h-px bg-brand-border flex-1"></div>
-            <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Action Items</span>
-            <div className="h-px bg-brand-border flex-1"></div>
-          </div>
-
-          {/* Primary Action Card */}
-          {urgentLeads.length > 0 ? (
-            <div 
-              onClick={() => openFullscreen('urgent')}
-              className="bg-white border border-brand-border rounded-xl p-4 mb-2 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-brand-red group-hover:scale-110 transition-transform">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-brand-text">Review Urgent Leads</h4>
-                  <p className="text-xs text-brand-silver mt-0.5">{urgentLeads.length} leads require immediate action</p>
-                </div>
+          {!isAdminOrSuperAdmin && (
+            <>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-px bg-brand-border flex-1"></div>
+                <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Action Items</span>
+                <div className="h-px bg-brand-border flex-1"></div>
               </div>
-              <svg className="w-4 h-4 text-brand-silver group-hover:text-brand-text transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-            </div>
-          ) : (
-             <div className="bg-white border border-brand-border rounded-xl p-4 mb-2 text-center text-brand-silver text-sm">
-               No urgent leads at the moment. Great job!
-             </div>
-          )}
 
-          {/* Recent Notifications (Last 5) */}
-          <div className="flex items-center gap-4 my-4">
-            <div className="h-px bg-brand-border flex-1"></div>
-            <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Recent Notifications</span>
-            <div className="h-px bg-brand-border flex-1"></div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {allNotifications.slice(0, 5).length > 0 ? (
-              allNotifications.slice(0, 5).map(n => {
-                const isUnread = !readNotifications.includes(n.id);
-                return (
-                  <div 
-                    key={n.id}
-                    onClick={() => {
-                      markAsRead(n.id);
-                      setIsOpen(false);
-                      setIsExpanded(true);
-                      setActiveFilter('assigned');
-                      if (n.leadDbId) {
-                        const index = assignedLeads.findIndex(l => l._id === n.leadDbId);
-                        if (index !== -1) {
-                          const targetPage = Math.floor(index / rowsPerPage) + 1;
-                          setCurrentPage(targetPage);
-                        }
-                        setHighlightedLeadId(n.leadDbId);
-                      }
-                    }}
-                    className={`bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-3 items-start border-brand-border relative ${
-                      isUnread ? 'border-l-4 border-l-brand-red' : ''
-                    }`}
-                  >
-                    <div className="text-base leading-none pt-0.5">{n.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs leading-normal ${isUnread ? 'font-black text-brand-text' : 'font-bold text-brand-silver'}`}>
-                        {n.message}
-                      </p>
-                      <span className="text-[9px] text-brand-silver font-bold block mt-1">{n.time}</span>
+              {/* Primary Action Card */}
+              {urgentLeads.length > 0 ? (
+                <div 
+                  onClick={() => openFullscreen('urgent')}
+                  className="bg-white border border-brand-border rounded-xl p-4 mb-2 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-brand-red group-hover:scale-110 transition-transform">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                     </div>
-                    {isUnread && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-red shrink-0 self-center"></span>
-                    )}
+                    <div>
+                      <h4 className="text-sm font-bold text-brand-text">Review Urgent Leads</h4>
+                      <p className="text-xs text-brand-silver mt-0.5">{urgentLeads.length} leads require immediate action</p>
+                    </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="bg-white border border-brand-border rounded-xl p-4 text-center text-brand-silver text-xs">
-                No recent notifications.
+                  <svg className="w-4 h-4 text-brand-silver group-hover:text-brand-text transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+              ) : (
+                 <div className="bg-white border border-brand-border rounded-xl p-4 mb-2 text-center text-brand-silver text-sm">
+                   No urgent leads at the moment. Great job!
+                 </div>
+              )}
+
+              {/* Recent Notifications (Last 5) */}
+              <div className="flex items-center gap-4 my-4">
+                <div className="h-px bg-brand-border flex-1"></div>
+                <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Recent Notifications</span>
+                <div className="h-px bg-brand-border flex-1"></div>
               </div>
-            )}
-          </div>
+
+              <div className="flex flex-col gap-2">
+                {allNotifications.slice(0, 5).length > 0 ? (
+                  allNotifications.slice(0, 5).map(n => {
+                    const isUnread = !readNotifications.includes(n.id);
+                    return (
+                      <div 
+                        key={n.id}
+                        onClick={() => {
+                          markAsRead(n.id);
+                          setIsOpen(false);
+                          setIsExpanded(true);
+                          setActiveFilter('assigned');
+                          if (n.leadDbId) {
+                            const index = assignedLeads.findIndex(l => l._id === n.leadDbId);
+                            if (index !== -1) {
+                              const targetPage = Math.floor(index / rowsPerPage) + 1;
+                              setCurrentPage(targetPage);
+                            }
+                            setHighlightedLeadId(n.leadDbId);
+                          }
+                        }}
+                        className={`bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-3 items-start border-brand-border relative ${
+                          isUnread ? 'border-l-4 border-l-brand-red' : ''
+                        }`}
+                      >
+                        <div className="text-base leading-none pt-0.5">{n.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs leading-normal ${isUnread ? 'font-black text-brand-text' : 'font-bold text-brand-silver'}`}>
+                            {n.message}
+                          </p>
+                          <span className="text-[9px] text-brand-silver font-bold block mt-1">{n.time}</span>
+                        </div>
+                        {isUnread && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-red shrink-0 self-center"></span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="bg-white border border-brand-border rounded-xl p-4 text-center text-brand-silver text-xs">
+                    No recent notifications.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
         
         {/* Footer */}
