@@ -20,6 +20,9 @@ const leadSchema = new mongoose.Schema({
   bant_n:   { type: Number, default: 0, min: 0, max: 5 },
   bant_t:   { type: Number, default: 0, min: 0, max: 5 },
   deadline: { type: Date },
+  assignedAt: { type: Date },
+  alert24hSent: { type: Boolean, default: false },
+  alert1hSent: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.model('Lead', leadSchema);

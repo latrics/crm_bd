@@ -15,11 +15,15 @@ import tenderRoutes from './routes/tenderRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import bugRoutes from './routes/bugRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { clerkMiddleware } from '@clerk/express';
 
 dotenv.config();
 connectDB();
+
+// Initialize cron jobs
+import './cron/deadlineAlerts.js';
 
 const app = express();
 
@@ -52,6 +56,7 @@ app.use('/api/v1/deals', dealRoutes);
 app.use('/api/v1/docs', docRoutes);
 app.use('/api/v1/tenders', tenderRoutes);
 app.use('/api/v1/bugs', bugRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.use(errorHandler);
 

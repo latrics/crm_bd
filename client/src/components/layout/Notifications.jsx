@@ -10,23 +10,10 @@ import UserMenu from './UserMenu.jsx';
 import BANTSection from '../leads/BANTSection.jsx';
 import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS } from '../../constants/index.js';
 import { updateLead, deleteLead } from '../../api/leadsApi.js';
+import { getNotifications, markNotificationAsRead } from '../../api/notificationsApi.js';
 import useToast from '../../hooks/useToast.js';
 
-const calculateDeadlineDate = (option) => {
-  const now = new Date();
-  switch (option) {
-    case '1 week':
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    case '2 weeks':
-      return new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-    case '3 weeks':
-      return new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000);
-    case '1 month':
-      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    default:
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  }
-};
+
 
 const formatTimeLeft = (deadlineString) => {
   if (!deadlineString) return '';
@@ -41,6 +28,23 @@ const formatTimeLeft = (deadlineString) => {
   return `${diffDays} days left`;
 };
 
+const formatNotificationTime = (date) => {
+  if (!date) return '';
+  const now = new Date();
+  const diffMs = now - new Date(date);
+  if (diffMs < 0) {
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 export default function Notifications() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -49,6 +53,7 @@ export default function Notifications() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showBanner, setShowBanner] = useState(true);
   const [expandedDocs, setExpandedDocs] = useState({});
+  const [apiNotifications, setApiNotifications] = useState([]);
   
   // Local Edit Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -76,22 +81,36 @@ export default function Notifications() {
     }
   }, [user]);
 
-  // Track read notification IDs in localStorage
-  const [readNotifications, setReadNotifications] = useState(() => {
+  const markAsRead = async (id) => {
     try {
-      return JSON.parse(localStorage.getItem('read_notifications') || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  const markAsRead = (id) => {
-    if (!readNotifications.includes(id)) {
-      const updated = [...readNotifications, id];
-      setReadNotifications(updated);
-      localStorage.setItem('read_notifications', JSON.stringify(updated));
+      if (user?.name) {
+        await markNotificationAsRead(id, user.name);
+        setApiNotifications(prev => prev.map(n => 
+          n._id === id 
+            ? { ...n, readBy: [...(n.readBy || []), user.name] } 
+            : n
+        ));
+      }
+    } catch(e) {
+      console.error(e);
     }
   };
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      try {
+        const res = await getNotifications(user?.role, user?.name);
+        if (res.success) {
+          setApiNotifications(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch notifications', err);
+      }
+    };
+    if (user) {
+      fetchNotifs();
+    }
+  }, [user, isOpen, state.leads]);
 
   // Case-insensitive name comparison helper to match different formats (e.g. snigdha.kundu vs Snigdha Kundu)
   const isMatch = (owner, userName) => {
@@ -151,58 +170,32 @@ export default function Notifications() {
     if (l.status === 'Closure' || l.status === 'Converted') return false;
     if (!l.deadline) return false;
     const timeLeft = new Date(l.deadline) - new Date();
-    return timeLeft <= 7 * 24 * 60 * 60 * 1000;
+    return timeLeft < 7 * 24 * 60 * 60 * 1000;
   });
 
-  // Map data to structured notifications (used in "All Notifications" category)
-  const assignedNotifications = assignedLeads.map(l => ({
-    id: `assigned_${l._id}`,
-    leadId: l.leadId,
-    leadDbId: l._id,
-    type: 'assigned',
-    message: `New Lead ${l.leadId} for ${l.company || 'Unnamed Company'} has been assigned to you.`,
-    time: new Date(l.createdAt).toLocaleDateString() + ' ' + new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    icon: '👤',
-    color: 'text-blue-500 bg-blue-50'
-  }));
+  // Map DB notifications to UI format
+  const allNotifications = apiNotifications.map(n => {
+    let icon = '🔔';
+    let color = 'text-blue-500 bg-blue-50';
+    if (n.type === 'urgent' || n.type === 'warning') { icon = '⚠️'; color = 'text-red-500 bg-red-50 border-l-4 border-red-500'; }
+    else if (n.type === 'info' || n.type === 'assignment') { icon = '👤'; color = 'text-blue-500 bg-blue-50'; }
+    else if (n.type === 'success') { icon = '✅'; color = 'text-green-500 bg-green-50'; }
 
-  const pendingNotifications = yetToContactLeads.map(l => ({
-    id: `pending_${l._id}`,
-    leadId: l.leadId,
-    leadDbId: l._id,
-    type: 'pending',
-    message: `Action Required: Contact ${l.decisionMaker || 'Decision Maker'} from ${l.company || 'Unnamed Company'} (Lead ${l.leadId}).`,
-    time: new Date(l.createdAt).toLocaleDateString() + ' ' + new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    icon: '📞',
-    color: 'text-amber-500 bg-amber-50'
-  }));
-
-  const urgentNotifications = urgentLeads.map(l => {
-    const timeLeft = new Date(l.deadline) - new Date();
-    const isUnder24h = timeLeft <= 24 * 60 * 60 * 1000;
     return {
-      id: `urgent_${l._id}`,
-      leadId: l.leadId,
-      leadDbId: l._id,
-      type: 'urgent',
-      message: isUnder24h 
-        ? `⚠️ Urgent: Deadline for Lead ${l.leadId} (${l.company || 'Unnamed Company'}) is in less than 24 hours! (${formatTimeLeft(l.deadline)} remaining)`
-        : `📅 Deadline Warning: Lead ${l.leadId} (${l.company || 'Unnamed Company'}) is due this week. (${formatTimeLeft(l.deadline)} remaining)`,
-      time: new Date(l.deadline).toLocaleDateString() + ' (Due)',
-      icon: isUnder24h ? '⏰' : '📅',
-      color: isUnder24h ? 'text-red-500 bg-red-50 border-l-4 border-red-500' : 'text-amber-500 bg-amber-50'
+      id: n._id,
+      leadDbId: n.relatedId,
+      type: n.type,
+      message: n.message,
+      time: formatNotificationTime(n.createdAt),
+      timestamp: new Date(n.createdAt).getTime(),
+      icon,
+      color,
+      isRead: (n.readBy && user?.name) ? n.readBy.includes(user.name) : n.isRead
     };
   });
 
-  // Combine for 'all' filter
-  const allNotifications = [
-    ...urgentNotifications,
-    ...pendingNotifications,
-    ...assignedNotifications
-  ];
-
   // Calculate unread notifications count
-  const unreadNotifications = allNotifications.filter(n => !readNotifications.includes(n.id));
+  const unreadNotifications = allNotifications.filter(n => !n.isRead);
   const unreadCount = unreadNotifications.length;
 
   useEffect(() => {
@@ -363,7 +356,7 @@ export default function Notifications() {
   // Edit action now opens local modal inside notifications, keeping the user in notifications page
   const handleLeadEdit = (lead) => {
     setSelectedLead(lead);
-    setFormData({ ...lead, deadlineOption: 'Keep current deadline' });
+    setFormData({ ...lead });
     setErrors({});
     setModalOpen(true);
   };
@@ -386,10 +379,7 @@ export default function Notifications() {
 
     try {
       let finalData = { ...formData };
-      const option = formData.deadlineOption || (formData.deadline ? 'Keep current deadline' : '1 week');
-      if (option !== 'Keep current deadline') {
-        finalData.deadline = calculateDeadlineDate(option).toISOString();
-      }
+
 
       const res = await updateLead(selectedLead._id, finalData);
       if (res.success) {
@@ -753,7 +743,7 @@ export default function Notifications() {
                 {paginatedItems.length > 0 ? (
                   activeFilter === 'all' ? (
                     paginatedItems.map((n) => {
-                      const isUnread = !readNotifications.includes(n.id);
+                      const isUnread = !n.isRead;
                       return (
                         <div 
                           key={n.id} 
@@ -952,10 +942,9 @@ export default function Notifications() {
               <div className="flex flex-col gap-1">
                 <Field 
                   label="Deadline" 
-                  type="select" 
-                  options={formData.deadline ? ['Keep current deadline', '1 week', '2 weeks', '3 weeks', '1 month'] : ['1 week', '2 weeks', '3 weeks', '1 month']} 
-                  value={formData.deadlineOption || (formData.deadline ? 'Keep current deadline' : '1 week')} 
-                  onChange={e => handleFormChange('deadlineOption', e.target.value)} 
+                  type="date" 
+                  value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''} 
+                  onChange={e => handleFormChange('deadline', e.target.value)} 
                 />
                 {formData.deadline && (
                   <span className="text-[9px] font-bold text-brand-silver ml-1">
@@ -1140,7 +1129,7 @@ export default function Notifications() {
               <div className="flex flex-col gap-2">
                 {allNotifications.slice(0, 5).length > 0 ? (
                   allNotifications.slice(0, 5).map(n => {
-                    const isUnread = !readNotifications.includes(n.id);
+                    const isUnread = !n.isRead;
                     return (
                       <div 
                         key={n.id}

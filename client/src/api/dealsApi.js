@@ -45,22 +45,21 @@ export const deleteDeal = async (id) => {
   }
 };
 
-export const revertDeal = async (id) => {
+export const revertDeal = async (id, targetStage) => {
   try {
-    return await api.post(`/deals/${id}/revert`);
+    return await api.post(`/deals/${id}/revert`, { targetStage });
   } catch (err) {
+    console.warn('Backend down, reverting in localStorage');
     let deals = getLocal('deals');
     const deal = deals.find(d => d._id === id);
-    if (deal) {
-      deals = deals.filter(d => d._id !== id);
-      setLocal('deals', deals);
-      // Revert to lead?
-      const leads = getLocal('leads');
-      const lead = { ...deal, _id: deal.from_lead_id || 'local_l_' + Date.now(), status: 'Communicated' };
-      leads.unshift(lead);
-      setLocal('leads', leads);
-      return { success: true };
+    if (deal && deal.from_lead_id) {
+      // Find the corresponding lead and update its status
+      let leads = getLocal('leads');
+      leads = leads.map(l => l._id === deal.from_lead_id ? { ...l, status: targetStage } : l);
+      localStorage.setItem('leads', JSON.stringify(leads));
     }
-    throw err;
+    deals = deals.filter(d => d._id !== id);
+    setLocal('deals', deals);
+    return { success: true, data: { dealId: id, targetStage, leadId: deal?.from_lead_id } };
   }
 };

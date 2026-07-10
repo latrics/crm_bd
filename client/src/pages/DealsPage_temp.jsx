@@ -3,63 +3,63 @@ import { useLocation } from 'react-router-dom';
 import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import PageHeader from '../components/layout/PageHeader.jsx';
-import LeadsView from '../components/leads/LeadsView.jsx';
+import DealsView from '../components/deals/DealsView.jsx';
 import Modal from '../components/common/Modal.jsx';
 import Field from '../components/common/Field.jsx';
-import BANTSection from '../components/leads/BANTSection.jsx';
+import BANTSection from '../components/deals/BANTSection.jsx';
 import DocsPanel from '../components/docs/DocsPanel.jsx';
 import Confirm from '../components/common/Confirm.jsx';
-import ImportWizard from '../components/leads/ImportWizard.jsx';
-import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads } from '../api/leadsApi.js';
+import ImportWizard from '../components/deals/ImportWizard.jsx';
+import { createDeal, updateDeal, deleteDeal, deleteMultipleDeals, convertDeal, resetDealCounter, updateMultipleDeals } from '../api/dealsApi.js';
 import useToast from '../hooks/useToast.js';
-import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS } from '../constants/index.js';
+import { DEAL_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, DEAL_COLORS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
 
-export default function LeadsPage() {
+export default function DealsPage() {
   const { state, dispatch } = useCRM();
   const { user } = useAuth();
   const { addToast } = useToast();
   const location = useLocation();
   const [modalOpen, setModalOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedDeal, setSelectedDeal] = useState(null);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
-  const [selectedLeads, setSelectedLeads] = useState([]);
+  const [selectedDeals, setSelectedDeals] = useState([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
-  const [activeStatusFilter, setActiveStatusFilter] = useState('all');
+  const [activeStageFilter, setActiveStatusFilter] = useState('all');
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
   const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (location.state?.highlightLeadId) {
-      const leadIdToEdit = location.state.highlightLeadId;
-      const lead = state.leads?.find(l => l._id === leadIdToEdit || l.leadId === leadIdToEdit);
-      if (lead) {
-        setSelectedLead(lead);
-        setFormData({ ...lead });
+    if (location.state?.highlightDealId) {
+      const dealIdToEdit = location.state.highlightDealId;
+      const deal = state.deals?.find(l => l._id === dealIdToEdit || l.dealId === dealIdToEdit);
+      if (deal) {
+        setSelectedDeal(deal);
+        setFormData({ ...deal });
         setErrors({});
         setModalOpen(true);
         // Clear location state to prevent repeating on refresh
         window.history.replaceState({}, document.title);
       }
     }
-  }, [location, state.leads]);
+  }, [location, state.deals]);
 
 
-  const statusStats = LEAD_STAGES.map(stage => ({
+  const statusStats = DEAL_STAGES.map(stage => ({
     key: stage,
     label: stage.toUpperCase(),
-    count: state.leads.filter(l => l.status === stage).length,
-    color: STG_COLORS[stage] || '#8A8D8F'
+    count: state.deals.filter(l => l.status === stage).length,
+    color: DEAL_COLORS[stage] || '#8A8D8F'
   }));
 
   const filterTabs = [
-    { key: 'all', label: 'All Leads', color: 'bg-brand-red' },
+    { key: 'all', label: 'All Deals', color: 'bg-brand-red' },
     { key: 'hot', label: 'Hot', color: 'bg-brand-redLight text-brand-red' },
     { key: 'warm', label: 'Warm', color: 'bg-orange-100 text-orange-600' },
     { key: 'cold', label: 'Cold', color: 'bg-blue-100 text-blue-600' },
@@ -69,13 +69,13 @@ export default function LeadsPage() {
   ];
 
   const handleExportCSV = () => {
-    if (state.leads.length === 0) return;
-    const headers = Object.keys(state.leads[0]).filter(k => k !== '__v');
+    if (state.deals.length === 0) return;
+    const headers = Object.keys(state.deals[0]).filter(k => k !== '__v');
     const csvRows = [];
     csvRows.push(headers.join(','));
-    state.leads.forEach(lead => {
+    state.deals.forEach(deal => {
       const values = headers.map(header => {
-        let val = lead[header] === null || lead[header] === undefined ? '' : lead[header].toString();
+        let val = deal[header] === null || deal[header] === undefined ? '' : deal[header].toString();
         val = val.replace(/"/g, '""');
         return `"${val}"`;
       });
@@ -85,7 +85,7 @@ export default function LeadsPage() {
     const url = URL.createObjectURL(blob);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", url);
-    downloadAnchorNode.setAttribute("download", "leads_export.csv");
+    downloadAnchorNode.setAttribute("download", "deals_export.csv");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -93,12 +93,12 @@ export default function LeadsPage() {
   };
 
   const handleExportJSON = () => {
-    if (state.leads.length === 0) return;
-    const blob = new Blob([JSON.stringify(state.leads, null, 2)], { type: 'application/json' });
+    if (state.deals.length === 0) return;
+    const blob = new Blob([JSON.stringify(state.deals, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", url);
-    downloadAnchorNode.setAttribute("download", "leads_export.json");
+    downloadAnchorNode.setAttribute("download", "deals_export.json");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -106,9 +106,9 @@ export default function LeadsPage() {
   };
 
   const getCount = (key) => {
-    if (key === 'all') return state.leads.length;
-    if (key === 'unassigned') return state.leads.filter(l => !l || !l.owner).length;
-    return state.leads.filter(l => {
+    if (key === 'all') return state.deals.length;
+    if (key === 'unassigned') return state.deals.filter(l => !l || !l.owner).length;
+    return state.deals.filter(l => {
       const score = bantScore(l);
       return bantCat(score).label.toLowerCase() === key;
     }).length;
@@ -129,15 +129,15 @@ export default function LeadsPage() {
   };
 
   const openNew = () => {
-    setSelectedLead(null);
-    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadline: '' });
+    setSelectedDeal(null);
+    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Deals', outbound: '', owner: '', industry: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadline: '' });
     setErrors({});
     setModalOpen(true);
   };
 
-  const openEdit = (lead) => {
-    setSelectedLead(lead);
-    setFormData({ ...lead });
+  const openEdit = (deal) => {
+    setSelectedDeal(deal);
+    setFormData({ ...deal });
     setErrors({});
     setModalOpen(true);
   };
@@ -168,70 +168,70 @@ export default function LeadsPage() {
       let finalData = { ...formData };
 
 
-      if (selectedLead) {
-        const res = await updateLead(selectedLead._id, finalData);
+      if (selectedDeal) {
+        const res = await updateDeal(selectedDeal._id, finalData);
         dispatch({ type: 'UPDATE_LEAD', payload: res.data });
         if (res.deal) {
           dispatch({ type: 'ADD_DEAL', payload: res.deal });
-          addToast({ type: 'success', message: 'Lead converted to Deal!' });
+          addToast({ type: 'success', message: 'Deal converted to Deal!' });
         } else {
-          addToast({ type: 'success', message: 'Lead updated' });
+          addToast({ type: 'success', message: 'Deal updated' });
         }
       } else {
-        const res = await createLead(finalData);
+        const res = await createDeal(finalData);
         dispatch({ type: 'ADD_LEAD', payload: res.data });
-        addToast({ type: 'success', message: 'Lead created' });
+        addToast({ type: 'success', message: 'Deal created' });
       }
       setModalOpen(false);
     } catch (err) {
-      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error saving lead' });
+      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error saving deal' });
     }
   };
 
   const handleDelete = async () => {
     try {
-      const res = await deleteLead(selectedLead._id);
+      const res = await deleteDeal(selectedDeal._id);
       
       if (res.data?.isPending) {
         addToast({ type: 'warning', message: res.data.message });
       } else {
-        dispatch({ type: 'DELETE_LEAD', payload: selectedLead._id });
-        addToast({ type: 'success', message: 'Lead deleted' });
+        dispatch({ type: 'DELETE_LEAD', payload: selectedDeal._id });
+        addToast({ type: 'success', message: 'Deal deleted' });
       }
       setModalOpen(false);
     } catch (err) {
-      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error deleting lead' });
+      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error deleting deal' });
     }
     setDeleteConfirm(false);
   };
 
-  const handleDeleteClick = (lead) => {
-    setSelectedLead(lead);
+  const handleDeleteClick = (deal) => {
+    setSelectedDeal(deal);
     setDeleteConfirm(true);
   };
 
   const handleBulkDelete = async () => {
     try {
-      const res = await deleteMultipleLeads(selectedLeads);
+      const res = await deleteMultipleDeals(selectedDeals);
       
       if (res.data?.isPending) {
         addToast({ type: 'warning', message: res.data.message });
       } else {
-        selectedLeads.forEach(id => dispatch({ type: 'DELETE_LEAD', payload: id }));
-        addToast({ type: 'success', message: `${selectedLeads.length} leads deleted` });
+        selectedDeals.forEach(id => dispatch({ type: 'DELETE_LEAD', payload: id }));
+        addToast({ type: 'success', message: `${selectedDeals.length} deals deleted` });
       }
-      setSelectedLeads([]);
+      setSelectedDeals([]);
       setBulkDeleteConfirm(false);
     } catch (err) {
-      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error deleting leads' });
+      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error deleting deals' });
     }
   };
 
   const handleResetCounter = async () => {
-    if (window.confirm("Are you sure you want to reset the Lead ID sequence back to 1? Only do this if you have deleted all existing leads.")) {
+    if (window.confirm("Are you sure you want to reset the Deal ID sequence back to 1? Only do this if you have deleted all existing deals.")) {
       try {
-        await resetLeadCounter();
-        addToast({ type: 'success', message: 'Lead ID sequence reset to 1 successfully' });
+        await resetDealCounter();
+        addToast({ type: 'success', message: 'Deal ID sequence reset to 1 successfully' });
       } catch (err) {
         addToast({ type: 'error', message: err.message || 'Error resetting sequence' });
       }
@@ -262,48 +262,48 @@ export default function LeadsPage() {
         return;
       }
 
-      const res = await updateMultipleLeads(selectedLeads, finalData);
+      const res = await updateMultipleDeals(selectedDeals, finalData);
       
       if (res.data && Array.isArray(res.data)) {
-        res.data.forEach(updatedLead => {
-           dispatch({ type: 'UPDATE_LEAD', payload: updatedLead });
+        res.data.forEach(updatedDeal => {
+           dispatch({ type: 'UPDATE_LEAD', payload: updatedDeal });
         });
       } else {
-        selectedLeads.forEach(id => {
-           const lead = state.leads.find(l => l._id === id);
-           if (lead) dispatch({ type: 'UPDATE_LEAD', payload: { ...lead, ...finalData } });
+        selectedDeals.forEach(id => {
+           const deal = state.deals.find(l => l._id === id);
+           if (deal) dispatch({ type: 'UPDATE_LEAD', payload: { ...deal, ...finalData } });
         });
       }
-      addToast({ type: 'success', message: `${selectedLeads.length} leads updated` });
-      setSelectedLeads([]);
+      addToast({ type: 'success', message: `${selectedDeals.length} deals updated` });
+      setSelectedDeals([]);
       setBulkUpdateModalOpen(false);
       setBulkUpdateData({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
     } catch (err) {
-      addToast({ type: 'error', message: err.message || 'Error updating leads' });
+      addToast({ type: 'error', message: err.message || 'Error updating deals' });
     }
   };
 
-  const toggleSelectAll = (filteredLeadsIds) => {
-    if (selectedLeads.length === filteredLeadsIds.length && filteredLeadsIds.length > 0) {
-      setSelectedLeads([]);
+  const toggleSelectAll = (filteredDealsIds) => {
+    if (selectedDeals.length === filteredDealsIds.length && filteredDealsIds.length > 0) {
+      setSelectedDeals([]);
     } else {
-      setSelectedLeads(filteredLeadsIds);
+      setSelectedDeals(filteredDealsIds);
     }
   };
 
   const toggleSelect = (id) => {
-    setSelectedLeads(prev => 
+    setSelectedDeals(prev => 
       prev.includes(id) ? prev.filter(lId => lId !== id) : [...prev, id]
     );
   };
 
-  const handleStageUpdate = async (lead, newStage) => {
+  const handleStageUpdate = async (deal, newStage) => {
     try {
-      const res = await updateLead(lead._id, { ...lead, status: newStage });
+      const res = await updateDeal(deal._id, { ...deal, status: newStage });
       dispatch({ type: 'UPDATE_LEAD', payload: res.data });
       if (res.deal) {
         dispatch({ type: 'ADD_DEAL', payload: res.deal });
-        addToast({ type: 'success', message: 'Lead moved to Closure and converted to Deal!' });
+        addToast({ type: 'success', message: 'Deal moved to Closure and converted to Deal!' });
       } else {
         addToast({ type: 'success', message: `Moved to ${newStage}` });
       }
@@ -314,10 +314,10 @@ export default function LeadsPage() {
 
   const handleConvert = async () => {
     try {
-      const res = await convertLead(selectedLead._id);
-      dispatch({ type: 'UPDATE_LEAD', payload: res.data.lead });
+      const res = await convertDeal(selectedDeal._id);
+      dispatch({ type: 'UPDATE_LEAD', payload: res.data.deal });
       dispatch({ type: 'ADD_DEAL', payload: res.data.deal });
-      addToast({ type: 'success', message: 'Lead converted to Deal!' });
+      addToast({ type: 'success', message: 'Deal converted to Deal!' });
       setModalOpen(false);
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Conversion failed' });
@@ -328,12 +328,12 @@ export default function LeadsPage() {
     return (
       <div className="max-w-[1200px] mx-auto pb-12 px-6">
         <PageHeader 
-          title="Lead Management" 
+          title="Deal Management" 
           subtitle="BANT scoring • pipeline stages • auto-saved"
         />
         <div className="flex flex-col items-center justify-center py-20 mt-12 bg-white rounded-crm border border-brand-border shadow-sm">
           <div className="w-12 h-12 border-4 border-brand-red border-t-transparent rounded-full animate-spin mb-4"></div>
-          <h3 className="text-lg font-bold text-brand-text mb-1">Loading Leads...</h3>
+          <h3 className="text-lg font-bold text-brand-text mb-1">Loading Deals...</h3>
           <p className="text-sm text-brand-silver">Syncing data from the server</p>
         </div>
       </div>
@@ -343,7 +343,7 @@ export default function LeadsPage() {
   return (
     <div className="max-w-[1200px] mx-auto pb-12 px-6">
       <PageHeader 
-        title="Lead Management" 
+        title="Deal Management" 
         subtitle="BANT scoring • pipeline stages • auto-saved"
       />
 
@@ -351,13 +351,13 @@ export default function LeadsPage() {
         {statusStats.map((stat, i) => (
           <div 
             key={stat.label} 
-            onClick={() => setActiveStatusFilter(activeStatusFilter === stat.key ? 'all' : stat.key)}
-            className={`p-6 text-center border-r border-brand-border last:border-0 cursor-pointer transition-colors ${activeStatusFilter === stat.key ? 'bg-brand-redLight' : 'hover:bg-gray-50'}`}
+            onClick={() => setActiveStatusFilter(activeStageFilter === stat.key ? 'all' : stat.key)}
+            className={`p-6 text-center border-r border-brand-border last:border-0 cursor-pointer transition-colors ${activeStageFilter === stat.key ? 'bg-brand-redLight' : 'hover:bg-gray-50'}`}
           >
             <div className="text-2xl font-serif font-black mb-1" style={{ color: i === 0 || i === 2 || i === 5 ? '#DA291C' : '#54585A' }}>
               {stat.count}
             </div>
-            <div className="text-[10px] font-bold text-brand-silver tracking-widest leading-tight uppercase">{stat.label}</div>
+            <div className="text-[10px] font-bold text-brand-silver tracking-widest dealing-tight uppercase">{stat.label}</div>
           </div>
         ))}
       </div>
@@ -375,7 +375,7 @@ export default function LeadsPage() {
               </div>
               <input 
                 type="text" 
-                placeholder="Search leads..." 
+                placeholder="Search deals..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all"
@@ -398,7 +398,7 @@ export default function LeadsPage() {
               <button 
                 onClick={handleResetCounter} 
                 className="text-brand-silver hover:text-brand-text p-2 transition-colors" 
-                title="Reset Lead ID Sequence to 1"
+                title="Reset Deal ID Sequence to 1"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
               </button>
@@ -408,7 +408,7 @@ export default function LeadsPage() {
             </button>
             <button onClick={openNew} className="px-5 py-2.5 bg-brand-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md transition-all flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              Add Lead
+              Add Deal
             </button>
             <div className="relative">
               <button 
@@ -443,7 +443,7 @@ export default function LeadsPage() {
         {/* Secondary Row: BANT Tabs & Contextual Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-h-[36px]">
           {/* Quick Filter Tabs */}
-          <div className={`flex flex-wrap items-center gap-2 transition-opacity duration-200 ${selectedLeads.length > 0 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`flex flex-wrap items-center gap-2 transition-opacity duration-200 ${selectedDeals.length > 0 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
             <span className="text-[11px] font-bold text-brand-silver uppercase tracking-wider mr-2 hidden sm:block">BANT:</span>
             {filterTabs.map(tab => (
               <button 
@@ -453,7 +453,7 @@ export default function LeadsPage() {
                 style={activeTab === tab.key && tab.key === 'all' ? { backgroundColor: '#DA291C', color: 'white' } : {}}
               >
                 {tab.label}
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] leading-none ${activeTab === tab.key ? 'bg-white/90' : 'bg-brand-surfaceAlt'} ${tab.key === 'all' && activeTab === 'all' ? 'text-brand-red' : ''}`}>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] dealing-none ${activeTab === tab.key ? 'bg-white/90' : 'bg-brand-surfaceAlt'} ${tab.key === 'all' && activeTab === 'all' ? 'text-brand-red' : ''}`}>
                   {getCount(tab.key)}
                 </span>
               </button>
@@ -461,14 +461,14 @@ export default function LeadsPage() {
           </div>
 
           {/* Contextual Action Bar (Shows when items are selected) */}
-          {selectedLeads.length > 0 && (
+          {selectedDeals.length > 0 && (
             <div className="flex items-center gap-3 bg-brand-surfaceAlt px-4 py-2 rounded-xl border border-brand-border">
               <span className="text-sm font-bold text-brand-text flex items-center gap-2 mr-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-xs">{selectedLeads.length}</span>
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-xs">{selectedDeals.length}</span>
                 Selected
               </span>
               
-              {selectedLeads.length > 1 && (
+              {selectedDeals.length > 1 && (
                 <button onClick={() => setBulkUpdateModalOpen(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-brand-border rounded-lg text-xs font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
                   <svg className="w-3.5 h-3.5 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                   Update
@@ -484,27 +484,27 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      <LeadsView 
-        onLeadClick={openEdit} 
+      <DealsView 
+        onDealClick={openEdit} 
         onDeleteClick={handleDeleteClick}
         onStageUpdate={handleStageUpdate}
         activeTab={activeTab} 
-        activeStatusFilter={activeStatusFilter}
+        activeStageFilter={activeStageFilter}
         search={search} 
-        selectedLeads={selectedLeads}
+        selectedDeals={selectedDeals}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
       />
 
-      {state.leads.length === 0 && (
+      {state.deals.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-brand-silver text-sm font-bold opacity-50">
-          No leads found.
+          No deals found.
         </div>
       )}
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-serif font-bold text-brand-text">{selectedLead ? 'Edit Lead' : 'New Lead'}</h2>
+          <h2 className="text-xl font-serif font-bold text-brand-text">{selectedDeal ? 'Edit Deal' : 'New Deal'}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
@@ -517,9 +517,9 @@ export default function LeadsPage() {
             <Field label="City" value={formData.city} onChange={e => handleChange('city', e.target.value)} />
             <Field label="State" value={formData.state} onChange={e => handleChange('state', e.target.value)} />
             <Field label="Value (Rs.)" type="number" value={formData.value} onChange={e => handleChange('value', e.target.value)} />
-            <Field label="Status" type="select" options={LEAD_STAGES} value={formData.status} onChange={e => handleChange('status', e.target.value)} />
+            <Field label="Status" type="select" options={DEAL_STAGES} value={formData.status} onChange={e => handleChange('status', e.target.value)} />
             <div className="flex flex-col gap-2">
-              <Field label="Lead Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.outbound) || !formData.outbound ? formData.outbound : 'Others'} onChange={e => handleChange('outbound', e.target.value)} />
+              <Field label="Deal Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.outbound) || !formData.outbound ? formData.outbound : 'Others'} onChange={e => handleChange('outbound', e.target.value)} />
               {(formData.outbound === 'Others' || (formData.outbound && !FLAT_SOURCES.includes(formData.outbound))) && (
                 <Field label="Custom Source" value={formData.outbound === 'Others' ? '' : formData.outbound} onChange={e => handleChange('outbound', e.target.value)} placeholder="Type custom source..." />
               )}
@@ -542,11 +542,11 @@ export default function LeadsPage() {
           </div>
           <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} />
 
-          <BANTSection lead={formData} onChange={handleChange} />
+          <BANTSection deal={formData} onChange={handleChange} />
 
           <div className="flex justify-end gap-3 mt-6">
             <button type="button" onClick={() => setModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2">Cancel</button>
-            <button type="submit" className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Save Lead</button>
+            <button type="submit" className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Save Deal</button>
           </div>
         </form>
 
@@ -556,32 +556,32 @@ export default function LeadsPage() {
         isOpen={deleteConfirm} 
         onClose={() => setDeleteConfirm(false)} 
         onConfirm={handleDelete}
-        title={user?.role === 'manager' ? "Request Deletion" : "Delete Lead"} 
+        title={user?.role === 'manager' ? "Request Deletion" : "Delete Deal"} 
         message={user?.role === 'manager' 
-          ? "Are you sure you want to request deletion of this lead? These deletion requests will be viewed by admin and will be in action based on admin or super admin's judgement." 
-          : "Are you sure you want to delete this lead? This action cannot be undone."} 
+          ? "Are you sure you want to request deletion of this deal? These deletion requests will be viewed by admin and will be in action based on admin or super admin's judgement." 
+          : "Are you sure you want to delete this deal? This action cannot be undone."} 
       />
       <Confirm 
         isOpen={bulkDeleteConfirm} 
         onClose={() => setBulkDeleteConfirm(false)} 
         onConfirm={handleBulkDelete}
-        title={user?.role === 'manager' ? `Request Deletion for ${selectedLeads.length} Leads` : `Delete ${selectedLeads.length} Leads`} 
+        title={user?.role === 'manager' ? `Request Deletion for ${selectedDeals.length} Deals` : `Delete ${selectedDeals.length} Deals`} 
         message={user?.role === 'manager'
-          ? `Are you sure you want to request deletion for ${selectedLeads.length} selected leads? These deletion requests will be viewed by admin and will be in action based on admin or super admin's judgement.`
-          : `Are you sure you want to delete ${selectedLeads.length} selected leads? This action cannot be undone.`} 
+          ? `Are you sure you want to request deletion for ${selectedDeals.length} selected deals? These deletion requests will be viewed by admin and will be in action based on admin or super admin's judgement.`
+          : `Are you sure you want to delete ${selectedDeals.length} selected deals? This action cannot be undone.`} 
       />
 
       <Modal isOpen={bulkUpdateModalOpen} onClose={() => setBulkUpdateModalOpen(false)}>
         <div className="mb-6">
-          <h2 className="text-xl font-serif font-bold text-brand-text">Bulk Update {selectedLeads.length} Leads</h2>
-          <p className="text-sm text-brand-silver mt-1">Select the fields you want to apply to all selected leads.</p>
+          <h2 className="text-xl font-serif font-bold text-brand-text">Bulk Update {selectedDeals.length} Deals</h2>
+          <p className="text-sm text-brand-silver mt-1">Select the fields you want to apply to all selected deals.</p>
         </div>
 
         <div className="flex flex-col gap-4">
           <Field 
             label="Status" 
             type="select" 
-            options={LEAD_STAGES} 
+            options={DEAL_STAGES} 
             value={bulkUpdateData.status} 
             onChange={e => setBulkUpdateData({ ...bulkUpdateData, status: e.target.value })} 
           />
@@ -602,7 +602,7 @@ export default function LeadsPage() {
           
           <div className="grid grid-cols-2 gap-4">
             <Field 
-              label="Lead Source" 
+              label="Deal Source" 
               type="select" 
               options={SOURCES} 
               value={bulkUpdateData.outbound} 

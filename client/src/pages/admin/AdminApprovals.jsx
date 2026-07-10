@@ -1,11 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
+import { getApprovals, updateApproval } from '../../api/approvalsApi.js';
+import useToast from '../../hooks/useToast.js';
 
 export default function AdminApprovals() {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', 'Delete Requests', 'Escalations', 'Resolved'];
 
-  const [requests] = useState([]); // Cleared test cases
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
+
+  const fetchApprovals = async () => {
+    try {
+      const res = await getApprovals();
+      setRequests(res.data || []);
+    } catch (err) {
+      addToast({ type: 'error', message: 'Failed to fetch approvals' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApprovals();
+  }, []);
+
+  const handleUpdateStatus = async (id, status) => {
+    try {
+      await updateApproval(id, status);
+      addToast({ type: 'success', message: `Request ${status.toLowerCase()} successfully` });
+      fetchApprovals();
+    } catch (err) {
+      addToast({ type: 'error', message: `Failed to ${status.toLowerCase()} request` });
+    }
+  };
 
   const filteredRequests = activeFilter === 'All' 
     ? requests 
@@ -65,8 +94,8 @@ export default function AdminApprovals() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredRequests.map(req => (
-                <tr key={req.id} className="hover:bg-gray-50/30 transition-colors">
-                  <td className="px-6 py-4 text-xs font-semibold text-brand-charcoal">{req.id}</td>
+                <tr key={req._id} className="hover:bg-gray-50/30 transition-colors">
+                  <td className="px-6 py-4 text-xs font-semibold text-brand-charcoal">{req._id.substring(req._id.length - 6).toUpperCase()}</td>
                   <td className="px-6 py-4 text-sm font-medium text-brand-charcoal">{req.raisedBy}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
@@ -75,9 +104,9 @@ export default function AdminApprovals() {
                       {req.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-brand-charcoal font-medium">{req.record}</td>
-                  <td className="px-6 py-4 text-xs text-brand-silver truncate max-w-[200px] font-normal">{req.desc}</td>
-                  <td className="px-6 py-4 text-xs font-semibold text-brand-silver">{req.date}</td>
+                  <td className="px-6 py-4 text-sm text-brand-charcoal font-medium">{req.recordName}</td>
+                  <td className="px-6 py-4 text-xs text-brand-silver truncate max-w-[200px] font-normal">{req.description}</td>
+                  <td className="px-6 py-4 text-xs font-semibold text-brand-silver">{new Date(req.createdAt).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
                       req.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-100/50' :
@@ -90,15 +119,15 @@ export default function AdminApprovals() {
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
                     {req.status === 'Pending' ? (
                       <>
-                        <button className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100/50 hover:bg-green-100/80 transition-colors">
+                        <button onClick={() => handleUpdateStatus(req._id, 'Approved')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100/50 hover:bg-green-100/80 transition-colors cursor-pointer">
                           Approve
                         </button>
-                        <button className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-brand-red/30 text-brand-red hover:bg-red-50 transition-colors">
+                        <button onClick={() => handleUpdateStatus(req._id, 'Rejected')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-brand-red/30 text-brand-red hover:bg-red-50 transition-colors cursor-pointer">
                           Reject
                         </button>
                       </>
                     ) : (
-                      <span className="text-xs font-semibold text-brand-silver px-3 py-1.5">Processed</span>
+                      <span className="text-xs font-semibold text-brand-silver/60 uppercase tracking-wider">{req.status}</span>
                     )}
                   </td>
                 </tr>

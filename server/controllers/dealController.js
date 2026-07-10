@@ -26,6 +26,12 @@ export const deleteDeal = asyncHandler(async (req, res) => {
 });
 
 export const revertDeal = asyncHandler(async (req, res) => {
+  const { targetStage } = req.body;
+  
+  if (!targetStage) {
+    return res.status(400).json({ success: false, message: 'targetStage is required to revert a deal' });
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -33,7 +39,7 @@ export const revertDeal = asyncHandler(async (req, res) => {
     if (!deal) throw new Error('Deal not found');
 
     if (deal.from_lead_id) {
-      await Lead.findByIdAndUpdate(deal.from_lead_id, { status: 'Closure' }, { session });
+      await Lead.findByIdAndUpdate(deal.from_lead_id, { status: targetStage }, { session });
     }
 
     await Deal.findByIdAndDelete(req.params.id).session(session);
@@ -41,7 +47,7 @@ export const revertDeal = asyncHandler(async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.json({ success: true, data: { dealId: req.params.id } });
+    res.json({ success: true, data: { dealId: req.params.id, targetStage, leadId: deal.from_lead_id } });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();

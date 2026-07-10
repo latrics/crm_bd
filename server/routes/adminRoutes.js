@@ -7,6 +7,7 @@ import {
   deleteUser 
 } from '../controllers/userController.js';
 import { createInvite, revokeInvite, resendInvite } from '../controllers/inviteController.js';
+import { getApprovals, updateApproval } from '../controllers/approvalController.js';
 import AuditLog from '../models/AuditLog.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
@@ -41,5 +42,12 @@ router.get('/audit-logs', checkPermission('audit.view'), asyncHandler(async (req
     .limit(100);
   res.status(200).json({ success: true, count: logs.length, data: logs });
 }));
+
+// Approvals Route
+router.route('/approvals')
+  .get(checkPermission('audit.view'), getApprovals);
+
+router.route('/approvals/:id')
+  .put(checkPermission('audit.view'), updateApproval);
 
 export default router;
