@@ -9,7 +9,7 @@ import DocsPanel from '../components/docs/DocsPanel.jsx';
 import Confirm from '../components/common/Confirm.jsx';
 import { createDeal, updateDeal, deleteDeal, revertDeal } from '../api/dealsApi.js';
 import useToast from '../hooks/useToast.js';
-import { DEAL_STAGES, OWNERS, SECTORS } from '../constants/index.js';
+import { DEAL_STAGES, OWNERS, SECTORS, SOURCES } from '../constants/index.js';
 
 export default function DealsPage() {
   const { dispatch } = useCRM();
@@ -22,7 +22,7 @@ export default function DealsPage() {
 
   const openNew = () => {
     setSelectedDeal(null);
-    setFormData({ title: '', company: '', contact: '', stage: 'Negotiation', value: '', probability: 30, close_date: '', owner: 'Sivaram B', sector: 'Mining', notes: '' });
+    setFormData({ title: '', company: '', contact: '', designation: '', email: '', phone: '', city: '', state: '', stage: '', value: '', probability: 30, close_date: '', owner: '', sector: '', source: '', notes: '' });
     setModalOpen(true);
   };
 
@@ -110,16 +110,26 @@ export default function DealsPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Deal Title" value={formData.title} onChange={e => handleChange('title', e.target.value)} required />
+            <Field label="Decision Maker" value={formData.contact} onChange={e => handleChange('contact', e.target.value)} />
+            <Field label="Title / Designation" value={formData.designation} onChange={e => handleChange('designation', e.target.value)} />
             <Field label="Company" value={formData.company} onChange={e => handleChange('company', e.target.value)} />
-            <Field label="Contact" value={formData.contact} onChange={e => handleChange('contact', e.target.value)} />
+            <Field label="Email" value={formData.email} onChange={e => handleChange('email', e.target.value)} />
+            <Field label="Phone" value={formData.phone} onChange={e => handleChange('phone', e.target.value)} />
+            <Field label="City" value={formData.city} onChange={e => handleChange('city', e.target.value)} />
+            <Field label="State" value={formData.state} onChange={e => handleChange('state', e.target.value)} />
             <Field label="Value (Rs.)" type="number" value={formData.value} onChange={e => handleChange('value', e.target.value)} />
-            <Field label="Probability %" type="number" value={formData.probability} onChange={e => handleChange('probability', e.target.value)} />
-            <Field label="Stage" type="select" options={DEAL_STAGES} value={formData.stage} onChange={e => handleChange('stage', e.target.value)} />
+            <Field label="Status" type="select" options={DEAL_STAGES} value={formData.stage} onChange={e => handleChange('stage', e.target.value)} />
             <Field label="Close Date" type="date" value={formData.close_date} onChange={e => handleChange('close_date', e.target.value)} />
             <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
+            <Field label="Industry" type="select" options={SECTORS} value={formData.sector} onChange={e => handleChange('sector', e.target.value)} />
+            <div className="flex flex-col gap-2">
+              <Field label="Source" type="select" options={SOURCES} value={SOURCES.includes(formData.source) || !formData.source ? formData.source : 'Others'} onChange={e => handleChange('source', e.target.value)} />
+              {(formData.source === 'Others' || (formData.source && !SOURCES.includes(formData.source))) && (
+                <Field label="Custom Source" value={formData.source === 'Others' ? '' : formData.source} onChange={e => handleChange('source', e.target.value)} placeholder="Type custom source..." />
+              )}
+            </div>
           </div>
-          <Field label="Sector" type="select" options={SECTORS} value={formData.sector} onChange={e => handleChange('sector', e.target.value)} />
-          <Field label="Notes" type="textarea" value={formData.notes} onChange={e => handleChange('notes', e.target.value)} />
+          <Field label="Remarks" type="textarea" value={formData.notes} onChange={e => handleChange('notes', e.target.value)} />
 
           <div className="flex justify-end gap-3 mt-6">
             <button type="button" onClick={() => setModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2">Cancel</button>
