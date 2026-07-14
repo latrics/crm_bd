@@ -32,7 +32,7 @@ export const STG_COLORS = {
 };
 
 export const DEAL_COLORS = { Negotiation: '#54585A', Won: '#DA291C', Lost: '#8A8D8F' };
-export const OWN_COLORS = { 'Sivaram B': '#DA291C', 'Sureka Suresh': '#54585A', 'Rajib Saikia': '#16a34a', 'Snigdha Kundu': '#2563eb' };
+export const OWN_COLORS = { 'Sivaram B': '#DA291C', 'Sureka Suresh': '#54585A', 'Rajib Saikia': '#16a34a' };
 
 export const BANT_TABS = [
   { key: 'all', label: 'All Leads', range: null },
