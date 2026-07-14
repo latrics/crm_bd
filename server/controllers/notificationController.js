@@ -1,13 +1,13 @@
 import Notification from '../models/Notification.js';
 
-export const createNotification = async (message, type, ownerName, leadId) => {
+export const createNotification = async ({ message, type, recipientUser = null, recipientRoles = [], relatedId = null }) => {
   try {
     await Notification.create({
       message,
       type,
-      recipientRole: ['Super Admin', 'Admin'],
-      recipientUser: ownerName || null,
-      relatedId: leadId
+      recipientRole: recipientRoles,
+      recipientUser: recipientUser,
+      relatedId: relatedId
     });
   } catch (error) {
     console.error('Failed to create notification', error);

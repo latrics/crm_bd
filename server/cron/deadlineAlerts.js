@@ -16,7 +16,7 @@ cron.schedule('*/5 * * * *', async () => {
     });
 
     for (const lead of leads24h) {
-      await createNotification(`Urgent: Only 24 hours remaining to contact lead ${lead.company}`, 'urgent', lead.owner, lead._id);
+      await createNotification({ message: `Urgent: Only 24 hours remaining to contact lead ${lead.company}`, type: 'urgent', recipientUser: lead.owner, relatedId: lead._id });
       lead.alert24hSent = true;
       await lead.save();
     }
@@ -30,12 +30,42 @@ cron.schedule('*/5 * * * *', async () => {
     });
 
     for (const lead of leads1h) {
-      await createNotification(`Critical: Last 60 mins left to contact lead ${lead.company}`, 'urgent', lead.owner, lead._id);
+      await createNotification({ message: `Critical: Last 60 mins left to contact lead ${lead.company}`, type: 'urgent', recipientUser: lead.owner, relatedId: lead._id });
       lead.alert1hSent = true;
       await lead.save();
     }
 
   } catch (error) {
     console.error('Error running deadline alerts cron:', error);
+  }
+});
+
+// Run daily at 9:00 AM to summarize overdue leads for Admins
+cron.schedule('0 9 * * *', async () => {
+  try {
+    const now = new Date();
+    const overdueLeads = await Lead.find({
+      deadline: { $lt: now },
+      status: { $nin: ['Closure', 'Converted'] }
+    });
+
+    if (overdueLeads.length === 0) return;
+
+    // Group by owner
+    const overdueByOwner = overdueLeads.reduce((acc, lead) => {
+      if (!lead.owner) return acc;
+      acc[lead.owner] = (acc[lead.owner] || 0) + 1;
+      return acc;
+    }, {});
+
+    for (const [owner, count] of Object.entries(overdueByOwner)) {
+      await createNotification({
+        message: `Action Required: ${owner} has ${count} overdue leads.`,
+        type: 'warning',
+        recipientRoles: ['Super Admin', 'Admin']
+      });
+    }
+  } catch (error) {
+    console.error('Error running daily overdue summary cron:', error);
   }
 });

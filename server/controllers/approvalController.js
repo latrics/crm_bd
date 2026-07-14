@@ -19,7 +19,7 @@ export const updateApproval = asyncHandler(async (req, res) => {
     // Actually delete the lead
     const lead = await Lead.findByIdAndDelete(request.recordId);
     if (lead) {
-      await createNotification(`Lead deleted by admin approval: ${lead.company}`, 'warning', lead.owner, lead._id);
+      await createNotification({ message: `Lead deleted by admin approval: ${lead.company}`, type: 'warning', recipientUser: lead.owner, relatedId: lead._id });
     }
   }
 
@@ -27,7 +27,7 @@ export const updateApproval = asyncHandler(async (req, res) => {
   await request.save();
 
   // Notify the manager who raised it
-  await createNotification(`Your deletion request for ${request.recordName} was ${status}`, status === 'Approved' ? 'success' : 'warning', request.raisedBy, null);
+  await createNotification({ message: `Your deletion request for ${request.recordName} was ${status}`, type: status === 'Approved' ? 'success' : 'warning', recipientUser: request.raisedBy });
 
   res.json({ success: true, data: request });
 });

@@ -33,12 +33,12 @@ export const createLead = asyncHandler(async (req, res) => {
 
   const lead = await Lead.create(req.body);
   
-  await createNotification(
-    `New lead created: ${lead.company}`,
-    'info',
-    lead.owner,
-    lead._id
-  );
+  await createNotification({
+    message: `New lead assigned to you: ${lead.company}`,
+    type: 'info',
+    recipientUser: lead.owner,
+    relatedId: lead._id
+  });
 
   res.status(201).json({ success: true, data: lead });
 });
@@ -97,7 +97,7 @@ export const updateLead = asyncHandler(async (req, res) => {
       await session.commitTransaction();
       session.endSession();
       
-      await createNotification(`Lead converted to Deal: ${lead.company}`, 'success', lead.owner, lead._id);
+      await createNotification({ message: `Congrats! Lead ${lead.company} converted to Deal.`, type: 'success', recipientUser: lead.owner, relatedId: lead._id });
       return res.json({ success: true, data: lead, deal });
     } catch (error) {
       await session.abortTransaction();
@@ -116,7 +116,7 @@ export const updateLead = asyncHandler(async (req, res) => {
     type = 'assignment';
   }
   
-  await createNotification(msg, type, lead.owner, lead._id);
+  await createNotification({ message: msg, type: type, recipientUser: lead.owner, relatedId: lead._id });
 
   res.json({ success: true, data: lead });
 });
@@ -133,12 +133,12 @@ export const deleteLead = asyncHandler(async (req, res) => {
       recordName: lead.company || lead.leadId,
       description: `Requested deletion of lead ${lead.company}`
     });
-    await createNotification(`Deletion request by ${req.user.name || req.user.email} for lead: ${lead.company}`, 'warning', null, null);
+    await createNotification({ message: `Deletion request by ${req.user.name || req.user.email} for lead: ${lead.company}`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
     return res.json({ success: true, message: 'Deletion request submitted for Admin approval', isPending: true });
   }
 
   await Lead.findByIdAndDelete(req.params.id);
-  await createNotification(`Lead deleted: ${lead.company}`, 'warning', lead.owner, lead._id);
+  await createNotification({ message: `Lead deleted: ${lead.company}`, type: 'warning', recipientUser: lead.owner, relatedId: lead._id });
   
   res.json({ success: true, data: {} });
 });
@@ -161,13 +161,13 @@ export const deleteMultipleLeads = asyncHandler(async (req, res) => {
       description: `Bulk deletion request for lead ${lead.company}`
     }));
     await ApprovalRequest.insertMany(requests);
-    await createNotification(`Bulk deletion request by ${req.user.name || req.user.email} for ${leads.length} leads`, 'warning', null, null);
+    await createNotification({ message: `Bulk deletion request by ${req.user.name || req.user.email} for ${leads.length} leads`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
     return res.json({ success: true, message: 'Bulk deletion request submitted for Admin approval', isPending: true });
   }
 
   const result = await Lead.deleteMany({ _id: { $in: ids } });
   
-  await createNotification(`${ids.length} leads deleted`, 'warning', null, null);
+  await createNotification({ message: `${ids.length} leads deleted`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
   
   res.json({ success: true, message: 'Leads deleted successfully' });
 });
@@ -198,7 +198,7 @@ export const convertLead = asyncHandler(async (req, res) => {
     await session.commitTransaction();
     session.endSession();
     
-    await createNotification(`Lead converted to Deal: ${lead.company}`, 'success', lead.owner, lead._id);
+    await createNotification({ message: `Congrats! Lead ${lead.company} converted to Deal.`, type: 'success', recipientUser: lead.owner, relatedId: lead._id });
 
     res.json({ success: true, data: { lead, deal: deal[0] } });
   } catch (error) {
@@ -233,7 +233,7 @@ export const importLeads = asyncHandler(async (req, res) => {
 
   const insertedLeads = await Lead.insertMany(leadsToInsert);
   
-  await createNotification(`${insertedLeads.length} leads imported`, 'info', null, null);
+  await createNotification({ message: `${insertedLeads.length} leads were imported into the system by ${req.user.name || req.user.email}.`, type: 'info', recipientRoles: ['Super Admin', 'Admin'] });
 
   res.status(201).json({ 
     success: true, 
@@ -296,7 +296,7 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
     type = 'assignment';
   }
   
-  await createNotification(msg, type, updateData.owner || null, null);
+  await createNotification({ message: msg, type: type, recipientUser: updateData.owner || null });
 
   res.json({ 
     success: true, 
