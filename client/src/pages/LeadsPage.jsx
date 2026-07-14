@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -28,12 +28,79 @@ export default function LeadsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
   const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  const dropdownRef = useRef(null);
+
+  // Parse and calculate suggestions on search change
+  useEffect(() => {
+    if (!search || !state.leads) {
+      setSuggestions([]);
+      return;
+    }
+    // Don't show suggestions if already searching by a parameter tag
+    if (/^(state|city|company|industry):/i.test(search)) {
+      setSuggestions([]);
+      return;
+    }
+
+    const query = search.trim().toLowerCase();
+    if (query.length < 1) {
+      setSuggestions([]);
+      return;
+    }
+
+    const uniqueStates = [...new Set(state.leads.map(l => l.state).filter(Boolean))];
+    const uniqueCities = [...new Set(state.leads.map(l => l.city).filter(Boolean))];
+    const uniqueCompanies = [...new Set(state.leads.map(l => l.company).filter(Boolean))];
+    const uniqueIndustries = [...new Set(state.leads.map(l => l.industry).filter(Boolean))];
+
+    const matched = [];
+
+    uniqueStates.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'state', value: val });
+      }
+    });
+
+    uniqueCities.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'city', value: val });
+      }
+    });
+
+    uniqueCompanies.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'company', value: val });
+      }
+    });
+
+    uniqueIndustries.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'industry', value: val });
+      }
+    });
+
+    setSuggestions(matched.slice(0, 10)); // limit to 10 suggestions
+  }, [search, state.leads]);
+
+  // Click-away listener for suggestions dropdown
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     if (location.state?.highlightLeadId) {
@@ -106,9 +173,10 @@ export default function LeadsPage() {
   };
 
   const getCount = (key) => {
-    if (key === 'all') return state.leads.length;
-    if (key === 'unassigned') return state.leads.filter(l => !l || !l.owner).length;
-    return state.leads.filter(l => {
+    const activeLeads = state.leads.filter(l => l.status !== 'Converted');
+    if (key === 'all') return activeLeads.length;
+    if (key === 'unassigned') return activeLeads.filter(l => !l || !l.owner).length;
+    return activeLeads.filter(l => {
       const score = bantScore(l);
       return bantCat(score).label.toLowerCase() === key;
     }).length;
@@ -192,8 +260,8 @@ export default function LeadsPage() {
     try {
       const res = await deleteLead(selectedLead._id);
       
-      if (res.data?.isPending) {
-        addToast({ type: 'warning', message: res.data.message });
+      if (res?.isPending) {
+        addToast({ type: 'warning', message: res.message });
       } else {
         dispatch({ type: 'DELETE_LEAD', payload: selectedLead._id });
         addToast({ type: 'success', message: 'Lead deleted' });
@@ -214,8 +282,8 @@ export default function LeadsPage() {
     try {
       const res = await deleteMultipleLeads(selectedLeads);
       
-      if (res.data?.isPending) {
-        addToast({ type: 'warning', message: res.data.message });
+      if (res?.isPending) {
+        addToast({ type: 'warning', message: res.message });
       } else {
         selectedLeads.forEach(id => dispatch({ type: 'DELETE_LEAD', payload: id }));
         addToast({ type: 'success', message: `${selectedLeads.length} leads deleted` });
@@ -369,17 +437,53 @@ export default function LeadsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           {/* Search and Filters */}
           <div className="flex flex-1 w-full md:w-auto items-center gap-3">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 max-w-md" ref={dropdownRef}>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-brand-silver/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               </div>
               <input 
                 type="text" 
-                placeholder="Search leads..." 
+                placeholder="Search by state, city, company, industry..." 
                 value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all"
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-10 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all font-medium"
               />
+              {search && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setShowSuggestions(false);
+                  }}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-silver hover:text-brand-red transition-colors"
+                  title="Clear search"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              )}
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-2 bg-white border border-brand-border rounded-xl shadow-lg z-30 max-h-60 overflow-y-auto py-1.5 animate-in fade-in slide-in-from-top-1 duration-100">
+                  {suggestions.map((s, idx) => (
+                    <button
+                      key={`${s.field}-${s.value}-${idx}`}
+                      onClick={() => {
+                        setSearch(`${s.field}: ${s.value}`);
+                        setShowSuggestions(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-brand-redLight/10 flex items-center justify-between text-xs transition-colors group cursor-pointer"
+                    >
+                      <span className="font-bold text-brand-text group-hover:text-brand-red">{s.value}</span>
+                      <span className="text-[9px] uppercase font-bold text-brand-silver bg-brand-surfaceAlt px-2 py-0.5 rounded border border-brand-border group-hover:bg-brand-redLight/20 group-hover:text-brand-red group-hover:border-brand-red/20 transition-all">
+                        {s.field}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             
             <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
@@ -496,7 +600,7 @@ export default function LeadsPage() {
         onToggleSelectAll={toggleSelectAll}
       />
 
-      {state.leads.length === 0 && (
+      {state.leads.filter(l => l.status !== 'Converted').length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-brand-silver text-sm font-bold opacity-50">
           No leads found.
         </div>

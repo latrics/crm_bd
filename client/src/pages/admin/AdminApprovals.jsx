@@ -9,6 +9,7 @@ export default function AdminApprovals() {
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
   const { addToast } = useToast();
 
   const fetchApprovals = async () => {
@@ -26,6 +27,11 @@ export default function AdminApprovals() {
     fetchApprovals();
   }, []);
 
+  // Clear selections when filter changes
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [activeFilter]);
+
   const handleUpdateStatus = async (id, status) => {
     try {
       await updateApproval(id, status);
@@ -36,11 +42,43 @@ export default function AdminApprovals() {
     }
   };
 
+  const handleBulkStatusUpdate = async (status) => {
+    if (selectedIds.length === 0) return;
+    setLoading(true);
+    try {
+      await Promise.all(selectedIds.map(id => updateApproval(id, status)));
+      addToast({ type: 'success', message: `${selectedIds.length} requests ${status.toLowerCase()} successfully` });
+      setSelectedIds([]);
+      fetchApprovals();
+    } catch (err) {
+      addToast({ type: 'error', message: `Failed to update status for some requests` });
+      fetchApprovals();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredRequests = activeFilter === 'All' 
     ? requests 
     : activeFilter === 'Resolved' 
       ? requests.filter(r => r.status !== 'Pending')
       : requests.filter(r => r.type === activeFilter.split(' ')[0] || r.type + ' Requests' === activeFilter);
+
+  const pendingFilteredRequests = filteredRequests.filter(r => r.status === 'Pending');
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(reqId => reqId !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === pendingFilteredRequests.length && pendingFilteredRequests.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(pendingFilteredRequests.map(r => r._id));
+    }
+  };
 
   const guideSteps = [
     "This screen displays delete operations and discount limits waiting for Super Admin approval.",
@@ -50,9 +88,33 @@ export default function AdminApprovals() {
 
   return (
     <div className="max-w-6xl space-y-6">
-      <div className="mb-4">
-        <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Approval Center</h1>
-        <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Review requests • escalations • deletions</p>
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Approval Center</h1>
+          <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Review requests • escalations • deletions</p>
+        </div>
+        
+        {/* Bulk Action Controls */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-3 bg-brand-surfaceAlt border border-brand-border px-4 py-2.5 rounded-xl animate-in fade-in slide-in-from-right-3 duration-200">
+            <span className="text-xs font-bold text-brand-text flex items-center gap-1.5 mr-1">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-[10px] font-black">{selectedIds.length}</span>
+              Selected
+            </span>
+            <button 
+              onClick={() => handleBulkStatusUpdate('Approved')}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all cursor-pointer active:scale-95 border-none"
+            >
+              Approve All
+            </button>
+            <button 
+              onClick={() => handleBulkStatusUpdate('Rejected')}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-brand-red/30 text-brand-red hover:bg-red-50 transition-all cursor-pointer active:scale-95"
+            >
+              Reject All
+            </button>
+          </div>
+        )}
       </div>
 
       <DeveloperGuide 
@@ -79,61 +141,83 @@ export default function AdminApprovals() {
 
       <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
         {filteredRequests.length > 0 ? (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Request ID</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Raised By</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Related Record</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredRequests.map(req => (
-                <tr key={req._id} className="hover:bg-gray-50/30 transition-colors">
-                  <td className="px-6 py-4 text-xs font-semibold text-brand-charcoal">{req._id.substring(req._id.length - 6).toUpperCase()}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-brand-charcoal">{req.raisedBy}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
-                      req.type === 'Delete' ? 'bg-red-50 text-red-600 border-red-100/50' : 'bg-orange-50 text-orange-600 border-orange-100/50'
-                    }`}>
-                      {req.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-brand-charcoal font-medium">{req.recordName}</td>
-                  <td className="px-6 py-4 text-xs text-brand-silver truncate max-w-[200px] font-normal">{req.description}</td>
-                  <td className="px-6 py-4 text-xs font-semibold text-brand-silver">{new Date(req.createdAt).toLocaleDateString()}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
-                      req.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-100/50' :
-                      req.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-100/50' :
-                      'bg-red-50 text-red-700 border-red-100/50'
-                    }`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    {req.status === 'Pending' ? (
-                      <>
-                        <button onClick={() => handleUpdateStatus(req._id, 'Approved')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100/50 hover:bg-green-100/80 transition-colors cursor-pointer">
-                          Approve
-                        </button>
-                        <button onClick={() => handleUpdateStatus(req._id, 'Rejected')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-brand-red/30 text-brand-red hover:bg-red-50 transition-colors cursor-pointer">
-                          Reject
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-xs font-semibold text-brand-silver/60 uppercase tracking-wider">{req.status}</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100">
+                  <th className="px-6 py-4 w-10 text-center">
+                    {pendingFilteredRequests.length > 0 && (
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 cursor-pointer accent-brand-red"
+                        checked={selectedIds.length > 0 && selectedIds.length === pendingFilteredRequests.length}
+                        onChange={toggleSelectAll}
+                      />
                     )}
-                  </td>
+                  </th>
+                  <th className="px-4 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Request ID</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Raised By</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Related Record</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredRequests.map(req => (
+                  <tr key={req._id} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-6 py-4 text-center">
+                      {req.status === 'Pending' && (
+                        <input 
+                          type="checkbox"
+                          className="w-4 h-4 cursor-pointer accent-brand-red"
+                          checked={selectedIds.includes(req._id)}
+                          onChange={() => toggleSelect(req._id)}
+                        />
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-xs font-semibold text-brand-charcoal">{req._id.substring(req._id.length - 6).toUpperCase()}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-brand-charcoal">{req.raisedBy}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
+                        req.type === 'Delete' ? 'bg-red-50 text-red-600 border-red-100/50' : 'bg-orange-50 text-orange-600 border-orange-100/50'
+                      }`}>
+                        {req.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-brand-charcoal font-medium">{req.recordName}</td>
+                    <td className="px-6 py-4 text-xs text-brand-silver truncate max-w-[200px] font-normal">{req.description}</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-brand-silver">{new Date(req.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${
+                        req.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-100/50' :
+                        req.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-100/50' :
+                        'bg-red-50 text-red-700 border-red-100/50'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                      {req.status === 'Pending' ? (
+                        <>
+                          <button onClick={() => handleUpdateStatus(req._id, 'Approved')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100/50 hover:bg-green-100/80 transition-colors cursor-pointer">
+                            Approve
+                          </button>
+                          <button onClick={() => handleUpdateStatus(req._id, 'Rejected')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-brand-red/30 text-brand-red hover:bg-red-50 transition-colors cursor-pointer">
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs font-semibold text-brand-silver/60 uppercase tracking-wider">{req.status}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="p-12 text-center text-sm font-semibold text-brand-silver bg-gray-50/20">
             All requests processed. No pending approval actions required.

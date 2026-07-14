@@ -45,7 +45,7 @@ export default function Navbar() {
             <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
             <NavLink to="/leads" className={navClass}>
               {({ isActive }) => (
-                <>Leads <span className={badgeClass(isActive)}>{state.leads.length}</span></>
+                <>Leads <span className={badgeClass(isActive)}>{state.leads.filter(l => l.status !== 'Converted').length}</span></>
               )}
             </NavLink>
             <NavLink to="/deals" className={navClass}>

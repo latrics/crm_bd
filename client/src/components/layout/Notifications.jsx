@@ -173,6 +173,50 @@ export default function Notifications() {
     return timeLeft < 7 * 24 * 60 * 60 * 1000;
   });
 
+  // Action Item - Urgent Leads:
+  // For Admins/Superadmins: all urgent leads in state.leads
+  // For normal users: only assigned urgent leads
+  const actionUrgentLeads = isAdminOrSuperAdmin
+    ? (state.leads?.filter(l => {
+        if (l.status === 'Closure' || l.status === 'Converted') return false;
+        if (!l.deadline) return false;
+        const timeLeft = new Date(l.deadline) - new Date();
+        return timeLeft < 7 * 24 * 60 * 60 * 1000;
+      }) || [])
+    : urgentLeads;
+
+  // Action Item - Uncontacted Overdue Leads:
+  // For Admins/Superadmins: all leads with status 'Leads' (Yet to Contact) where deadline is in the past
+  // For normal users: only assigned leads with status 'Leads' where deadline is in the past
+  const actionOverdueContactLeads = isAdminOrSuperAdmin
+    ? (state.leads?.filter(l => {
+        if (l.status !== 'Leads') return false;
+        if (!l.deadline) return false;
+        return new Date(l.deadline) - new Date() <= 0;
+      }) || [])
+    : assignedLeads.filter(l => l.status === 'Leads' && l.deadline && new Date(l.deadline) - new Date() <= 0);
+
+  // Detailed Action Cards for Admins/Superadmins mapping overdue and uncontacted leads
+  const adminActionCards = isAdminOrSuperAdmin
+    ? (state.leads?.filter(l => {
+        if (l.status !== 'Leads') return false;
+        if (!l.deadline) return false;
+        const timeLeft = new Date(l.deadline) - new Date();
+        return timeLeft <= 0;
+      }) || []).map(l => {
+        const ownerName = l.owner ? getShortName(l.owner) : 'Unassigned';
+        return {
+          id: l._id,
+          title: 'Overdue Contact',
+          message: `${ownerName} failed to contact ${l.company} in time.`,
+          leadDbId: l._id,
+          owner: l.owner,
+          icon: '⏳',
+          colorBg: 'bg-amber-50 text-amber-600 border border-amber-100/50'
+        };
+      })
+    : [];
+
   // Map DB notifications to UI format
   const allNotifications = apiNotifications.map(n => {
     let icon = '🔔';
@@ -460,7 +504,7 @@ export default function Notifications() {
                 <p className="text-xs text-brand-silver font-bold tracking-wider mt-0.5 truncate">{lead.company}</p>
                 <div className="text-[9px] text-brand-silver mt-1 flex items-center gap-2 flex-wrap">
                   <span>Added: {formatDate(lead.createdAt)}</span>
-                  {lead.deadline && (
+                  {lead.deadline && lead.status === 'Leads' && (
                     <>
                       <span className="text-gray-300">•</span>
                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
@@ -1009,6 +1053,67 @@ export default function Notifications() {
             </div>
           )}
 
+          {/* Overdue Notification Banner */}
+          {!isAdminOrSuperAdmin && (() => {
+            const overdueCount = assignedLeads.filter(l => {
+              if (l.status !== 'Leads') return false;
+              if (!l.deadline) return false;
+              const timeLeft = new Date(l.deadline) - new Date();
+              return timeLeft <= 0;
+            }).length;
+
+            return overdueCount > 0 ? (
+              <div className="bg-red-50 border border-brand-red/20 rounded-xl p-3.5 mb-5 flex justify-between items-start relative overflow-hidden shadow-sm animate-pulse">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand-red"></div>
+                <div className="flex gap-2.5">
+                  <span className="text-lg">⚠️</span>
+                  <div>
+                    <p className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-0.5">Overdue Action Required</p>
+                    <p className="text-xs text-brand-text font-bold leading-normal">
+                      You have <span className="text-brand-red">{overdueCount} overdue {overdueCount === 1 ? 'lead' : 'leads'}</span> that missed their deadline. Please update their status.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => openFullscreen('urgent')} 
+                  className="text-[10px] font-bold text-brand-red hover:underline shrink-0 ml-2 mt-0.5 cursor-pointer"
+                >
+                  View Leads
+                </button>
+              </div>
+            ) : null;
+          })()}
+
+          {isAdminOrSuperAdmin && (() => {
+            const totalOverdue = (state.leads?.filter(l => {
+              if (l.status !== 'Leads') return false;
+              if (!l.deadline) return false;
+              const timeLeft = new Date(l.deadline) - new Date();
+              return timeLeft <= 0;
+            }) || []).length;
+
+            return totalOverdue > 0 ? (
+              <div className="bg-red-50 border border-brand-red/20 rounded-xl p-3.5 mb-5 flex justify-between items-start relative overflow-hidden shadow-sm">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand-red"></div>
+                <div className="flex gap-2.5">
+                  <span className="text-lg">⚠️</span>
+                  <div>
+                    <p className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-0.5">Overdue Action Required</p>
+                    <p className="text-xs text-brand-text font-bold leading-normal">
+                      There are <span className="text-brand-red">{totalOverdue} overdue {totalOverdue === 1 ? 'lead' : 'leads'}</span> across the team.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => openFullscreen('assigned')} 
+                  className="text-[10px] font-bold text-brand-red hover:underline shrink-0 ml-2 mt-0.5 cursor-pointer"
+                >
+                  View Workload
+                </button>
+              </div>
+            ) : null;
+          })()}
+
           <div className="text-center mb-6">
             <h3 className="font-serif font-black text-xl text-brand-text mb-2">
               {isAdminOrSuperAdmin ? 'Owners Workload' : 'Weekly Overview'}
@@ -1088,36 +1193,101 @@ export default function Notifications() {
             </div>
           )}
 
-          {!isAdminOrSuperAdmin && (
-            <>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-px bg-brand-border flex-1"></div>
-                <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Action Items</span>
-                <div className="h-px bg-brand-border flex-1"></div>
-              </div>
+          {/* Action Items Section */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-px bg-brand-border flex-1"></div>
+            <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Action Items</span>
+            <div className="h-px bg-brand-border flex-1"></div>
+          </div>
 
-              {/* Primary Action Card */}
-              {urgentLeads.length > 0 ? (
-                <div 
-                  onClick={() => openFullscreen('urgent')}
-                  className="bg-white border border-brand-border rounded-xl p-4 mb-2 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-brand-red group-hover:scale-110 transition-transform">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          {isAdminOrSuperAdmin ? (
+            adminActionCards.length > 0 ? (
+              <div className="flex flex-col gap-2.5">
+                {adminActionCards.map((card, idx) => (
+                  <div 
+                    key={`${card.id}-${idx}`}
+                    onClick={() => {
+                      if (card.owner) {
+                        setSelectedOwner(card.owner);
+                      }
+                      setActiveFilter('assigned');
+                      setIsExpanded(true);
+                      setIsOpen(false);
+                      if (card.leadDbId) {
+                        setHighlightedLeadId(card.leadDbId);
+                      }
+                    }}
+                    className="bg-white border border-brand-border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${card.colorBg} group-hover:scale-110 transition-transform shrink-0`}>
+                        {card.icon}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-brand-text">{card.title}</h4>
+                        <p className="text-xs text-brand-silver mt-0.5">{card.message}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-brand-text">Review Urgent Leads</h4>
-                      <p className="text-xs text-brand-silver mt-0.5">{urgentLeads.length} leads require immediate action</p>
-                    </div>
+                    <svg className="w-4 h-4 text-brand-silver group-hover:text-brand-text transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                   </div>
-                  <svg className="w-4 h-4 text-brand-silver group-hover:text-brand-text transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                </div>
-              ) : (
-                 <div className="bg-white border border-brand-border rounded-xl p-4 mb-2 text-center text-brand-silver text-sm">
-                   No urgent leads at the moment. Great job!
-                 </div>
-              )}
+                ))}
+              </div>
+            ) : (
+               <div className="bg-white border border-brand-border rounded-xl p-4 text-center text-brand-silver text-sm">
+                 No action items at the moment. Great job!
+               </div>
+            )
+          ) : (
+            (actionUrgentLeads.length > 0 || actionOverdueContactLeads.length > 0) ? (
+              <div className="flex flex-col gap-2.5">
+                {/* Urgent Leads Card */}
+                {actionUrgentLeads.length > 0 && (
+                  <div 
+                    onClick={() => openFullscreen('urgent')}
+                    className="bg-white border border-brand-border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-brand-red group-hover:scale-110 transition-transform">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-brand-text">Review Urgent Leads</h4>
+                        <p className="text-xs text-brand-silver mt-0.5">
+                          {actionUrgentLeads.length} leads require immediate action
+                        </p>
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-brand-silver group-hover:text-brand-text transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </div>
+                )}
+
+                {/* Overdue Contact Alert Card */}
+                {actionOverdueContactLeads.length > 0 && (
+                  <div 
+                    onClick={() => openFullscreen('pending')}
+                    className="bg-white border border-brand-border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-brand-text">Overdue Contact Alert</h4>
+                        <p className="text-xs text-brand-silver mt-0.5">
+                          {actionOverdueContactLeads.length} assigned leads were not contacted within their deadline
+                        </p>
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-brand-silver group-hover:text-brand-text transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </div>
+                )}
+              </div>
+            ) : (
+               <div className="bg-white border border-brand-border rounded-xl p-4 text-center text-brand-silver text-sm">
+                 No action items at the moment. Great job!
+               </div>
+            )
+          )}
 
               {/* Recent Notifications (Last 5) */}
               <div className="flex items-center gap-4 my-4">
@@ -1170,8 +1340,6 @@ export default function Notifications() {
                   </div>
                 )}
               </div>
-            </>
-          )}
         </div>
         
         {/* Footer */}

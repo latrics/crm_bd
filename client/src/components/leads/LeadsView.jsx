@@ -15,13 +15,27 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
     setCurrentPage(1);
   }, [activeTab, search, activeStatusFilter]);
   
-  let filteredLeads = state.leads;
+  let filteredLeads = (state.leads || []).filter(l => l && l.status !== 'Converted');
 
   if (search) {
-    filteredLeads = (filteredLeads || []).filter(l => 
-      l && ((l.decisionMaker || '').toLowerCase().includes(search.toLowerCase()) || 
-      (l.company || '').toLowerCase().includes(search.toLowerCase()))
-    );
+    const match = search.match(/^(state|city|company|industry):\s*(.*)$/i);
+    if (match) {
+      const field = match[1].toLowerCase();
+      const value = match[2].toLowerCase();
+      filteredLeads = (filteredLeads || []).filter(l => 
+        l && (l[field] || '').toLowerCase() === value
+      );
+    } else {
+      filteredLeads = (filteredLeads || []).filter(l => 
+        l && (
+          (l.decisionMaker || '').toLowerCase().includes(search.toLowerCase()) || 
+          (l.company || '').toLowerCase().includes(search.toLowerCase()) ||
+          (l.state || '').toLowerCase().includes(search.toLowerCase()) ||
+          (l.city || '').toLowerCase().includes(search.toLowerCase()) ||
+          (l.industry || '').toLowerCase().includes(search.toLowerCase())
+        )
+      );
+    }
   }
   
   // Active Tab filter
@@ -132,7 +146,7 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                     <p className="text-xs text-brand-silver font-bold tracking-wider mt-0.5">{lead.company}</p>
                     <div className="text-[10px] text-brand-silver mt-1 flex items-center gap-2 flex-wrap">
                       <span>Added: {formatDate(lead.createdAt)}</span>
-                      {lead.deadline && (
+                      {lead.deadline && lead.status === 'Leads' && (
                         <>
                           <span className="text-gray-300">•</span>
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${

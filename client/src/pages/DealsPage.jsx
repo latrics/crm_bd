@@ -4,6 +4,7 @@ import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import PageHeader from '../components/layout/PageHeader.jsx';
 import DealsView from '../components/deals/DealsView.jsx';
+import DealsListView from '../components/deals/DealsListView.jsx';
 import Modal from '../components/common/Modal.jsx';
 import Field from '../components/common/Field.jsx';
 import DocsPanel from '../components/docs/DocsPanel.jsx';
