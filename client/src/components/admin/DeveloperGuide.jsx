@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Info, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function DeveloperGuide({ title, description, steps = [] }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -10,9 +11,9 @@ export default function DeveloperGuide({ title, description, steps = [] }) {
         className="w-full mb-6 bg-brand-red/[0.04] hover:bg-brand-red/[0.08] text-brand-red text-xs font-semibold px-4 py-2 rounded-xl border border-brand-red/10 flex items-center justify-between transition-all"
       >
         <span className="flex items-center gap-2">
-          <span>ℹ️</span> Show Page Guide & Development Notes
+          <Info className="w-4 h-4 text-brand-red shrink-0" /> Show Page Guide & Development Notes
         </span>
-        <span>▼</span>
+        <ChevronDown className="w-4 h-4 text-brand-red shrink-0" />
       </button>
     );
   }
@@ -23,14 +24,14 @@ export default function DeveloperGuide({ title, description, steps = [] }) {
       
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2 text-brand-charcoal">
-          <span className="text-lg">🛡️</span>
+          <Shield className="w-4 h-4 text-brand-red shrink-0" />
           <h3 className="font-serif text-base font-bold tracking-tight">{title}</h3>
         </div>
         <button 
           onClick={() => setIsOpen(false)}
-          className="text-brand-silver hover:text-brand-charcoal text-xs font-semibold transition-colors"
+          className="text-brand-silver hover:text-brand-charcoal text-xs font-semibold flex items-center gap-1 transition-colors"
         >
-          Hide Guide ▲
+          Hide Guide <ChevronUp className="w-3.5 h-3.5" />
         </button>
       </div>
 

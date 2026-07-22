@@ -8,10 +8,11 @@ import Modal from '../common/Modal.jsx';
 import Field from '../common/Field.jsx';
 import UserMenu from './UserMenu.jsx';
 import BANTSection from '../leads/BANTSection.jsx';
-import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS } from '../../constants/index.js';
+import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../../constants/index.js';
 import { updateLead, deleteLead } from '../../api/leadsApi.js';
 import { getNotifications, markNotificationAsRead } from '../../api/notificationsApi.js';
 import useToast from '../../hooks/useToast.js';
+import { AlertTriangle, Hourglass, User, CheckCircle2, Bell, BarChart2, Clock, Sparkles } from 'lucide-react';
 
 
 
@@ -211,7 +212,7 @@ export default function Notifications() {
           message: `${ownerName} failed to contact ${l.company} in time.`,
           leadDbId: l._id,
           owner: l.owner,
-          icon: '⏳',
+          icon: <Hourglass className="w-4 h-4" />,
           colorBg: 'bg-amber-50 text-amber-600 border border-amber-100/50'
         };
       })
@@ -219,11 +220,11 @@ export default function Notifications() {
 
   // Map DB notifications to UI format
   const allNotifications = apiNotifications.map(n => {
-    let icon = '🔔';
+    let icon = <Bell className="w-4.5 h-4.5" />;
     let color = 'text-blue-500 bg-blue-50';
-    if (n.type === 'urgent' || n.type === 'warning') { icon = '⚠️'; color = 'text-red-500 bg-red-50 border-l-4 border-red-500'; }
-    else if (n.type === 'info' || n.type === 'assignment') { icon = '👤'; color = 'text-blue-500 bg-blue-50'; }
-    else if (n.type === 'success') { icon = '✅'; color = 'text-green-500 bg-green-50'; }
+    if (n.type === 'urgent' || n.type === 'warning') { icon = <AlertTriangle className="w-4.5 h-4.5" />; color = 'text-red-500 bg-red-50 border-l-4 border-red-500'; }
+    else if (n.type === 'info' || n.type === 'assignment') { icon = <User className="w-4.5 h-4.5" />; color = 'text-blue-500 bg-blue-50'; }
+    else if (n.type === 'success') { icon = <CheckCircle2 className="w-4.5 h-4.5" />; color = 'text-green-500 bg-green-50'; }
 
     return {
       id: n._id,
@@ -490,29 +491,30 @@ export default function Notifications() {
           <div className="absolute top-0 left-0 w-full h-1 bg-brand-redLight border-b border-brand-red/20" />
         )}
         
-        <div className="p-4 sm:p-5 flex flex-col gap-3">
+        <div className="p-4 sm:p-5 flex flex-col gap-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm bg-brand-surfaceAlt text-brand-text border border-brand-border select-none">
-                {(lead.decisionMaker || 'U').charAt(0)}{(lead.company || 'C').charAt(0)}
+              {/* Lead ID Badge replacing Avatar Circle */}
+              <div className="px-3 py-2 bg-brand-red/[0.03] border border-brand-red/10 rounded-xl flex flex-col items-center justify-center shrink-0 min-w-[90px] shadow-[inset_0_1px_2px_rgba(218,41,28,0.02)]">
+                <span className="text-[8px] font-black text-brand-red/60 uppercase tracking-widest leading-none mb-1">Lead ID</span>
+                <span className="text-xs font-mono font-black text-brand-red leading-none">{lead.leadId || 'N/A'}</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <h4 className="font-serif text-sm font-bold text-brand-text leading-tight flex items-center gap-2">
-                  <span className="truncate">{lead.decisionMaker || 'Unnamed Lead'}</span>
-                  {lead.leadId && <span className="bg-brand-surfaceAlt border border-brand-border text-brand-text px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ml-1">#{lead.leadId}</span>}
+
+              <div className="min-w-0">
+                <h4 className="font-serif text-base font-bold text-brand-text leading-tight truncate">
+                  {lead.company || 'Unnamed Company'}
                 </h4>
-                <p className="text-xs text-brand-silver font-bold tracking-wider mt-0.5 truncate">{lead.company}</p>
-                <div className="text-[9px] text-brand-silver mt-1 flex items-center gap-2 flex-wrap">
+                <div className="text-[10px] text-brand-silver font-bold mt-1.5 flex items-center gap-2 flex-wrap">
                   <span>Added: {formatDate(lead.createdAt)}</span>
                   {lead.deadline && lead.status === 'Leads' && (
                     <>
                       <span className="text-gray-300">•</span>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
                         new Date(lead.deadline) - new Date() <= 24 * 60 * 60 * 1000
                           ? 'bg-brand-redLight text-brand-red animate-pulse'
                           : 'bg-amber-50 text-amber-600 border border-amber-200'
                       }`}>
-                        ⏰ {formatTimeLeft(lead.deadline)}
+                        <Clock className="w-3 h-3 shrink-0" /> {formatTimeLeft(lead.deadline)}
                       </span>
                     </>
                   )}
@@ -522,15 +524,15 @@ export default function Notifications() {
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               {lead.owner && (
-                <div className="flex items-center gap-1.5">
-                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-redLight select-none">
-                      <span className="text-brand-red">{lead.owner.charAt(0)}</span>
+                <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-full py-1 pl-1 pr-3 shadow-sm">
+                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-red select-none">
+                      <span>{lead.owner.charAt(0)}</span>
                    </div>
-                   <span className="text-xs text-brand-silver font-bold">{getShortName(lead.owner)}</span>
+                   <span className="text-xs text-brand-charcoal font-bold">{getShortName(lead.owner)}</span>
                 </div>
               )}
               
-              <div className="flex gap-1.5 ml-2">
+              <div className="flex gap-1.5">
                 <button 
                   onClick={() => toggleDocs(lead._id)}
                   className={`px-3 py-1 rounded text-[11px] font-bold transition-colors ${expandedDocs[lead._id] ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt border border-brand-border text-brand-text hover:bg-brand-border'}`}
@@ -553,24 +555,40 @@ export default function Notifications() {
             </div>
           </div>
 
+          {/* Lead Details Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
+            <div>
+              <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Decision Maker</span>
+              <span className="text-xs font-bold text-brand-text">{lead.decisionMaker || '--'}</span>
+            </div>
+            <div>
+              <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Industry</span>
+              <span className="text-xs font-bold text-brand-text">{lead.industry || '--'}</span>
+            </div>
+            <div>
+              <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Business Model</span>
+              <span className="text-xs font-bold text-brand-text">{lead.businessModel || '--'}</span>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-3">
              <div className="flex-1 mr-4">
-                <div className="flex gap-1 h-1 rounded-full overflow-hidden w-full">
-                  {LEAD_STAGES.map((stage, idx) => (
-                    <div 
-                      key={stage}
-                      onClick={(e) => { e.stopPropagation(); handleStageUpdate(lead, stage); }}
-                      className="h-full rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-                      title={`Move to ${stage}`}
-                      style={{
-                        flex: 1,
-                        backgroundColor: idx <= currentStageIdx ? '#8A8D8F' : '#f3f4f6', 
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="text-[10px] font-bold text-brand-silver mt-1.5 tracking-widest">
-                   Stage: <span className="text-brand-text font-black">{lead.status}</span>
+                 <div className="flex gap-1 h-1.5 w-full">
+                   {LEAD_STAGES.map((stage, idx) => (
+                     <div 
+                       key={stage}
+                       onClick={(e) => { e.stopPropagation(); handleStageUpdate(lead, stage); }}
+                       className="h-full rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                       title={`Move to ${stage}`}
+                       style={{
+                         flex: 1,
+                         backgroundColor: idx <= currentStageIdx ? '#8A8D8F' : '#f3f4f6', 
+                       }}
+                     />
+                   ))}
+                 </div>
+                <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase">
+                   Stage: <span className="text-brand-red font-black">{lead.status}</span>
                 </div>
              </div>
              
@@ -814,7 +832,7 @@ export default function Notifications() {
                   )
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center py-12 text-center text-brand-silver">
-                    <div className="text-3xl mb-2">✨</div>
+                    <Sparkles className="w-8 h-8 text-brand-silver/60 mb-2" />
                     <p className="text-xs font-bold uppercase tracking-wider">No records found</p>
                     <p className="text-[10px] mt-1">Everything is caught up!</p>
                   </div>
@@ -982,7 +1000,29 @@ export default function Notifications() {
                 )}
               </div>
               <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleFormChange('owner', e.target.value)} />
-              <Field label="Industry" type="select" options={SECTORS} value={formData.industry} onChange={e => handleFormChange('industry', e.target.value)} />
+              <div className="flex flex-col gap-2">
+                <Field label="Industry" type="select" options={SECTORS} value={SECTORS.includes(formData.industry) || !formData.industry ? formData.industry : 'Others'} onChange={e => handleFormChange('industry', e.target.value)} />
+                {(formData.industry === 'Others' || (formData.industry && !SECTORS.includes(formData.industry))) && (
+                  <Field label="Custom Industry" value={formData.industry === 'Others' ? '' : formData.industry} onChange={e => handleFormChange('industry', e.target.value)} placeholder="Type custom industry..." />
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Field label="Business Model" type="select" options={BUSINESS_MODELS} value={formData.businessModel || ''} onChange={e => handleFormChange('businessModel', e.target.value)} />
+                {formData.businessModel && (
+                  <Field 
+                    label={
+                      formData.businessModel.toLowerCase().includes('joint') 
+                        ? 'Joint Ownership Details' 
+                        : formData.businessModel.toLowerCase().includes('drone') 
+                        ? 'Drone Sales Details' 
+                        : 'Service Project Details'
+                    } 
+                    value={formData.businessModelDetail || ''} 
+                    onChange={e => handleFormChange('businessModelDetail', e.target.value)} 
+                    placeholder={`Enter details for ${formData.businessModel}...`} 
+                  />
+                )}
+              </div>
               <div className="flex flex-col gap-1">
                 <Field 
                   label="Deadline" 
@@ -997,6 +1037,7 @@ export default function Notifications() {
                 )}
               </div>
             </div>
+            <Field label="Bio" type="textarea" value={formData.bio || ''} onChange={e => handleFormChange('bio', e.target.value)} placeholder="Input custom bio notes..." />
             <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleFormChange('remarks', e.target.value)} />
 
             <BANTSection lead={formData} onChange={handleFormChange} />
@@ -1028,8 +1069,8 @@ export default function Notifications() {
         
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-brand-border bg-brand-surfaceAlt/30 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
+          <div className="flex items-center gap-2 text-brand-text">
+            <BarChart2 className="w-5 h-5 opacity-80" />
             <span className="font-serif font-black text-brand-text text-lg tracking-wide">Your Stats & Alerts</span>
           </div>
           <button onClick={() => setIsOpen(false)} className="text-brand-silver hover:text-brand-text transition-colors">
@@ -1066,7 +1107,7 @@ export default function Notifications() {
               <div className="bg-red-50 border border-brand-red/20 rounded-xl p-3.5 mb-5 flex justify-between items-start relative overflow-hidden shadow-sm animate-pulse">
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand-red"></div>
                 <div className="flex gap-2.5">
-                  <span className="text-lg">⚠️</span>
+                  <AlertTriangle className="w-5 h-5 text-brand-red shrink-0 mt-0.5" />
                   <div>
                     <p className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-0.5">Overdue Action Required</p>
                     <p className="text-xs text-brand-text font-bold leading-normal">
@@ -1096,7 +1137,7 @@ export default function Notifications() {
               <div className="bg-red-50 border border-brand-red/20 rounded-xl p-3.5 mb-5 flex justify-between items-start relative overflow-hidden shadow-sm">
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand-red"></div>
                 <div className="flex gap-2.5">
-                  <span className="text-lg">⚠️</span>
+                  <AlertTriangle className="w-5 h-5 text-brand-red shrink-0 mt-0.5" />
                   <div>
                     <p className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-0.5">Overdue Action Required</p>
                     <p className="text-xs text-brand-text font-bold leading-normal">

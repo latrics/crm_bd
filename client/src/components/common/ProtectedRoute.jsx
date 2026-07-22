@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { AlertTriangle } from 'lucide-react';
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const { isAuthenticated, user, loading, connectionError } = useAuth();
@@ -18,8 +19,8 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg px-6">
         <div className="max-w-md w-full bg-white border border-brand-border rounded-crm p-8 shadow-sm text-center">
-          <div className="w-16 h-16 bg-brand-redLight rounded-full flex items-center justify-center mx-auto mb-6 text-brand-red text-2xl font-bold">
-            ⚠️
+          <div className="w-16 h-16 bg-brand-redLight rounded-full flex items-center justify-center mx-auto mb-6 text-brand-red">
+            <AlertTriangle className="w-8 h-8 text-brand-red animate-bounce" />
           </div>
           <h2 className="font-serif text-2xl font-black text-brand-text mb-3">Backend Connection Error</h2>
           <p className="text-brand-silver text-sm mb-6 leading-relaxed">

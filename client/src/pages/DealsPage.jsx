@@ -11,7 +11,7 @@ import DocsPanel from '../components/docs/DocsPanel.jsx';
 import Confirm from '../components/common/Confirm.jsx';
 import { createDeal, updateDeal, deleteDeal, revertDeal } from '../api/dealsApi.js';
 import useToast from '../hooks/useToast.js';
-import { DEAL_STAGES, LEAD_STAGES, OWNERS, SECTORS, DEAL_COLORS } from '../constants/index.js';
+import { DEAL_STAGES, LEAD_STAGES, OWNERS, SECTORS, DEAL_COLORS, SOURCES, FLAT_SOURCES, BUSINESS_MODELS } from '../constants/index.js';
 
 export default function DealsPage() {
   const { state, dispatch } = useCRM();
@@ -50,9 +50,14 @@ export default function DealsPage() {
   const statusStats = DEAL_STAGES.map(stage => ({
     key: stage,
     label: stage.toUpperCase(),
-    count: state.deals.filter(d => d.stage === stage).length,
+    count: (state.deals || []).filter(d => d && d.stage === stage).length,
     color: DEAL_COLORS[stage] || '#8A8D8F'
   }));
+
+  const wonCount = (state.deals || []).filter(d => d && d.stage === 'Won').length;
+  const lostCount = (state.deals || []).filter(d => d && d.stage === 'Lost').length;
+  const closedCount = wonCount + lostCount;
+  const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 100) : 0;
 
   // ... (keep the export functions same) ...
   const handleExportCSV = () => {
@@ -94,7 +99,26 @@ export default function DealsPage() {
 
   const openNew = () => {
     setSelectedDeal(null);
-    setFormData({ title: '', company: '', contact: '', value: 0, stage: 'Negotiation', probability: 50, owner: '', sector: '', notes: '', close_date: '' });
+    setFormData({ 
+      title: '', 
+      company: '', 
+      contact: '', 
+      designation: '',
+      email: '',
+      phone: '',
+      city: '',
+      state: '',
+      value: 0, 
+      stage: 'Negotiation', 
+      probability: 50, 
+      close_date: '',
+      owner: '', 
+      source: '',
+      sector: '', 
+      businessModel: '',
+      businessModelDetail: '',
+      notes: '' 
+    });
     setErrors({});
     setModalOpen(true);
   };
@@ -250,19 +274,28 @@ export default function DealsPage() {
         subtitle="Pipeline stages • auto-saved"
       />
 
-      <div className="grid grid-cols-4 gap-0 border border-brand-border rounded-crm bg-white overflow-hidden mb-8 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         {statusStats.map((stat, i) => (
           <div 
             key={stat.label} 
             onClick={() => setActiveStageFilter(activeStageFilter === stat.key ? 'all' : stat.key)}
-            className={`p-6 text-center border-r border-brand-border last:border-0 cursor-pointer transition-colors ${activeStageFilter === stat.key ? 'bg-brand-redLight' : 'hover:bg-gray-50'}`}
+            className={`p-6 text-center border rounded-crm bg-white cursor-pointer shadow-sm transition-all hover:shadow-md ${activeStageFilter === stat.key ? 'ring-2 ring-brand-red bg-brand-redLight border-brand-red' : 'border-brand-border hover:bg-gray-50'}`}
           >
-            <div className="text-2xl font-serif font-black mb-1" style={{ color: i === 0 || i === 2 || i === 5 ? '#DA291C' : '#54585A' }}>
+            <div className="text-2xl font-serif font-black mb-1" style={{ color: stat.key === 'Won' ? '#DA291C' : '#54585A' }}>
               {stat.count}
             </div>
             <div className="text-[10px] font-bold text-brand-silver tracking-widest leading-tight uppercase">{stat.label}</div>
           </div>
         ))}
+        {/* Winning Percentile card */}
+        <div 
+          className="p-6 text-center border border-brand-border rounded-crm bg-white shadow-sm hover:shadow-md transition-all select-none"
+        >
+          <div className="text-2xl font-serif font-black mb-1 text-green-600">
+            {winRate}%
+          </div>
+          <div className="text-[10px] font-bold text-brand-silver tracking-widest leading-tight uppercase">Winning Percentile</div>
+        </div>
       </div>
 
       {/* VIEW TOGGLE & TOOLBAR SECTION */}
@@ -413,15 +446,48 @@ export default function DealsPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Deal Title" value={formData.title} onChange={e => handleChange('title', e.target.value)} required />
+            <Field label="Contact Person" value={formData.contact} onChange={e => handleChange('contact', e.target.value)} />
+            <Field label="Title / Designation" value={formData.designation} onChange={e => handleChange('designation', e.target.value)} />
             <Field label="Company" value={formData.company} onChange={e => handleChange('company', e.target.value)} />
-            <Field label="Contact" value={formData.contact} onChange={e => handleChange('contact', e.target.value)} />
+            <Field label="Email" value={formData.email} onChange={e => handleChange('email', e.target.value)} />
+            <Field label="Phone" value={formData.phone} onChange={e => handleChange('phone', e.target.value)} />
+            <Field label="City" value={formData.city} onChange={e => handleChange('city', e.target.value)} />
+            <Field label="State" value={formData.state} onChange={e => handleChange('state', e.target.value)} />
             <Field label="Value (Rs.)" type="number" value={formData.value} onChange={e => handleChange('value', e.target.value)} />
             <Field label="Probability %" type="number" value={formData.probability} onChange={e => handleChange('probability', e.target.value)} />
             <Field label="Stage" type="select" options={DEAL_STAGES} value={formData.stage} onChange={e => handleChange('stage', e.target.value)} />
             <Field label="Close Date" type="date" value={formData.close_date ? new Date(formData.close_date).toISOString().split('T')[0] : ''} onChange={e => handleChange('close_date', e.target.value)} />
             <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
+            <div className="flex flex-col gap-2">
+              <Field label="Deal Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.source) || !formData.source ? formData.source : 'Others'} onChange={e => handleChange('source', e.target.value)} />
+              {(formData.source === 'Others' || (formData.source && !FLAT_SOURCES.includes(formData.source))) && (
+                <Field label="Custom Source" value={formData.source === 'Others' ? '' : formData.source} onChange={e => handleChange('source', e.target.value)} placeholder="Type custom source..." />
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Field label="Sector / Industry" type="select" options={SECTORS} value={SECTORS.includes(formData.sector) || !formData.sector ? formData.sector : 'Others'} onChange={e => handleChange('sector', e.target.value)} />
+              {(formData.sector === 'Others' || (formData.sector && !SECTORS.includes(formData.sector))) && (
+                <Field label="Custom Sector" value={formData.sector === 'Others' ? '' : formData.sector} onChange={e => handleChange('sector', e.target.value)} placeholder="Type custom sector..." />
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Field label="Business Model" type="select" options={BUSINESS_MODELS} value={formData.businessModel || ''} onChange={e => handleChange('businessModel', e.target.value)} />
+              {formData.businessModel && (
+                <Field 
+                  label={
+                    formData.businessModel.toLowerCase().includes('joint') 
+                      ? 'Joint Ownership Details' 
+                      : formData.businessModel.toLowerCase().includes('drone') 
+                      ? 'Drone Sales Details' 
+                      : 'Service Project Details'
+                  } 
+                  value={formData.businessModelDetail || ''} 
+                  onChange={e => handleChange('businessModelDetail', e.target.value)} 
+                  placeholder={`Enter details for ${formData.businessModel}...`} 
+                />
+              )}
+            </div>
           </div>
-          <Field label="Sector" type="select" options={SECTORS} value={formData.sector} onChange={e => handleChange('sector', e.target.value)} />
           <Field label="Notes" type="textarea" value={formData.notes} onChange={e => handleChange('notes', e.target.value)} />
 
           <div className="flex justify-end gap-3 mt-6">

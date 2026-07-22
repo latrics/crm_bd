@@ -88,7 +88,7 @@ export default function DocsPanel({ entityId, entityType }) {
           {docs.map(doc => (
             <div key={doc._id} className="flex justify-between items-center p-3 border border-brand-border rounded-lg bg-white">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{fileIcon(doc.name)}</span>
+                <span className="flex items-center justify-center shrink-0">{fileIcon(doc.name, "w-6 h-6 text-brand-silver")}</span>
                 <div>
                   <a href={doc.data_url} download={doc.name} className="font-bold text-brand-text hover:text-brand-red transition-colors text-sm">{doc.name}</a>
                   <div className="text-[10px] text-brand-silver font-bold uppercase tracking-wider">{fmtBytes(doc.size)} • {doc.createdAt?.slice(0,10) || today()}</div>

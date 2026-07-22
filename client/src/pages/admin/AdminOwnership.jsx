@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import AdminStatCard from '../../components/admin/AdminStatCard.jsx';
 import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
+import { User, Briefcase, FileText } from 'lucide-react';
 
 export default function AdminOwnership() {
   const [selectedUser, setSelectedUser] = useState('');
   
   const stats = [
-    { label: 'Assigned Leads', value: 0, icon: '👤' },
-    { label: 'Assigned Deals', value: 0, icon: '💼' },
-    { label: 'Assigned Tenders', value: 0, icon: '📄' },
+    { label: 'Assigned Leads', value: 0, icon: <User className="w-5 h-5 text-indigo-500 shrink-0" /> },
+    { label: 'Assigned Deals', value: 0, icon: <Briefcase className="w-5 h-5 text-amber-500 shrink-0" /> },
+    { label: 'Assigned Tenders', value: 0, icon: <FileText className="w-5 h-5 text-blue-500 shrink-0" /> },
   ];
 
   const history = []; // Cleared reassignment history

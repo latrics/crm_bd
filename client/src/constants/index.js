@@ -15,11 +15,13 @@ export const SOURCES = [
 ];
 export const FLAT_SOURCES = ['Inbound', 'LinkedIn', 'Referral', 'Website', 'Cold Email', 'Events', 'Others'];
 export const OWNERS = ['Sivaram B', 'Sureka Suresh', 'Rajib Saikia'];
-export const SECTORS = ['Mining', 'Highway & Railways', 'Urban Development', 'Energy & Utilities', 'Water Resources', 'Emergency Services', 'DPR'];
+export const SECTORS = ['Mining', 'Highway & Railways', 'Urban Development', 'Energy & Utilities', 'Water Resources', 'Emergency Services', 'Others'];
+export const BUSINESS_MODELS = ['Joint ownership', 'Drone Sales', 'Service project'];
 export const DOC_TYPES = ['Quotation', 'Agreement', 'Purchase Order', 'Contract', 'Others'];
 export const T_STATUSES = ['New', 'Under Preparation', 'Submitted', 'Evaluation', 'Awarded', 'Won', 'Lost'];
 export const T_EMD = ['EMD Paid', 'EMD NA', 'EMD Exempted'];
 export const T_JV = ['JV', 'JV Not Allowed'];
+export const T_PORTALS = ['GeM', 'CPPP', 'State Portal', 'Railway Portal', 'MSTC', 'Defense', 'Others'];
 
 export const T_COLORS = {
   'New': '#8A8D8F', 'Under Preparation': '#54585A', 'Submitted': '#2563EB',

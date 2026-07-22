@@ -1,5 +1,5 @@
 import express from 'express';
-import { getTenders, createTender, updateTender, deleteTender } from '../controllers/tenderController.js';
+import { getTenders, createTender, updateTender, deleteTender, importTenders } from '../controllers/tenderController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { checkPermission } from '../middleware/rbacMiddleware.js';
 import { logActivity } from '../middleware/auditMiddleware.js';
@@ -7,6 +7,8 @@ import { logActivity } from '../middleware/auditMiddleware.js';
 const router = express.Router();
 
 router.use(protect);
+
+router.post('/import', checkPermission('tenders.create'), logActivity('Tenders', 'IMPORT'), importTenders);
 
 router.route('/')
   .get(checkPermission('tenders.view'), getTenders)

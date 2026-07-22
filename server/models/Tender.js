@@ -1,8 +1,12 @@
 import mongoose from 'mongoose';
 
 const tenderSchema = new mongoose.Schema({
-  tender_no:        { type: String, required: true, unique: true, trim: true },
-  authority:        { type: String, required: true, trim: true },
+  latrics_tender_id: { type: String, sparse: true, trim: true },
+  tender_id:         { type: String, trim: true },
+  tender_no:         { type: String, required: true, trim: true },
+  portal:            { type: String, trim: true },
+  doc_link:          { type: String, trim: true },
+  authority:         { type: String, required: true, trim: true },
   description:      String,
   location:         String,
   opening_date:     String,

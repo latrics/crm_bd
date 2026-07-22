@@ -144,10 +144,10 @@ export default function ReportBugWidget() {
                   onChange={(e) => setSeverity(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-[#fcfcfc] border border-brand-border rounded-crm text-sm font-medium text-brand-text focus:outline-none focus:border-brand-red transition-all cursor-pointer"
                 >
-                  <option value="low">🟢 Low (Minor UI issue, formatting, typos)</option>
-                  <option value="medium">🟡 Medium (Non-blocking bug, has workaround)</option>
-                  <option value="high">🟠 High (Major functional breakdown, blocked workflow)</option>
-                  <option value="critical">🔴 Critical (Data loss, system crash, security issue)</option>
+                  <option value="low">Low (Minor UI issue, formatting, typos)</option>
+                  <option value="medium">Medium (Non-blocking bug, has workaround)</option>
+                  <option value="high">High (Major functional breakdown, blocked workflow)</option>
+                  <option value="critical">Critical (Data loss, system crash, security issue)</option>
                 </select>
               </div>
 

@@ -39,12 +39,19 @@ export function CRMProvider({ children }) {
   const [state, dispatch] = useReducer(crmReducer, initialState);
 
   useEffect(() => {
-    async function loadAll() {
+    let isMounted = true;
+
+    async function loadAll(silent = false) {
+      if (!silent) {
+        dispatch({ type: 'SET_SYNCING', payload: true });
+      }
       try {
         const results = await Promise.allSettled([
           getLeads(), getDeals(), getDocs(), getTenders()
         ]);
         
+        if (!isMounted) return;
+
         const leadsData = results[0].status === 'fulfilled' ? results[0].value.data : [];
         const dealsData = results[1].status === 'fulfilled' ? results[1].value.data : [];
         const docsData = results[2].status === 'fulfilled' ? results[2].value.data : [];
@@ -58,10 +65,26 @@ export function CRMProvider({ children }) {
         }});
       } catch (err) {
         console.error("Failed to load initial data", err);
-        dispatch({ type: 'SET_ALL', payload: { leads: [], deals: [], docs: [], tenders: [] } });
+        if (!silent) {
+          dispatch({ type: 'SET_ALL', payload: { leads: [], deals: [], docs: [], tenders: [] } });
+        }
+      } finally {
+        if (isMounted) {
+          dispatch({ type: 'SET_SYNCING', payload: false });
+        }
       }
     }
+    
     loadAll();
+
+    const interval = setInterval(() => {
+      loadAll(true);
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return <CRMContext.Provider value={{ state, dispatch }}>{children}</CRMContext.Provider>;

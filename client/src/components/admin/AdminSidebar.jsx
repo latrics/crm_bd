@@ -1,13 +1,14 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Users, CheckSquare, FileText, Settings, RefreshCw, Shield } from 'lucide-react';
 
 const navItems = [
-  { id: 'overview', label: 'Overview', path: '/admin/overview', icon: '📊' },
-  { id: 'users', label: 'User Management', path: '/admin/users', icon: '👥' },
-  { id: 'approvals', label: 'Approval Center', path: '/admin/approvals', icon: '✅' },
-  { id: 'audit', label: 'Audit Logs', path: '/admin/audit-logs', icon: '📝' },
-  { id: 'master', label: 'Master Data Config', path: '/admin/master-data', icon: '⚙️' },
-  { id: 'ownership', label: 'Ownership & Reassign', path: '/admin/ownership', icon: '🔄' },
-  { id: 'roles', label: 'Roles & Permissions', path: '/admin/roles', icon: '🛡️' },
+  { id: 'overview', label: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
+  { id: 'users', label: 'User Management', path: '/admin/users', icon: Users },
+  { id: 'approvals', label: 'Approval Center', path: '/admin/approvals', icon: CheckSquare },
+  { id: 'audit', label: 'Audit Logs', path: '/admin/audit-logs', icon: FileText },
+  { id: 'master', label: 'Master Data Config', path: '/admin/master-data', icon: Settings },
+  { id: 'ownership', label: 'Ownership & Reassign', path: '/admin/ownership', icon: RefreshCw },
+  { id: 'roles', label: 'Roles & Permissions', path: '/admin/roles', icon: Shield },
 ];
 
 export default function AdminSidebar() {
@@ -28,8 +29,8 @@ export default function AdminSidebar() {
                   : 'text-brand-charcoal/80 hover:text-brand-charcoal hover:bg-gray-50 font-medium'
                 }`}
             >
-              <span className={`text-base transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-75'}`}>
-                {item.icon}
+              <span className={`transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-75'}`}>
+                <item.icon className="w-4.5 h-4.5 shrink-0" />
               </span>
               <span className="tracking-wide">{item.label}</span>
               {isActive && (

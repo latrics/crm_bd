@@ -12,7 +12,7 @@ import Confirm from '../components/common/Confirm.jsx';
 import ImportWizard from '../components/leads/ImportWizard.jsx';
 import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads } from '../api/leadsApi.js';
 import useToast from '../hooks/useToast.js';
-import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS } from '../constants/index.js';
+import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
 
 export default function LeadsPage() {
@@ -198,7 +198,7 @@ export default function LeadsPage() {
 
   const openNew = () => {
     setSelectedLead(null);
-    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadline: '' });
+    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', businessModel: '', businessModelDetail: '', bio: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadline: '' });
     setErrors({});
     setModalOpen(true);
   };
@@ -629,7 +629,29 @@ export default function LeadsPage() {
               )}
             </div>
             <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
-            <Field label="Industry" type="select" options={SECTORS} value={formData.industry} onChange={e => handleChange('industry', e.target.value)} />
+            <div className="flex flex-col gap-2">
+              <Field label="Industry" type="select" options={SECTORS} value={SECTORS.includes(formData.industry) || !formData.industry ? formData.industry : 'Others'} onChange={e => handleChange('industry', e.target.value)} />
+              {(formData.industry === 'Others' || (formData.industry && !SECTORS.includes(formData.industry))) && (
+                <Field label="Custom Industry" value={formData.industry === 'Others' ? '' : formData.industry} onChange={e => handleChange('industry', e.target.value)} placeholder="Type custom industry..." />
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Field label="Business Model" type="select" options={BUSINESS_MODELS} value={formData.businessModel || ''} onChange={e => handleChange('businessModel', e.target.value)} />
+              {formData.businessModel && (
+                <Field 
+                  label={
+                    formData.businessModel.toLowerCase().includes('joint') 
+                      ? 'Joint Ownership Details' 
+                      : formData.businessModel.toLowerCase().includes('drone') 
+                      ? 'Drone Sales Details' 
+                      : 'Service Project Details'
+                  } 
+                  value={formData.businessModelDetail || ''} 
+                  onChange={e => handleChange('businessModelDetail', e.target.value)} 
+                  placeholder={`Enter details for ${formData.businessModel}...`} 
+                />
+              )}
+            </div>
             <div className="flex flex-col gap-1">
               <Field 
                 label="Deadline" 
@@ -644,6 +666,7 @@ export default function LeadsPage() {
               )}
             </div>
           </div>
+          <Field label="Bio" type="textarea" value={formData.bio || ''} onChange={e => handleChange('bio', e.target.value)} placeholder="Input custom bio notes..." />
           <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} />
 
           <BANTSection lead={formData} onChange={handleChange} />

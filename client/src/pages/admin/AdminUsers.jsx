@@ -257,7 +257,7 @@ export default function AdminUsers() {
                 <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Reporting Manager</th>
                 <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Last Login</th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider text-right">Actions</th>
+                <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -282,7 +282,7 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border ${getRoleBadgeStyle(user.role)}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border whitespace-nowrap ${getRoleBadgeStyle(user.role)}`}>
                         {displayRole(user.role)}
                       </span>
                     </td>
@@ -313,58 +313,60 @@ export default function AdminUsers() {
                     <td className="px-6 py-4 text-xs text-brand-silver font-medium tracking-wide">
                       {user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '-'}
                     </td>
-                    <td className="px-6 py-4 text-right flex justify-end gap-2">
-                      {user.isInvite ? (
-                        <>
-                          <button 
-                            onClick={() => handleResendInvite(user._id)}
-                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
-                            title="Resend Invitation"
-                          >
-                            Resend
-                          </button>
-                          <button 
-                            onClick={() => handleRevokeInvite(user._id)}
-                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-red hover:bg-red-50/50 transition-all"
-                            title="Revoke Invitation"
-                          >
-                            Revoke
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button 
-                            onClick={() => {
-                              setFormError('');
-                              setEditForm({ id: user._id, name: user.name, email: user.email, role: user.role });
-                              setShowEditModal(true);
-                            }}
-                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleToggleActive(user)}
-                            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg transition-all ${
-                              user.isActive 
-                                ? 'text-brand-red hover:bg-red-50/50' 
-                                : 'text-green-600 hover:bg-green-50/50'
-                            }`}
-                          >
-                            {user.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setFormError('');
-                              setResetForm({ id: user._id, name: user.name, password: '', confirmPassword: '' });
-                              setShowResetModal(true);
-                            }}
-                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-silver hover:bg-gray-50 transition-all"
-                          >
-                            Reset Pwd
-                          </button>
-                        </>
-                      )}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {user.isInvite ? (
+                          <>
+                            <button 
+                              onClick={() => handleResendInvite(user._id)}
+                              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all whitespace-nowrap"
+                              title="Resend Invitation"
+                            >
+                              Resend
+                            </button>
+                            <button 
+                              onClick={() => handleRevokeInvite(user._id)}
+                              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-red hover:bg-red-50/50 transition-all whitespace-nowrap"
+                              title="Revoke Invitation"
+                            >
+                              Revoke
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => {
+                                setFormError('');
+                                setEditForm({ id: user._id, name: user.name, email: user.email, role: user.role });
+                                setShowEditModal(true);
+                              }}
+                              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all whitespace-nowrap"
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              onClick={() => handleToggleActive(user)}
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                                user.isActive 
+                                  ? 'text-brand-red hover:bg-red-50/50' 
+                                  : 'text-green-600 hover:bg-green-50/50'
+                              }`}
+                            >
+                              {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setFormError('');
+                                setResetForm({ id: user._id, name: user.name, password: '', confirmPassword: '' });
+                                setShowResetModal(true);
+                              }}
+                              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-silver hover:bg-gray-50 transition-all whitespace-nowrap"
+                            >
+                              Reset Pwd
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

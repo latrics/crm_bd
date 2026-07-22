@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
+import { Shield, Bell, Settings, Palette, Bug } from 'lucide-react';
 
 export default function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -88,7 +89,7 @@ export default function UserMenu() {
                 }} 
                 className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left"
               >
-                <span className="text-lg opacity-60">🛡️</span> Admin Dashboard
+                <Shield className="w-4 h-4 text-brand-text opacity-60 shrink-0" /> Admin Dashboard
               </button>
             )}
             <button 
@@ -98,13 +99,13 @@ export default function UserMenu() {
               }}
               className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left"
             >
-              <span className="text-lg opacity-60">🔔</span> Notifications
+              <Bell className="w-4 h-4 text-brand-text opacity-60 shrink-0" /> Notifications
             </button>
-            <button className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
-              <span className="text-lg opacity-60">⚙️</span> Settings
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left">
+              <Settings className="w-4 h-4 text-brand-text opacity-60 shrink-0" /> Settings
             </button>
-            <button className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors">
-              <span className="text-lg opacity-60">🎨</span> Theme Setup
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left">
+              <Palette className="w-4 h-4 text-brand-text opacity-60 shrink-0" /> Theme Setup
             </button>
             <button 
               onClick={() => {
@@ -113,7 +114,7 @@ export default function UserMenu() {
               }}
               className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-surfaceAlt rounded-lg transition-colors text-left border-none bg-transparent cursor-pointer"
             >
-              <span className="text-lg opacity-60">🪲</span> Report Bug
+              <Bug className="w-4 h-4 text-brand-text opacity-60 shrink-0" /> Report Bug
             </button>
           </div>
         </div>

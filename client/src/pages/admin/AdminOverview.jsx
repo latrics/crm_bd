@@ -5,6 +5,7 @@ import AdminStatCard from '../../components/admin/AdminStatCard.jsx';
 import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 import { getUsers, inviteUser, deleteUser, getAuditLogs, revokeInvite } from '../../api/adminApi.js';
 import { format, isToday, isYesterday } from 'date-fns';
+import { Users, CircleDot, Shield, ClipboardList, User, AlertTriangle } from 'lucide-react';
 
 export default function AdminOverview() {
   const { user, logout } = useAuth();
@@ -302,11 +303,11 @@ Building Better Tomorrow
   };
 
   const stats = [
-    { label: 'Total Users', value: members.length, icon: '👥' },
-    { label: 'Active Now', value: members.filter(m => isOnline(m)).length, icon: '🟢' },
-    { label: 'System Admins', value: members.filter(m => ['superadmin', 'admin'].includes(m.role?.toLowerCase())).length, icon: '🛡️' },
-    { label: 'Managers', value: members.filter(m => m.role?.toLowerCase() === 'manager').length, icon: '📋' },
-    { label: 'Members', value: members.filter(m => m.role?.toLowerCase() === 'member').length, icon: '👤' },
+    { label: 'Total Users', value: members.length, icon: <Users className="w-5 h-5 text-indigo-500 shrink-0" /> },
+    { label: 'Active Now', value: members.filter(m => isOnline(m)).length, icon: <CircleDot className="w-5 h-5 text-green-500 shrink-0" /> },
+    { label: 'System Admins', value: members.filter(m => ['superadmin', 'admin'].includes(m.role?.toLowerCase())).length, icon: <Shield className="w-5 h-5 text-red-500 shrink-0" /> },
+    { label: 'Managers', value: members.filter(m => m.role?.toLowerCase() === 'manager').length, icon: <ClipboardList className="w-5 h-5 text-amber-500 shrink-0" /> },
+    { label: 'Members', value: members.filter(m => m.role?.toLowerCase() === 'member').length, icon: <User className="w-5 h-5 text-blue-500 shrink-0" /> },
   ];
 
   // Filtering
@@ -453,7 +454,7 @@ Building Better Tomorrow
                       <th className="pb-3 font-semibold">ROLE</th>
                       <th className="pb-3 font-semibold">ACCESS</th>
                       <th className="pb-3 font-semibold">STATUS</th>
-                      <th className="pb-3 font-semibold text-right">ACTIONS</th>
+                      <th className="pb-3 font-semibold text-left">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -478,7 +479,7 @@ Building Better Tomorrow
                             </div>
                           </td>
                           <td className="py-3.5">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${getRoleBadgeStyle(member.role)}`}>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider whitespace-nowrap ${getRoleBadgeStyle(member.role)}`}>
                               {member.role === 'superadmin' ? 'SUPER ADMIN' : member.role?.toUpperCase()}
                             </span>
                           </td>
@@ -505,11 +506,11 @@ Building Better Tomorrow
                               </div>
                             )}
                           </td>
-                          <td className="py-3.5 text-right">
+                          <td className="py-3.5 text-left">
                             {member.role?.toLowerCase() !== 'superadmin' && (
                               <button 
                                 onClick={() => setUserToDelete(member)}
-                                className="text-red-500 hover:text-red-700 transition-colors p-1.5 text-xs font-bold hover:underline"
+                                className="text-red-500 hover:text-red-700 transition-colors p-1.5 text-xs font-bold hover:underline whitespace-nowrap"
                               >
                                 {member.isInvite ? 'Revoke' : (user && (user.id === member._id || user._id === member._id) ? 'Leave' : 'Remove')}
                               </button>
@@ -880,27 +881,27 @@ Building Better Tomorrow
                       <button
                         type="button"
                         onClick={() => setInviteRole('member')}
-                        className={`py-3 px-2 border rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all ${inviteRole === 'member' ? 'border-brand-red bg-red-50/30 text-brand-red' : 'border-gray-200 text-brand-charcoal hover:bg-gray-50'}`}
+                        className={`py-3 px-2 border rounded-xl text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${inviteRole === 'member' ? 'border-brand-red bg-red-50/30 text-brand-red' : 'border-gray-200 text-brand-charcoal hover:bg-gray-50'}`}
                       >
-                        <span className="text-base">👤</span>
+                        <User className="w-5 h-5 shrink-0" />
                         <span>Member</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setInviteRole('manager')}
-                        className={`py-3 px-2 border rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all ${inviteRole === 'manager' ? 'border-brand-red bg-red-50/30 text-brand-red' : 'border-gray-200 text-brand-charcoal hover:bg-gray-50'}`}
+                        className={`py-3 px-2 border rounded-xl text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${inviteRole === 'manager' ? 'border-brand-red bg-red-50/30 text-brand-red' : 'border-gray-200 text-brand-charcoal hover:bg-gray-50'}`}
                       >
-                        <span className="text-base">📋</span>
+                        <ClipboardList className="w-5 h-5 shrink-0" />
                         <span>Manager</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setInviteRole('admin')}
-                        className={`py-3 px-2 border rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all ${inviteRole === 'admin' ? 'border-brand-red bg-red-50/30 text-brand-red' : 'border-gray-200 text-brand-charcoal hover:bg-gray-50'}`}
+                        className={`py-3 px-2 border rounded-xl text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${inviteRole === 'admin' ? 'border-brand-red bg-red-50/30 text-brand-red' : 'border-gray-200 text-brand-charcoal hover:bg-gray-50'}`}
                       >
-                        <span className="text-base">🛡️</span>
+                        <Shield className="w-5 h-5 shrink-0" />
                         <span>Admin</span>
                       </button>
                     </div>
@@ -1027,8 +1028,8 @@ Building Better Tomorrow
       {userToDelete && (
         <div className="fixed inset-0 bg-brand-charcoal/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 text-center space-y-4">
-            <div className="w-12 h-12 bg-red-50 text-red-500 border border-red-100 rounded-full flex items-center justify-center text-xl mx-auto">
-              ⚠️
+            <div className="w-12 h-12 bg-red-50 text-red-500 border border-red-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-serif text-lg font-bold text-brand-charcoal">

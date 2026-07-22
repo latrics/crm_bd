@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { SignIn } from '@clerk/react';
 import loginBg from '../assets/images/signup_login_img.jpeg';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
   const { isAuthenticated, user, error, clearError } = useAuth();
@@ -14,66 +15,53 @@ export default function LoginPage() {
     if (clearError) {
       clearError();
     }
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/' && from !== '/login') {
-        navigate(from, { replace: true });
-      } else {
-        const isAdmin = ['superadmin', 'admin'].includes(user.role?.toLowerCase());
-        navigate(isAdmin ? '/admin/overview' : '/dashboard', { replace: true });
-      }
+    if (isAuthenticated) {
+      navigate('/dashboard');
     }
-  }, [isAuthenticated, user, navigate, location]);
+  }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen flex w-full bg-[#fcfcfc]">
-      {/* Left Pane - Image & Text */}
-      <div className="hidden lg:flex w-1/2 relative bg-gray-100 flex-col justify-center px-16 xl:px-24">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${loginBg})` }}
-        >
-          {/* Subtle overlay to ensure text readability */}
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]"></div>
+    <div className="min-h-screen flex font-sans">
+      {/* Left side: Artwork/Branding Panel (Hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-brand-charcoal relative text-white flex-col justify-between p-12 overflow-hidden select-none">
+        {/* Background Image Overlay with subtle opacity */}
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-10000 hover:scale-105" 
+          style={{ backgroundImage: `url(${loginBg})`, opacity: 0.15 }}
+        />
+        
+        {/* Top brand signature */}
+        <div className="z-10 font-serif text-2xl font-black tracking-wide">
+          LATRICS <span className="font-sans text-[10px] font-bold text-brand-silver tracking-normal ml-2">CRM SYSTEM</span>
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 max-w-lg">
-          <div className="flex items-center mb-16">
-            <span className="font-serif text-3xl font-black text-[#DA291C] tracking-wide">LATRICS</span>
-            <span className="font-sans text-sm font-bold text-gray-500 tracking-normal ml-2 mt-1">CRM</span>
-          </div>
-
-          <div className="w-12 h-0.5 bg-[#DA291C] mb-8"></div>
-
-          <h1 className="text-5xl xl:text-6xl font-bold text-gray-900 leading-tight mb-8 font-serif tracking-tight">
-            Manage.<br />Track.<br />Grow.
-          </h1>
-
-          <p className="text-lg text-gray-600 max-w-md font-medium leading-relaxed">
-            A simple and powerful CRM built for teams that want to achieve more.
+        {/* Dynamic call to action messaging */}
+        <div className="z-10 max-w-md mt-auto">
+          <h2 className="text-3xl font-serif font-black mb-4 uppercase tracking-tight leading-tight">Empowering Sales & Operations</h2>
+          <p className="text-sm font-medium text-brand-silver leading-relaxed">
+            Access secure CRM tools for managing pipelines, bulk lead reassignment, automated checklists, roles, and administrative data configuration.
           </p>
         </div>
 
-        <div className="absolute bottom-8 left-16 z-10 text-sm text-gray-500 font-medium">
-          Secure Enterprise Access
+        {/* Bottom corporate trademark */}
+        <div className="z-10 text-[9px] font-bold text-brand-silver uppercase tracking-widest mt-12">
+          © {new Date().getFullYear()} Latrics India Private Limited • All rights reserved
         </div>
       </div>
 
-      {/* Right Pane - Clerk SignIn */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 sm:p-12">
+      {/* Right side: Modern Clerk Login Component */}
+      <div className="w-full lg:w-1/2 bg-brand-bg flex flex-col items-center justify-center p-8 relative">
         {location.state?.message && (
-          <div className="max-w-md w-full mb-4 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm font-semibold text-center">
-            ✅ {location.state.message}
+          <div className="max-w-md w-full mb-4 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> {location.state.message}
           </div>
         )}
         {error && (
-          <div className="max-w-md w-full mb-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-semibold text-center">
-            ⚠️ {error}
+          <div className="max-w-md w-full mb-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
           </div>
         )}
         <SignIn routing="path" path="/login" fallbackRedirectUrl="/dashboard" signUpUrl="/accept-invite" />

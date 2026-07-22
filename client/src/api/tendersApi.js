@@ -23,6 +23,18 @@ export const createTender = async (data) => {
   }
 };
 
+export const importTenders = async (tendersArray) => {
+  try {
+    return await api.post('/tenders/import', { tenders: tendersArray });
+  } catch (err) {
+    const existing = getLocal('tenders');
+    const imported = tendersArray.map((t, idx) => ({ ...t, _id: 'local_t_imp_' + Date.now() + '_' + idx, createdAt: new Date().toISOString() }));
+    const updated = [...imported, ...existing];
+    setLocal('tenders', updated);
+    return { success: true, count: imported.length, data: imported };
+  }
+};
+
 export const updateTender = async (id, data) => {
   try {
     return await api.put(`/tenders/${id}`, data);

@@ -4,6 +4,7 @@ import { LEAD_STAGES, STG_COLORS } from '../../constants/index.js';
 import { bantScore, bantCat } from '../../utils/bantHelpers.js';
 import Badge from '../common/Badge.jsx';
 import DocsPanel from '../docs/DocsPanel.jsx';
+import { Clock } from 'lucide-react';
 
 export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, activeTab, search, activeStatusFilter, selectedLeads = [], onToggleSelect, onToggleSelectAll }) {
   const { state } = useCRM();
@@ -56,6 +57,14 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
   if (activeStatusFilter && activeStatusFilter !== 'all') {
     filteredLeads = (filteredLeads || []).filter(l => l && l.status === activeStatusFilter);
   }
+
+  // Always sort by leadId descending so latest lead ID (e.g. LED-000068) is at the top
+  filteredLeads.sort((a, b) => {
+    const numA = parseInt((a?.leadId || '').replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt((b?.leadId || '').replace(/\D/g, ''), 10) || 0;
+    if (numA !== numB) return numB - numA;
+    return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
+  });
 
   const toggleDocs = (id) => {
     setExpandedDocs(prev => ({ ...prev, [id]: !prev[id] }));
@@ -125,54 +134,63 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
               <div className="absolute top-0 left-0 w-full h-1 bg-brand-redLight border-b border-brand-red/20" />
             )}
             
-            <div className="p-4 sm:p-6 flex flex-col gap-4">
+            <div className="p-4 sm:p-6 flex flex-col gap-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                   {onToggleSelect && (
                     <input 
                       type="checkbox"
-                      className="w-4 h-4 cursor-pointer accent-brand-red mr-2"
+                      className="w-4 h-4 cursor-pointer accent-brand-red shrink-0"
                       checked={selectedLeads.includes(lead._id)}
                       onChange={() => onToggleSelect(lead._id)}
                     />
                   )}
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm bg-brand-surfaceAlt text-brand-text border border-brand-border">
-                    {(lead.decisionMaker || 'U').charAt(0)}{(lead.company || 'C').charAt(0)}
+                  
+                  {/* Lead ID Badge replacing Avatar Circle */}
+                  <div className="px-3 py-2 bg-brand-red/[0.03] border border-brand-red/10 rounded-xl flex flex-col items-center justify-center shrink-0 min-w-[90px] shadow-[inset_0_1px_2px_rgba(218,41,28,0.02)]">
+                    <span className="text-[8px] font-black text-brand-red/60 uppercase tracking-widest leading-none mb-1">Lead ID</span>
+                    <span className="text-xs font-mono font-black text-brand-red leading-none">{lead.leadId || 'N/A'}</span>
                   </div>
-                  <div>
-                    <h4 className="font-serif text-base font-bold text-brand-text leading-tight flex items-center">
-                      {lead.decisionMaker || 'Unnamed Lead'} {lead.leadId && <span className="bg-brand-surfaceAlt border border-brand-border text-brand-text px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ml-3">#{lead.leadId}</span>}
+
+                  <div className="min-w-0">
+                    <h4 className="font-serif text-lg font-bold text-brand-text leading-tight truncate">
+                      {lead.company || 'Unnamed Company'}
                     </h4>
-                    <p className="text-xs text-brand-silver font-bold tracking-wider mt-0.5">{lead.company}</p>
-                    <div className="text-[10px] text-brand-silver mt-1 flex items-center gap-2 flex-wrap">
+                    <div className="text-[10px] text-brand-silver font-bold mt-1.5 flex items-center gap-2 flex-wrap">
                       <span>Added: {formatDate(lead.createdAt)}</span>
                       {lead.deadline && lead.status === 'Leads' && (
                         <>
                           <span className="text-gray-300">•</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
                             new Date(lead.deadline) - new Date() <= 24 * 60 * 60 * 1000
-                              ? 'bg-brand-redLight text-brand-red'
+                              ? 'bg-brand-redLight text-brand-red animate-pulse'
                               : 'bg-amber-50 text-amber-600 border border-amber-200'
                           }`}>
-                            ⏰ {formatTimeLeft(lead.deadline)}
+                            <Clock className="w-3 h-3 shrink-0" /> {formatTimeLeft(lead.deadline)}
                           </span>
                         </>
                       )}
                     </div>
+                    {lead.bio && (
+                      <p className="text-xs text-brand-text font-normal mt-1.5 leading-relaxed">
+                        <span className="font-bold text-[10px] text-brand-silver uppercase tracking-wider mr-1">Bio:</span>
+                        <span className="text-gray-700">{lead.bio}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   {lead.owner && (
-                    <div className="flex items-center gap-2">
-                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-redLight">
-                          <span className="text-brand-red">{lead.owner.charAt(0)}</span>
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full py-1 pl-1 pr-3 shadow-sm">
+                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-red">
+                          <span>{lead.owner.charAt(0)}</span>
                        </div>
-                       <span className="text-xs text-brand-silver font-bold">{getShortName(lead.owner)}</span>
+                       <span className="text-xs text-brand-charcoal font-bold">{getShortName(lead.owner)}</span>
                     </div>
                   )}
                   
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex gap-2">
                     <button 
                       onClick={() => toggleDocs(lead._id)}
                       className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${expandedDocs[lead._id] ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt border border-brand-border text-brand-text hover:bg-brand-border'}`}
@@ -195,9 +213,23 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4">
+              {/* Lead Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Decision Maker</span>
+                  <span className="text-xs font-bold text-brand-text">{lead.decisionMaker || '--'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Industry</span>
+                  <span className="text-xs font-bold text-brand-text">{lead.industry || '--'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Business Model</span>
+                  <span className="text-xs font-bold text-brand-text">{lead.businessModel || '--'}</span>
+                </div>
+              </div>              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-4">
                  <div className="flex-1 mr-6">
-                    <div className="flex gap-1 h-1.5 rounded-full overflow-hidden w-full">
+                    <div className="flex gap-1 h-1.5 w-full">
                       {LEAD_STAGES.map((stage, idx) => (
                         <div 
                           key={stage}
@@ -211,8 +243,8 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                         />
                       ))}
                     </div>
-                    <div className="text-[10px] font-bold text-brand-silver mt-2 tracking-widest">
-                       Stage: <span className="text-brand-text font-black">{lead.status}</span>
+                    <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase">
+                       Stage: <span className="text-brand-red font-black">{lead.status}</span>
                     </div>
                  </div>
                  

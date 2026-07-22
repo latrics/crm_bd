@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Field from '../common/Field.jsx';
-import { T_STATUSES, T_EMD, T_JV } from '../../constants/index.js';
+import { T_STATUSES, T_EMD, T_JV, T_PORTALS } from '../../constants/index.js';
 import useCRM from '../../hooks/useCRM.js';
 import { createTender, updateTender } from '../../api/tendersApi.js';
 import useToast from '../../hooks/useToast.js';
@@ -10,7 +10,7 @@ export default function TenderForm({ initialData, onClose }) {
   const { addToast } = useToast();
   
   const [formData, setFormData] = useState({
-    tender_no: '', authority: '', description: '', location: '', opening_date: '', closing_date: '',
+    latrics_tender_id: '', tender_id: '', tender_no: '', portal: '', doc_link: '', authority: '', description: '', location: '', opening_date: '', closing_date: '',
     amount: '', emd: 'EMD Exempted', emd_amount: 0, jv: 'JV Not Allowed', jv_partner: '', status: 'New', notes: ''
   });
   const [error, setError] = useState('');
@@ -25,18 +25,18 @@ export default function TenderForm({ initialData, onClose }) {
     e.preventDefault();
     setError('');
     
-    if (!initialData || initialData.tender_no !== formData.tender_no) {
-      const exists = state.tenders.find(t => t.tender_no === formData.tender_no);
-      if (exists) return setError('Tender Number must be unique.');
-    }
-
     try {
+      const payload = { ...formData };
+      if (!payload.tender_no || !payload.tender_no.trim()) {
+        payload.tender_no = payload.tender_id || payload.latrics_tender_id || 'TND-UNNAMED';
+      }
+
       if (initialData?._id) {
-        const res = await updateTender(initialData._id, formData);
+        const res = await updateTender(initialData._id, payload);
         dispatch({ type: 'UPDATE_TENDER', payload: res.data });
         addToast({ type: 'success', message: 'Tender updated' });
       } else {
-        const res = await createTender(formData);
+        const res = await createTender(payload);
         dispatch({ type: 'ADD_TENDER', payload: res.data });
         addToast({ type: 'success', message: 'Tender created' });
       }
@@ -51,9 +51,46 @@ export default function TenderForm({ initialData, onClose }) {
       {error && <div className="text-brand-red text-sm bg-brand-redLight p-2 rounded mb-2">{error}</div>}
       
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Tender No" value={formData.tender_no} onChange={e => handleChange('tender_no', e.target.value)} required />
-        <Field label="Authority" value={formData.authority} onChange={e => handleChange('authority', e.target.value)} required />
+        <Field 
+          label="Latrics Tender ID" 
+          value={formData.latrics_tender_id || ''} 
+          onChange={e => handleChange('latrics_tender_id', e.target.value)} 
+          placeholder="Auto-generated if left blank (e.g. LTR-TND-000001)"
+        />
+        <Field 
+          label="Tender ID" 
+          value={formData.tender_id || ''} 
+          onChange={e => handleChange('tender_id', e.target.value)} 
+          placeholder="Portal / Government Tender ID"
+        />
       </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Authority" value={formData.authority} onChange={e => handleChange('authority', e.target.value)} required />
+        <Field 
+          label="Portal" 
+          type="select" 
+          options={T_PORTALS} 
+          value={T_PORTALS.includes(formData.portal) || !formData.portal ? formData.portal : 'Others'} 
+          onChange={e => handleChange('portal', e.target.value)} 
+        />
+      </div>
+
+      {formData.portal === 'Others' && (
+        <Field 
+          label="Custom Portal Name" 
+          value={formData.portal === 'Others' ? '' : formData.portal} 
+          onChange={e => handleChange('portal', e.target.value)} 
+          placeholder="Type portal name..." 
+        />
+      )}
+
+      <Field 
+        label="Doc Link (URL for Tender Docs)" 
+        value={formData.doc_link || ''} 
+        onChange={e => handleChange('doc_link', e.target.value)} 
+        placeholder="https://drive.google.com/... or document link"
+      />
 
       <Field label="Description" value={formData.description} onChange={e => handleChange('description', e.target.value)} />
 

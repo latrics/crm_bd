@@ -10,7 +10,10 @@ const leadSchema = new mongoose.Schema({
   value:        { type: Number, default: 0 },
   outbound:     { type: String }, // Removed enum to support custom 'Others' sources
   owner:        { type: String },
-  industry:     { type: String, enum: ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','DPR'] },
+  industry:     { type: String, enum: ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','Others'] },
+  businessModel: { type: String },
+  businessModelDetail: { type: String },
+  bio:          String,
   remarks:      String,
   city:         String,
   state:        String,

@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { createNotification } from './notificationController.js';
 
 export const getLeads = asyncHandler(async (req, res) => {
-  const leads = await Lead.find().sort({ createdAt: -1 });
+  const leads = await Lead.find().sort({ leadId: -1, createdAt: -1 });
   res.json({ success: true, data: leads });
 });
 
@@ -82,11 +82,16 @@ export const updateLead = asyncHandler(async (req, res) => {
         title: `${lead.decisionMaker || 'Lead'} - ${lead.company}`,
         company: lead.company,
         contact: lead.decisionMaker,
+        designation: lead.designation,
         email: lead.email,
         phone: lead.phone,
+        city: lead.city,
+        state: lead.state,
         sector: lead.industry,
         source: lead.outbound,
-        notes: lead.remarks,
+        businessModel: lead.businessModel,
+        businessModelDetail: lead.businessModelDetail,
+        notes: [lead.bio ? `Bio: ${lead.bio}` : '', lead.remarks ? `Remarks: ${lead.remarks}` : ''].filter(Boolean).join('\n\n'),
         owner: lead.owner,
         value: lead.value,
         probability: 50,
@@ -184,10 +189,15 @@ export const convertLead = asyncHandler(async (req, res) => {
       title: `${lead.decisionMaker || 'Lead'} - ${lead.company}`,
       company: lead.company,
       contact: lead.decisionMaker,
+      designation: lead.designation,
       email: lead.email,
       phone: lead.phone,
+      city: lead.city,
+      state: lead.state,
       sector: lead.industry,
       source: lead.outbound,
+      businessModel: lead.businessModel,
+      businessModelDetail: lead.businessModelDetail,
       notes: lead.remarks,
       owner: lead.owner,
       value: lead.value,

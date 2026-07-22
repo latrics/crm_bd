@@ -162,7 +162,7 @@ export default function AdminApprovals() {
                   <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Description</th>
                   <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-brand-silver uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -199,19 +199,21 @@ export default function AdminApprovals() {
                         {req.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right flex justify-end gap-2">
-                      {req.status === 'Pending' ? (
-                        <>
-                          <button onClick={() => handleUpdateStatus(req._id, 'Approved')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100/50 hover:bg-green-100/80 transition-colors cursor-pointer">
-                            Approve
-                          </button>
-                          <button onClick={() => handleUpdateStatus(req._id, 'Rejected')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-brand-red/30 text-brand-red hover:bg-red-50 transition-colors cursor-pointer">
-                            Reject
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-xs font-semibold text-brand-silver/60 uppercase tracking-wider">{req.status}</span>
-                      )}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {req.status === 'Pending' ? (
+                          <>
+                            <button onClick={() => handleUpdateStatus(req._id, 'Approved')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100/50 hover:bg-green-100/80 transition-colors cursor-pointer whitespace-nowrap">
+                              Approve
+                            </button>
+                            <button onClick={() => handleUpdateStatus(req._id, 'Rejected')} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-brand-red/30 text-brand-red hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap">
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs font-semibold text-brand-silver/60 uppercase tracking-wider whitespace-nowrap">{req.status}</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

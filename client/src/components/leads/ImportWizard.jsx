@@ -12,11 +12,14 @@ const CRM_FIELDS = [
   { key: 'email', label: 'Email', required: true, aliases: ['email', 'email id', 'email address'] },
   { key: 'phone', label: 'Phone', aliases: ['phone', 'phone number', 'contact number', 'mobile'] },
   { key: 'value', label: 'Value (Rs.)', aliases: ['value', 'revenue', 'amount'] },
+  { key: 'bio', label: 'Bio / Notes', aliases: ['bio', 'bio notes', 'about'] },
   { key: 'remarks', label: 'Remarks', aliases: ['remarks', 'notes'] },
   { key: 'city', label: 'City', aliases: ['city', 'location'] },
   { key: 'state', label: 'State', aliases: ['state', 'region'] },
   { key: 'designation', label: 'Title / Designation', aliases: ['title', 'designation', 'job title'] },
   { key: 'outbound', label: 'Lead Source', aliases: ['lead source', 'source', 'outbound'] },
+  { key: 'businessModel', label: 'Business Model', aliases: ['business model', 'model', 'business_model'] },
+  { key: 'businessModelDetail', label: 'Business Model Detail', aliases: ['business model detail', 'model detail', 'business_model_detail'] },
 ];
 
 export default function ImportWizard({ isOpen, onClose }) {

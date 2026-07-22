@@ -52,7 +52,7 @@ export default function UserManagement() {
                 <th className="px-6 py-5 text-[10px] font-black text-brand-silver uppercase tracking-widest">Role</th>
                 <th className="px-6 py-5 text-[10px] font-black text-brand-silver uppercase tracking-widest">Status</th>
                 <th className="px-6 py-5 text-[10px] font-black text-brand-silver uppercase tracking-widest">Last Login</th>
-                <th className="px-6 py-5 text-[10px] font-black text-brand-silver uppercase tracking-widest text-right">Actions</th>
+                <th className="px-6 py-5 text-[10px] font-black text-brand-silver uppercase tracking-widest text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border">
@@ -63,12 +63,12 @@ export default function UserManagement() {
                     <div className="text-xs text-brand-silver font-medium">{user.email}</div>
                   </td>
                   <td className="px-6 py-5">
-                    <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-tight ${
+                    <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-tight whitespace-nowrap ${
                       ['super_admin', 'superadmin'].includes(user.role) ? 'bg-purple-100 text-purple-700' :
                       user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
                       user.role === 'manager' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {user.role}
+                      {user.role === 'superadmin' || user.role === 'super_admin' ? 'Super Admin' : user.role}
                     </span>
                   </td>
                   <td className="px-6 py-5">
@@ -80,18 +80,20 @@ export default function UserManagement() {
                   <td className="px-6 py-5 text-xs text-brand-silver font-bold uppercase tracking-tighter">
                     {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                   </td>
-                  <td className="px-6 py-5 text-right">
-                    <button 
-                      onClick={() => toggleStatus(user)}
-                      className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all ${
-                        user.isActive ? 'text-brand-red hover:bg-red-50' : 'text-brand-green hover:bg-green-50'
-                      }`}
-                    >
-                      {user.isActive ? 'Suspend' : 'Activate'}
-                    </button>
-                    <button className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-brand-silver hover:bg-brand-surfaceAlt ml-2">
-                      Edit
-                    </button>
+                  <td className="px-6 py-5 text-left">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => toggleStatus(user)}
+                        className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                          user.isActive ? 'text-brand-red hover:bg-red-50' : 'text-brand-green hover:bg-green-50'
+                        }`}
+                      >
+                        {user.isActive ? 'Suspend' : 'Activate'}
+                      </button>
+                      <button className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-brand-silver hover:bg-brand-surfaceAlt whitespace-nowrap">
+                        Edit
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

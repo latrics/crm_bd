@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useCRM from '../../hooks/useCRM.js';
 import { DEAL_STAGES, DEAL_COLORS } from '../../constants/index.js';
 import DocsPanel from '../docs/DocsPanel.jsx';
+import { Clock } from 'lucide-react';
 
 export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, onStageUpdate, search, activeStageFilter, selectedDeals = [], onToggleSelect, onToggleSelectAll }) {
   const { state } = useCRM();
@@ -93,56 +94,57 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
               <div className="absolute top-0 left-0 w-full h-1 bg-green-100 border-b border-green-500/20" />
             )}
             
-            <div className="p-4 sm:p-6 flex flex-col gap-4">
+            <div className="p-4 sm:p-6 flex flex-col gap-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                   {onToggleSelect && (
                     <input 
                       type="checkbox"
-                      className="w-4 h-4 cursor-pointer accent-brand-red mr-2"
+                      className="w-4 h-4 cursor-pointer accent-brand-red shrink-0"
                       checked={selectedDeals.includes(deal._id)}
                       onChange={() => onToggleSelect(deal._id)}
                     />
                   )}
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm bg-brand-surfaceAlt text-brand-text border border-brand-border">
-                    {(deal.title || 'D').charAt(0)}{(deal.company || 'C').charAt(0)}
+                  
+                  {/* Deal ID Badge replacing Avatar Circle */}
+                  <div className="px-3 py-2 bg-brand-red/[0.03] border border-brand-red/10 rounded-xl flex flex-col items-center justify-center shrink-0 min-w-[90px] shadow-[inset_0_1px_2px_rgba(218,41,28,0.02)]">
+                    <span className="text-[8px] font-black text-brand-red/60 uppercase tracking-widest leading-none mb-1">Deal ID</span>
+                    <span className="text-xs font-mono font-black text-brand-red leading-none">{deal.dealId || 'N/A'}</span>
                   </div>
-                  <div>
-                    <h4 className="font-serif text-base font-bold text-brand-text leading-tight flex items-center">
-                      {deal.title || 'Unnamed Deal'} {deal.dealId && <span className="bg-brand-surfaceAlt border border-brand-border text-brand-text px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ml-3">#{deal.dealId}</span>}
+
+                  <div className="min-w-0">
+                    <h4 className="font-serif text-lg font-bold text-brand-text leading-tight truncate">
+                      {deal.title || 'Unnamed Deal'}
                     </h4>
-                    <p className="text-xs text-brand-silver font-bold tracking-wider mt-0.5">{deal.company} {deal.contact ? `• ${deal.contact}` : ''}</p>
-                    <div className="text-[10px] text-brand-silver mt-1 flex items-center gap-2 flex-wrap">
+                    <div className="text-[10px] text-brand-silver font-bold mt-1.5 flex items-center gap-2 flex-wrap">
                       <span>Added: {formatDate(deal.createdAt)}</span>
                       {deal.close_date && (
                         <>
                           <span className="text-gray-300">•</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
                             new Date(deal.close_date) - new Date() <= 24 * 60 * 60 * 1000
-                              ? 'bg-brand-redLight text-brand-red'
+                              ? 'bg-brand-redLight text-brand-red animate-pulse'
                               : 'bg-amber-50 text-amber-600 border border-amber-200'
                           }`}>
-                            🎯 {formatTimeLeft(deal.close_date)}
+                            <Clock className="w-3 h-3 shrink-0" /> {formatTimeLeft(deal.close_date)}
                           </span>
                         </>
                       )}
-                      <span className="text-gray-300">•</span>
-                      <span className="font-bold text-green-600">₹{deal.value?.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   {deal.owner && (
-                    <div className="flex items-center gap-2">
-                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-redLight">
-                          <span className="text-brand-red">{deal.owner.charAt(0)}</span>
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full py-1 pl-1 pr-3 shadow-sm">
+                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-red">
+                          <span>{deal.owner.charAt(0)}</span>
                        </div>
-                       <span className="text-xs text-brand-silver font-bold">{getShortName(deal.owner)}</span>
+                       <span className="text-xs text-brand-charcoal font-bold">{getShortName(deal.owner)}</span>
                     </div>
                   )}
                   
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex gap-2">
                     <button 
                       onClick={() => toggleDocs(deal._id)}
                       className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${expandedDocs[deal._id] ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt border border-brand-border text-brand-text hover:bg-brand-border'}`}
@@ -171,9 +173,29 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4">
+              {/* Deal Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Company</span>
+                  <span className="text-xs font-bold text-brand-text truncate block">{deal.company || '--'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Contact</span>
+                  <span className="text-xs font-bold text-brand-text truncate block">{deal.contact ? `${deal.contact}${deal.designation ? ` (${deal.designation})` : ''}` : '--'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Location / Sector</span>
+                  <span className="text-xs font-bold text-brand-text truncate block">{[deal.city || deal.state, deal.sector].filter(Boolean).join(' • ') || '--'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Deal Value</span>
+                  <span className="text-xs font-bold text-green-600">₹{deal.value?.toLocaleString() || '0'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-4">
                  <div className="flex-1 mr-6">
-                    <div className="flex gap-1 h-1.5 rounded-full overflow-hidden w-full">
+                    <div className="flex gap-1 h-1.5 w-full">
                       {DEAL_STAGES.map((stage, idx) => (
                         <div 
                           key={stage}
@@ -187,8 +209,8 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
                         />
                       ))}
                     </div>
-                    <div className="text-[10px] font-bold text-brand-silver mt-2 tracking-widest flex items-center justify-between w-full">
-                       <span>Stage: <span className="text-brand-text font-black">{deal.stage}</span></span>
+                    <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase flex items-center justify-between w-full">
+                       <span>Stage: <span className="text-brand-red font-black">{deal.stage}</span></span>
                        <span>Probability: <span className="text-brand-text font-black">{deal.probability || 0}%</span></span>
                     </div>
                  </div>
