@@ -189,7 +189,7 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
                 </div>
                 <div>
                   <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Deal Value</span>
-                  <span className="text-xs font-bold text-green-600">₹{deal.value?.toLocaleString() || '0'}</span>
+                  <span className="text-xs font-bold text-green-600">₹{deal.value ? Number(deal.value).toLocaleString('en-IN') : '0'}</span>
                 </div>
               </div>
 

@@ -55,7 +55,7 @@ export default function TenderForm({ initialData, onClose }) {
           label="Latrics Tender ID" 
           value={formData.latrics_tender_id || ''} 
           onChange={e => handleChange('latrics_tender_id', e.target.value)} 
-          placeholder="Auto-generated if left blank (e.g. LTR-TND-000001)"
+          placeholder="Leave blank if unassigned or input manually"
         />
         <Field 
           label="Tender ID" 

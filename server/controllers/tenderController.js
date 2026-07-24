@@ -4,19 +4,77 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApprovalRequest from '../models/ApprovalRequest.js';
 import { createNotification } from './notificationController.js';
 
+const parseExcelDate = (val) => {
+  if (!val) return '';
+  if (val instanceof Date) {
+    try {
+      return val.toISOString().slice(0, 10);
+    } catch (_) {
+      return '';
+    }
+  }
+  if (typeof val === 'number' || (!isNaN(val) && !isNaN(parseFloat(val)))) {
+    const serial = parseFloat(val);
+    if (serial > 30000 && serial < 60000) {
+      try {
+        const date = new Date((serial - 25569) * 86400 * 1000);
+        return date.toISOString().slice(0, 10);
+      } catch (_) {
+        return '';
+      }
+    }
+  }
+  const str = String(val).trim();
+  if (!str) return '';
+
+  // Try parsing standard Date string
+  const parsedDate = new Date(str);
+  if (!isNaN(parsedDate.getTime())) {
+    try {
+      return parsedDate.toISOString().slice(0, 10);
+    } catch (_) {}
+  }
+
+  // Try parsing DD-MM-YYYY or DD/MM/YYYY
+  const parts = str.split(/[-/]/);
+  if (parts.length === 3) {
+    const d = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const y = parseInt(parts[2], 10);
+    if (y > 1000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      try {
+        const dateObj = new Date(y, m - 1, d);
+        return dateObj.toISOString().slice(0, 10);
+      } catch (_) {}
+    }
+    if (parts[0].length === 4) { // YYYY-MM-DD
+      const y2 = parseInt(parts[0], 10);
+      const m2 = parseInt(parts[1], 10);
+      const d2 = parseInt(parts[2], 10);
+      try {
+        const dateObj = new Date(y2, m2 - 1, d2);
+        return dateObj.toISOString().slice(0, 10);
+      } catch (_) {}
+    }
+  }
+  return str;
+};
+
 export const getTenders = asyncHandler(async (req, res) => {
   const tenders = await Tender.find().sort({ createdAt: -1 });
   res.json({ success: true, data: tenders });
 });
 
 export const createTender = asyncHandler(async (req, res) => {
-  if (!req.body.latrics_tender_id || !req.body.latrics_tender_id.trim()) {
-    const counter = await Counter.findByIdAndUpdate(
-      { _id: 'latricsTenderId' },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-    req.body.latrics_tender_id = `LTR-TND-${String(counter.seq).padStart(6, '0')}`;
+  if (req.body.latrics_tender_id) {
+    req.body.latrics_tender_id = req.body.latrics_tender_id.trim();
+  }
+
+  if (req.body.opening_date) {
+    req.body.opening_date = parseExcelDate(req.body.opening_date);
+  }
+  if (req.body.closing_date) {
+    req.body.closing_date = parseExcelDate(req.body.closing_date);
   }
 
   if (!req.body.tender_no || !req.body.tender_no.trim()) {
@@ -44,14 +102,16 @@ export const importTenders = asyncHandler(async (req, res) => {
     try {
       const tenderData = { ...rawTender };
 
+      if (tenderData.opening_date) {
+        tenderData.opening_date = parseExcelDate(tenderData.opening_date);
+      }
+      if (tenderData.closing_date) {
+        tenderData.closing_date = parseExcelDate(tenderData.closing_date);
+      }
+
       // 1. Latrics Tender ID Sequence
-      if (!tenderData.latrics_tender_id || !tenderData.latrics_tender_id.trim()) {
-        const counter = await Counter.findByIdAndUpdate(
-          { _id: 'latricsTenderId' },
-          { $inc: { seq: 1 } },
-          { new: true, upsert: true }
-        );
-        tenderData.latrics_tender_id = `LTR-TND-${String(counter.seq).padStart(6, '0')}`;
+      if (tenderData.latrics_tender_id) {
+        tenderData.latrics_tender_id = tenderData.latrics_tender_id.trim();
       }
 
       // 2. Tender Number
@@ -89,17 +149,35 @@ export const importTenders = asyncHandler(async (req, res) => {
 
       // 5. EMD Status normalization
       let rawEmd = String(tenderData.emd || '').trim().toLowerCase();
-      if (!rawEmd) {
+      let rawEmdClean = rawEmd.replace(/,/g, '');
+
+      const isNumeric = (str) => {
+        return str !== '' && !isNaN(str) && !isNaN(parseFloat(str)) && isFinite(str);
+      };
+
+      if (!rawEmd || rawEmd === '0' || rawEmd.includes('exempt')) {
         tenderData.emd = 'EMD Exempted';
-      } else if (rawEmd.includes('paid') || rawEmd === 'yes') {
-        tenderData.emd = 'EMD Paid';
-      } else if (rawEmd.includes('na') || rawEmd.includes('not')) {
+        tenderData.emd_amount = 0;
+      } else if (rawEmd === 'na' || rawEmd === 'n/a' || rawEmd.includes('not applicable')) {
         tenderData.emd = 'EMD NA';
-      } else if (rawEmd.includes('exempt')) {
-        tenderData.emd = 'EMD Exempted';
+        tenderData.emd_amount = 0;
+      } else if (isNumeric(rawEmdClean)) {
+        tenderData.emd = 'EMD Paid';
+        tenderData.emd_amount = parseFloat(rawEmdClean);
       } else {
-        const matched = validEmd.find(e => e.toLowerCase() === rawEmd);
-        tenderData.emd = matched || 'EMD Exempted';
+        const numMatch = rawEmdClean.match(/\d+(\.\d+)?/);
+        if (numMatch) {
+          tenderData.emd = 'EMD Paid';
+          tenderData.emd_amount = parseFloat(numMatch[0]);
+        } else if (rawEmd.includes('paid') || rawEmd === 'yes' || rawEmd === 'y') {
+          tenderData.emd = 'EMD Paid';
+        } else if (rawEmd.includes('na') || rawEmd.includes('not')) {
+          tenderData.emd = 'EMD NA';
+          tenderData.emd_amount = 0;
+        } else {
+          tenderData.emd = 'EMD Exempted';
+          tenderData.emd_amount = 0;
+        }
       }
 
       // 6. JV Status normalization
@@ -123,11 +201,11 @@ export const importTenders = asyncHandler(async (req, res) => {
         tenderData.amount = 0;
       }
 
-      if (tenderData.emd_amount !== undefined && tenderData.emd_amount !== null) {
+      if (tenderData.emd_amount === undefined || tenderData.emd_amount === null) {
+        tenderData.emd_amount = 0;
+      } else {
         const parsedEmdAmount = Number(String(tenderData.emd_amount).replace(/[^0-9.]/g, ''));
         tenderData.emd_amount = isNaN(parsedEmdAmount) ? 0 : parsedEmdAmount;
-      } else {
-        tenderData.emd_amount = 0;
       }
 
       // 8. Create tender in MongoDB

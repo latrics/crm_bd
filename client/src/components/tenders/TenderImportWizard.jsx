@@ -9,15 +9,14 @@ const TENDER_FIELDS = [
   { key: 'latrics_tender_id', label: 'Latrics Tender ID', aliases: ['latrics tender id', 'latrics id', 'latrics_id', 'ltr id'] },
   { key: 'tender_id', label: 'Tender ID', aliases: ['tender id', 'tender_id', 'tender no', 'tender_no', 'govt tender id'] },
   { key: 'portal', label: 'Portal', aliases: ['portal', 'website', 'source portal', 'portal name'] },
-  { key: 'doc_link', label: 'Doc Link', aliases: ['doc link', 'doc_link', 'document link', 'docs url', 'url', 'link'] },
+  { key: 'doc_link', label: 'Doc Link', aliases: ['doc link', 'doc_link', 'document link', 'docs url', 'url', 'link', 'tender doc link (drive)'] },
   { key: 'authority', label: 'Authority', required: true, aliases: ['authority', 'organization', 'dept', 'department', 'client'] },
-  { key: 'description', label: 'Description', aliases: ['description', 'title', 'subject', 'work description'] },
+  { key: 'description', label: 'Description', aliases: ['description', 'title', 'subject', 'work description', 'tender name'] },
   { key: 'location', label: 'Location', aliases: ['location', 'place', 'city', 'state'] },
-  { key: 'amount', label: 'Amount (Rs.)', aliases: ['amount', 'tender value', 'value', 'cost'] },
-  { key: 'opening_date', label: 'Opening Date', aliases: ['opening date', 'start date', 'publish date', 'opening_date'] },
+  { key: 'amount', label: 'Amount (Rs.)', aliases: ['amount', 'tender value', 'value', 'cost', 'estimated cost'] },
+  { key: 'opening_date', label: 'Opening Date', aliases: ['opening date', 'start date', 'publish date', 'opening_date', 'date identified'] },
   { key: 'closing_date', label: 'Closing Date', aliases: ['closing date', 'due date', 'end date', 'closing_date'] },
   { key: 'emd', label: 'EMD Status', aliases: ['emd', 'emd status'] },
-  { key: 'emd_amount', label: 'EMD Amount', aliases: ['emd amount', 'emd_amount'] },
   { key: 'jv', label: 'JV Status', aliases: ['jv', 'jv status', 'joint venture'] },
   { key: 'jv_partner', label: 'JV Partner', aliases: ['jv partner', 'partner'] },
   { key: 'status', label: 'Status', aliases: ['status', 'stage'] },
@@ -403,7 +402,7 @@ export default function TenderImportWizard({ isOpen, onClose }) {
                   <tbody className="divide-y divide-gray-100 text-brand-text bg-white">
                     {previewData.valid.slice(0, 5).map((row, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
-                        <td className="p-2.5 font-mono font-bold text-brand-red">{row.latrics_tender_id || '(Auto-gen)'}</td>
+                        <td className="p-2.5 font-mono font-bold text-brand-red">{row.latrics_tender_id || '(Blank)'}</td>
                         <td className="p-2.5 font-bold">{row.tender_id || row.tender_no || '--'}</td>
                         <td className="p-2.5">{row.portal || '--'}</td>
                         <td className="p-2.5 font-medium">{row.authority}</td>

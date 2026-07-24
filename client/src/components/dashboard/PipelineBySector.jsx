@@ -1,6 +1,9 @@
 import { SECTORS } from '../../constants/index.js';
 
 export default function PipelineBySector({ leads = [], deals = [] }) {
+  const standardSectors = SECTORS.filter(s => s !== 'Others');
+  const normalize = (str) => (str || '').trim().toLowerCase();
+
   return (
     <div className="bg-white border border-brand-border rounded-crm p-5 shadow-sm">
       <div className="flex justify-between items-end mb-4">
@@ -16,8 +19,24 @@ export default function PipelineBySector({ leads = [], deals = [] }) {
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {SECTORS.map(sector => {
-          const leadsCount = leads.filter(l => l.industry === sector).length;
-          const dealsCount = deals.filter(d => d.sector === sector).length;
+          const leadsCount = leads.filter(l => {
+            if (!l) return false;
+            const ind = normalize(l.industry);
+            if (sector === 'Others') {
+              return !ind || !standardSectors.map(normalize).includes(ind);
+            }
+            return ind === normalize(sector);
+          }).length;
+
+          const dealsCount = deals.filter(d => {
+            if (!d) return false;
+            const sec = normalize(d.sector);
+            if (sector === 'Others') {
+              return !sec || !standardSectors.map(normalize).includes(sec);
+            }
+            return sec === normalize(sector);
+          }).length;
+
           return (
             <div key={sector} className="flex-1 min-w-[120px] bg-brand-surfaceAlt border border-brand-border rounded p-3 flex flex-col items-center justify-center">
               <div className="flex items-center gap-3 mb-2 font-serif text-xl font-black">

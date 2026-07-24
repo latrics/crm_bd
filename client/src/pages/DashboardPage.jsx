@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const wonDeals = deals.filter(d => d && d.stage === 'Won');
   const pipelineValue = deals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
   const wonValue = wonDeals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
-  const weightedValue = deals.reduce((acc, curr) => acc + ((curr?.value || 0) * (curr?.probability || 0) / 100), 0);
+  const leadsValue = leads.reduce((acc, curr) => acc + (curr?.value || 0), 0);
   const convertedLeads = leads.filter(l => l && l.status === 'Converted').length;
   const activeLeads = leads.filter(l => l && l.status !== 'Converted').length;
 
@@ -48,10 +48,9 @@ export default function DashboardPage() {
 
   const bottomKpis = [
     { label: 'Leads Added', value: leads.length, sub: 'total in range', icon: 'bg-brand-silver' },
+    { label: 'Weighted Forecast', value: fmt(leadsValue), sub: 'total lead value', icon: 'bg-brand-silver' },
     { label: 'Pipeline Value', value: fmt(pipelineValue), sub: `${deals.length} active deals`, icon: 'bg-brand-silver' },
-    { label: 'Weighted Forecast', value: fmt(weightedValue), sub: 'probability-adjusted', icon: 'bg-brand-silver' },
-    { label: 'Won Revenue', value: fmt(wonValue), sub: `${wonDeals.length} deals closed`, icon: 'bg-brand-red', highlight: true },
-    { label: 'Converted Leads', value: convertedLeads, sub: 'leads → deals', icon: 'bg-brand-red' },
+    { label: 'Won Revenue', value: fmt(wonValue), sub: `${wonDeals.length} deals won`, icon: 'bg-brand-red', highlight: true },
     { label: 'Total Documents', value: (state.docs || []).length, sub: 'all time', icon: 'bg-brand-silver' },
   ];
 
@@ -348,6 +347,9 @@ export default function DashboardPage() {
                   }
                 },
                 plugins: {
+                  legend: {
+                    display: false
+                  },
                   tooltip: {
                     callbacks: {
                       title: (items) => items[0].label.split(' (')[0],
@@ -480,12 +482,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {bottomKpis.map((kpi, i) => (
-            <div key={i} className={`bg-white border rounded-crm p-5 shadow-sm flex flex-col justify-between min-h-[120px] ${kpi.highlight ? 'border-brand-red/20' : 'border-brand-border'}`}>
-              <div className="flex mb-4">
-                <div className={`w-3 h-1 rounded-full ${kpi.icon}`}></div>
-              </div>
+            <div key={i} className={`bg-white border rounded-crm p-5 shadow-sm flex flex-col justify-center min-h-[110px] ${kpi.highlight ? 'border-brand-red/20' : 'border-brand-border'}`}>
               <div>
                 <div className={`font-serif text-xl font-black mb-1 ${kpi.highlight ? 'text-brand-red' : 'text-brand-text'}`}>
                   {kpi.value || '0'}

@@ -5,6 +5,7 @@ import { bantScore, bantCat } from '../../utils/bantHelpers.js';
 import Badge from '../common/Badge.jsx';
 import DocsPanel from '../docs/DocsPanel.jsx';
 import { Clock } from 'lucide-react';
+import { fmt } from '../../utils/formatters.js';
 
 export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, activeTab, search, activeStatusFilter, selectedLeads = [], onToggleSelect, onToggleSelectAll }) {
   const { state } = useCRM();
@@ -214,7 +215,7 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
               </div>
 
               {/* Lead Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
                 <div>
                   <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Decision Maker</span>
                   <span className="text-xs font-bold text-brand-text">{lead.decisionMaker || '--'}</span>
@@ -226,6 +227,10 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                 <div>
                   <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Business Model</span>
                   <span className="text-xs font-bold text-brand-text">{lead.businessModel || '--'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Lead Value</span>
+                  <span className="text-xs font-bold text-brand-text">{fmt(lead.value)}</span>
                 </div>
               </div>              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-4">
                  <div className="flex-1 mr-6">

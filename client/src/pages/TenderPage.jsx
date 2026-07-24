@@ -31,7 +31,7 @@ export default function TenderPage() {
   const [selectedTenders, setSelectedTenders] = useState([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
-  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', portal: '', jv: '', emd: '', location: '' });
+  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', portal: '', jv: '', emd: '', emd_amount: '', location: '' });
 
   const dropdownRef = useRef(null);
 
@@ -190,7 +190,14 @@ export default function TenderPage() {
       if (bulkUpdateData.status) finalData.status = bulkUpdateData.status;
       if (bulkUpdateData.portal) finalData.portal = bulkUpdateData.portal;
       if (bulkUpdateData.jv) finalData.jv = bulkUpdateData.jv;
-      if (bulkUpdateData.emd) finalData.emd = bulkUpdateData.emd;
+      if (bulkUpdateData.emd) {
+        finalData.emd = bulkUpdateData.emd;
+        if (bulkUpdateData.emd === 'EMD Paid') {
+          finalData.emd_amount = Number(bulkUpdateData.emd_amount) || 0;
+        } else {
+          finalData.emd_amount = 0;
+        }
+      }
       if (bulkUpdateData.location) finalData.location = bulkUpdateData.location;
 
       if (Object.keys(finalData).length === 0) {
@@ -212,7 +219,7 @@ export default function TenderPage() {
       addToast({ type: 'success', message: `${selectedTenders.length} tenders updated` });
       setSelectedTenders([]);
       setBulkUpdateModalOpen(false);
-      setBulkUpdateData({ status: '', portal: '', jv: '', emd: '', location: '' });
+      setBulkUpdateData({ status: '', portal: '', jv: '', emd: '', emd_amount: '', location: '' });
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Error updating tenders' });
     }
@@ -481,8 +488,17 @@ export default function TenderPage() {
             type="select" 
             options={T_EMD} 
             value={bulkUpdateData.emd} 
-            onChange={e => setBulkUpdateData({ ...bulkUpdateData, emd: e.target.value })} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, emd: e.target.value, emd_amount: e.target.value === 'EMD Paid' ? '' : 0 })} 
           />
+          {bulkUpdateData.emd === 'EMD Paid' && (
+            <Field 
+              label="EMD Amount" 
+              type="number"
+              value={bulkUpdateData.emd_amount} 
+              onChange={e => setBulkUpdateData({ ...bulkUpdateData, emd_amount: e.target.value })} 
+              placeholder="Enter EMD Amount..."
+            />
+          )}
           <Field 
             label="Location" 
             value={bulkUpdateData.location} 
