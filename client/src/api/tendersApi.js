@@ -56,3 +56,29 @@ export const deleteTender = async (id) => {
     return { success: true };
   }
 };
+
+export const deleteMultipleTenders = async (ids) => {
+  try {
+    return await api.post('/tenders/bulk-delete', { ids });
+  } catch (err) {
+    let tenders = getLocal('tenders');
+    tenders = tenders.filter(t => !ids.includes(t._id));
+    setLocal('tenders', tenders);
+    return { success: true };
+  }
+};
+
+export const updateMultipleTenders = async (ids, updateData) => {
+  try {
+    return await api.post('/tenders/bulk-update', { ids, updateData });
+  } catch (err) {
+    let tenders = getLocal('tenders');
+    tenders = tenders.map(t => ids.includes(t._id) ? { ...t, ...updateData } : t);
+    setLocal('tenders', tenders);
+    return { success: true, data: tenders.filter(t => ids.includes(t._id)) };
+  }
+};
+
+export const resetTenderCounter = async () => {
+  return await api.post('/tenders/reset-counter');
+};

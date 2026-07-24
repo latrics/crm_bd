@@ -134,6 +134,7 @@ export const deleteLead = asyncHandler(async (req, res) => {
     await ApprovalRequest.create({
       type: 'Delete',
       raisedBy: req.user.name || req.user.email,
+      recordModel: 'Lead',
       recordId: lead._id,
       recordName: lead.company || lead.leadId,
       description: `Requested deletion of lead ${lead.company}`
@@ -161,6 +162,7 @@ export const deleteMultipleLeads = asyncHandler(async (req, res) => {
     const requests = leads.map(lead => ({
       type: 'Delete',
       raisedBy: req.user.name || req.user.email,
+      recordModel: 'Lead',
       recordId: lead._id,
       recordName: lead.company || lead.leadId,
       description: `Bulk deletion request for lead ${lead.company}`

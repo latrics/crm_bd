@@ -1,5 +1,6 @@
 import ApprovalRequest from '../models/ApprovalRequest.js';
 import Lead from '../models/Lead.js';
+import Tender from '../models/Tender.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { createNotification } from './notificationController.js';
 
@@ -16,10 +17,26 @@ export const updateApproval = asyncHandler(async (req, res) => {
   if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
 
   if (status === 'Approved' && request.type === 'Delete') {
-    // Actually delete the lead
-    const lead = await Lead.findByIdAndDelete(request.recordId);
-    if (lead) {
-      await createNotification({ message: `Lead deleted by admin approval: ${lead.company}`, type: 'warning', recipientUser: lead.owner, relatedId: lead._id });
+    if (request.recordModel === 'Tender') {
+      const tender = await Tender.findByIdAndDelete(request.recordId);
+      if (tender) {
+        await createNotification({
+          message: `Tender deleted by admin approval: ${tender.tender_no || tender.latrics_tender_id}`,
+          type: 'warning',
+          recipientRoles: ['Super Admin', 'Admin']
+        });
+      }
+    } else {
+      // Default to Lead deletion
+      const lead = await Lead.findByIdAndDelete(request.recordId);
+      if (lead) {
+        await createNotification({
+          message: `Lead deleted by admin approval: ${lead.company}`,
+          type: 'warning',
+          recipientUser: lead.owner,
+          relatedId: lead._id
+        });
+      }
     }
   }
 
@@ -31,3 +48,4 @@ export const updateApproval = asyncHandler(async (req, res) => {
 
   res.json({ success: true, data: request });
 });
+

@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import useCRM from '../hooks/useCRM.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import PageHeader from '../components/layout/PageHeader.jsx';
 import TenderView from '../components/tenders/TenderView.jsx';
 import TenderForm from '../components/tenders/TenderForm.jsx';
 import TenderImportWizard from '../components/tenders/TenderImportWizard.jsx';
 import Modal from '../components/common/Modal.jsx';
 import Confirm from '../components/common/Confirm.jsx';
-import { deleteTender } from '../api/tendersApi.js';
+import Field from '../components/common/Field.jsx';
+import { deleteTender, deleteMultipleTenders, updateMultipleTenders, resetTenderCounter } from '../api/tendersApi.js';
 import useToast from '../hooks/useToast.js';
-import { T_STATUSES } from '../constants/index.js';
+import { T_STATUSES, T_EMD, T_JV } from '../constants/index.js';
 
 export default function TenderPage() {
   const { state, dispatch } = useCRM();
+  const { user } = useAuth();
   const { addToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
@@ -23,6 +26,12 @@ export default function TenderPage() {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  // Bulk Operations State
+  const [selectedTenders, setSelectedTenders] = useState([]);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
+  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', portal: '', jv: '', emd: '', location: '' });
 
   const dropdownRef = useRef(null);
 
@@ -130,14 +139,94 @@ export default function TenderPage() {
 
   const handleDelete = async () => {
     try {
-      await deleteTender(selectedTender._id);
-      dispatch({ type: 'DELETE_TENDER', payload: selectedTender._id });
-      addToast({ type: 'success', message: 'Tender deleted' });
+      const res = await deleteTender(selectedTender._id);
+      if (res?.isPending) {
+        addToast({ type: 'warning', message: res.message });
+      } else {
+        dispatch({ type: 'DELETE_TENDER', payload: selectedTender._id });
+        addToast({ type: 'success', message: 'Tender deleted' });
+      }
       setModalOpen(false);
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Error deleting tender' });
     }
     setDeleteConfirm(false);
+  };
+
+  // Bulk operation handlers
+  const handleToggleSelect = (id) => {
+    setSelectedTenders(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAll = (ids) => {
+    if (ids.every(id => selectedTenders.includes(id))) {
+      setSelectedTenders(prev => prev.filter(x => !ids.includes(x)));
+    } else {
+      setSelectedTenders(prev => [...new Set([...prev, ...ids])]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const res = await deleteMultipleTenders(selectedTenders);
+      if (res?.isPending) {
+        addToast({ type: 'warning', message: res.message });
+      } else {
+        selectedTenders.forEach(id => dispatch({ type: 'DELETE_TENDER', payload: id }));
+        addToast({ type: 'success', message: `${selectedTenders.length} tenders deleted` });
+      }
+      setSelectedTenders([]);
+      setBulkDeleteConfirm(false);
+    } catch (err) {
+      addToast({ type: 'error', message: err.message || 'Error deleting tenders' });
+    }
+  };
+
+  const handleBulkUpdateSubmit = async () => {
+    try {
+      const finalData = {};
+      if (bulkUpdateData.status) finalData.status = bulkUpdateData.status;
+      if (bulkUpdateData.portal) finalData.portal = bulkUpdateData.portal;
+      if (bulkUpdateData.jv) finalData.jv = bulkUpdateData.jv;
+      if (bulkUpdateData.emd) finalData.emd = bulkUpdateData.emd;
+      if (bulkUpdateData.location) finalData.location = bulkUpdateData.location;
+
+      if (Object.keys(finalData).length === 0) {
+        addToast({ type: 'error', message: 'No fields selected to update' });
+        return;
+      }
+
+      const res = await updateMultipleTenders(selectedTenders, finalData);
+      if (res.data && Array.isArray(res.data)) {
+        res.data.forEach(updatedTender => {
+          dispatch({ type: 'UPDATE_TENDER', payload: updatedTender });
+        });
+      } else {
+        selectedTenders.forEach(id => {
+          const tender = state.tenders.find(t => t._id === id);
+          if (tender) dispatch({ type: 'UPDATE_TENDER', payload: { ...tender, ...finalData } });
+        });
+      }
+      addToast({ type: 'success', message: `${selectedTenders.length} tenders updated` });
+      setSelectedTenders([]);
+      setBulkUpdateModalOpen(false);
+      setBulkUpdateData({ status: '', portal: '', jv: '', emd: '', location: '' });
+    } catch (err) {
+      addToast({ type: 'error', message: err.message || 'Error updating tenders' });
+    }
+  };
+
+  const handleResetCounter = async () => {
+    if (window.confirm("Are you sure you want to reset the Tender ID sequence back to 1? Only do this if you have deleted all existing tenders.")) {
+      try {
+        await resetTenderCounter();
+        addToast({ type: 'success', message: 'Tender ID sequence reset to 1 successfully' });
+      } catch (err) {
+        addToast({ type: 'error', message: err.message || 'Error resetting sequence' });
+      }
+    }
   };
 
   return (
@@ -239,6 +328,15 @@ export default function TenderPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              <button 
+                onClick={handleResetCounter} 
+                className="text-brand-silver hover:text-brand-text p-2 transition-colors" 
+                title="Reset Tender ID Sequence to 1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              </button>
+            )}
             <button onClick={() => setImportWizardOpen(true)} className="px-5 py-2.5 bg-white border border-brand-border text-brand-text font-bold text-sm rounded-xl hover:bg-gray-50 transition-all shadow-sm">
               Import
             </button>
@@ -275,13 +373,44 @@ export default function TenderPage() {
         </div>
       </div>
 
+      {/* Floating Bulk Actions Bar */}
+      {selectedTenders.length > 0 && (
+        <div className="bg-brand-surfaceAlt border border-brand-border p-4 rounded-crm shadow-sm mb-8 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-brand-text">
+              {selectedTenders.length} {selectedTenders.length === 1 ? 'tender' : 'tenders'} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setBulkUpdateModalOpen(true)}
+              className="px-4 py-2 bg-white border border-brand-border text-brand-text font-bold text-xs rounded-lg hover:bg-gray-50 shadow-xs"
+            >
+              Bulk Update
+            </button>
+            {user?.role !== 'member' && (
+              <button 
+                onClick={() => setBulkDeleteConfirm(true)}
+                className="px-4 py-2 bg-brand-red text-white font-bold text-xs rounded-lg hover:bg-red-700 shadow-xs"
+              >
+                Bulk Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <TenderView 
         onTenderClick={openEdit} 
         search={search} 
         selectedLocation={selectedLocation} 
-        activeStatusFilter={activeStatusFilter} 
+        activeStatusFilter={activeStatusFilter}
+        selectedTenders={selectedTenders}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
       />
 
+      {/* Tender Edit/Add Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-serif font-bold text-brand-text">{selectedTender ? 'Edit Tender' : 'Add Tender'}</h2>
@@ -292,13 +421,14 @@ export default function TenderPage() {
           onClose={() => setModalOpen(false)} 
         />
         
-        {selectedTender && (
+        {selectedTender && user?.role !== 'member' && (
           <div className="flex justify-end mt-4 pt-4 border-t border-brand-border">
              <button type="button" onClick={() => setDeleteConfirm(true)} className="text-brand-red font-bold text-xs hover:underline">Delete Tender</button>
           </div>
         )}
       </Modal>
 
+      {/* Delete Single Tender Confirmation */}
       <Confirm 
         isOpen={deleteConfirm} 
         onClose={() => setDeleteConfirm(false)} 
@@ -306,6 +436,66 @@ export default function TenderPage() {
         title="Delete Tender" 
         message="Are you sure you want to delete this tender? This action cannot be undone." 
       />
+
+      {/* Bulk Delete Confirmation */}
+      <Confirm 
+        isOpen={bulkDeleteConfirm} 
+        onClose={() => setBulkDeleteConfirm(false)} 
+        onConfirm={handleBulkDelete}
+        title={user?.role === 'manager' ? `Request Deletion for ${selectedTenders.length} Tenders` : `Delete ${selectedTenders.length} Tenders`}
+        message={user?.role === 'manager'
+          ? `Are you sure you want to request deletion for ${selectedTenders.length} selected tenders? These deletion requests will be reviewed by admin and acted upon based on admin or super admin's judgement.`
+          : `Are you sure you want to delete ${selectedTenders.length} selected tenders? This action cannot be undone.`}
+      />
+
+      {/* Bulk Update Modal */}
+      <Modal isOpen={bulkUpdateModalOpen} onClose={() => setBulkUpdateModalOpen(false)}>
+        <div className="mb-6">
+          <h2 className="text-xl font-serif font-bold text-brand-text">Bulk Update {selectedTenders.length} Tenders</h2>
+          <p className="text-sm text-brand-silver mt-1">Select the fields you want to apply to all selected tenders.</p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Field 
+            label="Status" 
+            type="select" 
+            options={T_STATUSES} 
+            value={bulkUpdateData.status} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, status: e.target.value })} 
+          />
+          <Field 
+            label="Portal" 
+            value={bulkUpdateData.portal} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, portal: e.target.value })} 
+            placeholder="Type portal name..."
+          />
+          <Field 
+            label="JV Status" 
+            type="select" 
+            options={T_JV} 
+            value={bulkUpdateData.jv} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, jv: e.target.value })} 
+          />
+          <Field 
+            label="EMD Status" 
+            type="select" 
+            options={T_EMD} 
+            value={bulkUpdateData.emd} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, emd: e.target.value })} 
+          />
+          <Field 
+            label="Location" 
+            value={bulkUpdateData.location} 
+            onChange={e => setBulkUpdateData({ ...bulkUpdateData, location: e.target.value })} 
+            placeholder="Type location..."
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 mt-8">
+          <button onClick={() => setBulkUpdateModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2 hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleBulkUpdateSubmit} className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Apply Changes</button>
+        </div>
+      </Modal>
 
       <TenderImportWizard isOpen={importWizardOpen} onClose={() => setImportWizardOpen(false)} />
     </div>

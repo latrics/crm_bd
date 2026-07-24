@@ -1,12 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useCRM from '../../hooks/useCRM.js';
 import { fmt, today } from '../../utils/formatters.js';
 import { daysBetween } from '../../utils/dateHelpers.js';
 import Badge from '../common/Badge.jsx';
 import { T_COLORS } from '../../constants/index.js';
 
-export default function TenderView({ onTenderClick, search = '', selectedLocation = 'all', activeStatusFilter = 'all' }) {
+export default function TenderView({ 
+  onTenderClick, 
+  search = '', 
+  selectedLocation = 'all', 
+  activeStatusFilter = 'all',
+  selectedTenders = [],
+  onToggleSelect,
+  onToggleSelectAll
+}) {
   const { state } = useCRM();
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedLocation, activeStatusFilter, search]);
 
   let filteredTenders = state.tenders || [];
 
@@ -49,59 +63,92 @@ export default function TenderView({ onTenderClick, search = '', selectedLocatio
     }
   }
 
+  const totalTenders = filteredTenders.length;
+  const totalPages = Math.max(1, Math.ceil(totalTenders / pageSize));
+  
+  const isStatewise = selectedLocation === 'statewise';
+  const paginatedTenders = isStatewise 
+    ? filteredTenders 
+    : filteredTenders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const renderTable = (tendersList) => (
-    <div className="rounded-xl overflow-hidden border border-brand-border bg-white shadow-sm overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[1400px]">
-        <thead className="bg-brand-surfaceAlt text-[10px] font-bold uppercase tracking-wide text-brand-silver border-b border-brand-border">
+    <div className="rounded-2xl overflow-hidden border border-brand-border bg-white shadow-sm overflow-x-auto">
+      <table className="w-full text-left border-collapse min-w-[1700px]">
+        <thead className="bg-brand-surfaceAlt text-[9px] font-black uppercase tracking-widest text-brand-silver border-b border-brand-border">
           <tr>
-            <th className="p-4 font-bold whitespace-nowrap">LATRICS ID -</th>
-            <th className="p-4 font-bold whitespace-nowrap">TENDER ID -</th>
-            <th className="p-4 font-bold whitespace-nowrap">PORTAL -</th>
-            <th className="p-4 font-bold whitespace-nowrap">DOCS -</th>
-            <th className="p-4 font-bold whitespace-nowrap">AUTHORITY -</th>
-            <th className="p-4 font-bold whitespace-nowrap">DESCRIPTION -</th>
-            <th className="p-4 font-bold whitespace-nowrap">LOCATION -</th>
-            <th className="p-4 font-bold whitespace-nowrap">OPENING -</th>
-            <th className="p-4 font-bold whitespace-nowrap">CLOSING -</th>
-            <th className="p-4 font-bold whitespace-nowrap">AMOUNT -</th>
-            <th className="p-4 font-bold whitespace-nowrap">EMD -</th>
-            <th className="p-4 font-bold whitespace-nowrap">JV -</th>
-            <th className="p-4 font-bold whitespace-nowrap">STATUS -</th>
-            <th className="p-4 font-bold whitespace-nowrap text-right">ACTIONS</th>
+            {onToggleSelectAll && (
+              <th className="py-4 px-5 w-12 text-center">
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 cursor-pointer accent-brand-red rounded focus:ring-brand-red align-middle"
+                  checked={tendersList.length > 0 && tendersList.every(t => selectedTenders.includes(t._id))}
+                  onChange={() => onToggleSelectAll(tendersList.map(t => t._id))}
+                />
+              </th>
+            )}
+            <th className="py-4 px-5 whitespace-nowrap">LATRICS ID</th>
+            <th className="py-4 px-5 whitespace-nowrap">TENDER ID</th>
+            <th className="py-4 px-5 whitespace-nowrap">PORTAL</th>
+            <th className="py-4 px-5 whitespace-nowrap">DOCS</th>
+            <th className="py-4 px-5 whitespace-nowrap">AUTHORITY</th>
+            <th className="py-4 px-5 whitespace-nowrap">DESCRIPTION</th>
+            <th className="py-4 px-5 whitespace-nowrap">LOCATION</th>
+            <th className="py-4 px-5 whitespace-nowrap">OPENING DATE</th>
+            <th className="py-4 px-5 whitespace-nowrap">CLOSING DATE</th>
+            <th className="py-4 px-5 whitespace-nowrap">AMOUNT</th>
+            <th className="py-4 px-5 whitespace-nowrap">EMD STATUS</th>
+            <th className="py-4 px-5 whitespace-nowrap">EMD AMOUNT</th>
+            <th className="py-4 px-5 whitespace-nowrap">JV STATUS</th>
+            <th className="py-4 px-5 whitespace-nowrap">JV PARTNER</th>
+            <th className="py-4 px-5 whitespace-nowrap">STATUS</th>
+            <th className="py-4 px-5 text-right whitespace-nowrap">ACTIONS</th>
           </tr>
         </thead>
-        <tbody className="text-sm text-brand-text">
+        <tbody className="text-xs text-brand-text">
           {tendersList.map(t => {
             const daysLeft = daysBetween(today(), t.closing_date);
             const isExpiring = daysLeft >= 0 && daysLeft <= 7;
+            const isSelected = selectedTenders.includes(t._id);
             
             return (
               <tr 
                 key={t._id} 
                 onClick={() => onTenderClick && onTenderClick(t)}
-                className="border-b border-brand-border last:border-0 hover:bg-brand-red/5 cursor-pointer transition-colors"
+                className={`border-b border-brand-border/60 last:border-0 hover:bg-brand-red/[0.02] cursor-pointer transition-colors ${isSelected ? 'bg-brand-red/[0.015]' : ''}`}
               >
-                <td className="p-4">
-                  <span className="text-xs font-mono font-bold text-brand-red bg-brand-red/[0.05] border border-brand-red/10 px-2 py-1 rounded-md">
+                {onToggleSelect && (
+                  <td className="py-5 px-5 text-center" onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 cursor-pointer accent-brand-red rounded focus:ring-brand-red align-middle"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(t._id)}
+                    />
+                  </td>
+                )}
+                <td className="py-5 px-5 whitespace-nowrap">
+                  <span className="text-[10px] font-mono font-bold text-brand-red bg-brand-red/[0.04] border border-brand-red/10 px-2.5 py-1 rounded-md shadow-xs">
                     {t.latrics_tender_id || 'N/A'}
                   </span>
                 </td>
-                <td className="p-4 font-bold text-xs">{t.tender_id || t.tender_no || '--'}</td>
-                <td className="p-4 text-xs font-bold text-brand-text">
+                <td className="py-5 px-5 font-bold text-brand-text text-[11px] whitespace-nowrap">
+                  {t.tender_id || t.tender_no || '--'}
+                </td>
+                <td className="py-5 px-5 max-w-[200px] truncate" title={t.portal}>
                   {t.portal ? (
-                    <span className="px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-full text-[10px] uppercase font-bold text-gray-700">
+                    <span className="px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-full text-[9px] uppercase font-bold text-gray-700">
                       {t.portal}
                     </span>
                   ) : '--'}
                 </td>
-                <td className="p-4">
+                <td className="py-5 px-5 whitespace-nowrap">
                   {t.doc_link ? (
                     <a
                       href={t.doc_link.startsWith('http') ? t.doc_link : `https://${t.doc_link}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-red hover:text-red-700 hover:underline bg-brand-redLight/40 px-2.5 py-1 rounded-lg border border-brand-red/20 transition-all shadow-xs"
+                      className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-brand-red hover:text-red-700 bg-brand-redLight/40 px-2.5 py-1 rounded border border-brand-red/20 transition-all"
                     >
                       Docs ↗
                     </a>
@@ -109,37 +156,67 @@ export default function TenderView({ onTenderClick, search = '', selectedLocatio
                     <span className="text-xs text-brand-silver">--</span>
                   )}
                 </td>
-                <td className="p-4 max-w-[150px] truncate">{t.authority}</td>
-                <td className="p-4 max-w-[200px] truncate text-xs text-brand-silver">{t.description || '--'}</td>
-                <td className="p-4 text-xs">{t.location || '--'}</td>
-                <td className="p-4 text-xs">{t.opening_date || '--'}</td>
-                <td className="p-4">
-                  <span className={`text-xs ${isExpiring ? 'text-amber-600 font-bold' : ''}`}>
+                <td className="py-5 px-5 max-w-[180px] truncate font-bold text-brand-text text-[11px]" title={t.authority}>
+                  {t.authority}
+                </td>
+                <td className="py-5 px-5 max-w-[220px]">
+                  <div className="text-[11px] text-brand-silver line-clamp-2 leading-relaxed" title={t.description}>
+                    {t.description || '--'}
+                  </div>
+                </td>
+                <td className="py-5 px-5 whitespace-nowrap">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-brand-text">
+                    <svg className="w-3.5 h-3.5 text-brand-silver shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>{t.location || '--'}</span>
+                  </div>
+                </td>
+                <td className="py-5 px-5 whitespace-nowrap text-[11px] text-brand-text">
+                  {t.opening_date || '--'}
+                </td>
+                <td className="py-5 px-5 whitespace-nowrap text-[11px]">
+                  <span className={`px-1 py-0.5 rounded ${isExpiring ? 'text-brand-red bg-brand-redLight/40 font-bold' : 'text-brand-text bg-gray-50 font-medium'}`}>
                     {t.closing_date || '--'}
-                    {isExpiring && <span className="ml-2 font-black">!</span>}
                   </span>
                 </td>
-                <td className="p-4 font-bold">{fmt(t.amount)}</td>
-                <td className="p-4 text-xs text-brand-silver">
-                  <div>{t.emd}</div>
-                  {t.emd_amount > 0 && <div className="font-bold text-brand-text">{fmt(t.emd_amount)}</div>}
+                <td className="py-5 px-5 whitespace-nowrap">
+                  <span className="font-serif font-black text-brand-text text-sm">
+                    {fmt(t.amount)}
+                  </span>
                 </td>
-                <td className="p-4 text-xs text-brand-silver">
-                  <div>{t.jv}</div>
-                  {t.jv_partner && <div className="font-bold text-brand-text">{t.jv_partner}</div>}
+                <td className="py-5 px-5 whitespace-nowrap font-bold text-brand-text text-[11px]">
+                  {t.emd || 'EMD Exempted'}
                 </td>
-                <td className="p-4">
+                <td className="py-5 px-5 whitespace-nowrap">
+                  {t.emd_amount > 0 ? (
+                    <span className="font-medium text-brand-silver">{fmt(t.emd_amount)}</span>
+                  ) : '--'}
+                </td>
+                <td className="py-5 px-5 whitespace-nowrap font-bold text-brand-text text-[11px]">
+                  {t.jv || 'JV Not Allowed'}
+                </td>
+                <td className="py-5 px-5 max-w-[150px] truncate text-[11px] text-brand-silver" title={t.jv_partner}>
+                  {t.jv_partner || '--'}
+                </td>
+                <td className="py-5 px-5 whitespace-nowrap">
                   <Badge label={t.status} color={T_COLORS[t.status] || '#8A8D8F'} />
                 </td>
-                <td className="p-4 text-right">
-                  <button className="text-brand-silver hover:text-brand-text font-bold text-xs bg-brand-surfaceAlt px-3 py-1.5 rounded-lg border border-brand-border">Edit</button>
+                <td className="py-5 px-5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={() => onTenderClick && onTenderClick(t)}
+                    className="text-brand-silver hover:text-brand-red hover:border-brand-red/20 transition-all font-bold text-[10px] bg-brand-surfaceAlt px-3 py-1.5 rounded-lg border border-brand-border"
+                  >
+                    Edit
+                  </button>
                 </td>
               </tr>
             );
           })}
           {tendersList.length === 0 && (
             <tr>
-              <td colSpan="14" className="p-16 text-center text-brand-silver text-sm font-bold opacity-70">
+              <td colSpan="17" className="p-16 text-center text-brand-silver text-sm font-bold opacity-70">
                 {state.tenders.length === 0 ? 'No tenders yet. Click Add Tender or Import.' : 'No matching tenders found.'}
               </td>
             </tr>
@@ -149,7 +226,7 @@ export default function TenderView({ onTenderClick, search = '', selectedLocatio
     </div>
   );
 
-  if (selectedLocation === 'statewise') {
+  if (isStatewise) {
     const grouped = filteredTenders.reduce((acc, t) => {
       const loc = (t.location && t.location.trim()) ? t.location.trim() : 'Unspecified Location';
       if (!acc[loc]) acc[loc] = [];
@@ -161,7 +238,7 @@ export default function TenderView({ onTenderClick, search = '', selectedLocatio
 
     if (stateKeys.length === 0) {
       return (
-        <div className="bg-white p-12 text-center rounded-xl border border-brand-border text-brand-silver font-bold">
+        <div className="bg-white p-12 text-center rounded-2xl border border-brand-border text-brand-silver font-bold">
           No matching tenders found for state-wise grouping.
         </div>
       );
@@ -177,14 +254,14 @@ export default function TenderView({ onTenderClick, search = '', selectedLocatio
             <div key={stateName} className="flex flex-col gap-3">
               <div className="flex items-center justify-between bg-white px-5 py-3 border border-brand-border rounded-xl shadow-xs">
                 <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full bg-brand-red"></span>
-                  <h3 className="text-base font-serif font-bold text-brand-text">{stateName}</h3>
-                  <span className="px-2.5 py-0.5 bg-brand-surfaceAlt border border-brand-border text-brand-silver text-xs font-bold rounded-full">
+                  <span className="w-2.5 h-2.5 rounded-full bg-brand-red"></span>
+                  <h3 className="text-sm font-serif font-black text-brand-text">{stateName}</h3>
+                  <span className="px-2 py-0.5 bg-brand-surfaceAlt border border-brand-border text-brand-silver text-[10px] font-bold rounded-full">
                     {stateTenders.length} {stateTenders.length === 1 ? 'Tender' : 'Tenders'}
                   </span>
                 </div>
-                <div className="text-xs font-bold text-brand-silver">
-                  Total Amount: <span className="text-brand-text font-serif font-black text-sm ml-1">{fmt(totalValue)}</span>
+                <div className="text-[10px] font-bold text-brand-silver">
+                  Total Amount: <span className="text-brand-text font-serif font-black text-xs ml-1">{fmt(totalValue)}</span>
                 </div>
               </div>
               {renderTable(stateTenders)}
@@ -195,5 +272,50 @@ export default function TenderView({ onTenderClick, search = '', selectedLocatio
     );
   }
 
-  return renderTable(filteredTenders);
+  return (
+    <div className="flex flex-col gap-4">
+      {renderTable(paginatedTenders)}
+      
+      {totalTenders > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 bg-white border border-brand-border rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-brand-silver font-bold">Rows per page:</span>
+            <select 
+              className="bg-brand-surfaceAlt border border-brand-border rounded-md px-3 py-1.5 text-xs font-bold text-brand-text outline-none cursor-pointer"
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <span className="text-xs text-brand-silver font-bold">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalTenders)} of {totalTenders}
+            </span>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3.5 py-1.5 rounded-md text-xs font-bold border border-brand-border bg-white text-brand-text disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-surfaceAlt transition-colors"
+              >
+                Prev
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3.5 py-1.5 rounded-md text-xs font-bold border border-brand-border bg-white text-brand-text disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-surfaceAlt transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

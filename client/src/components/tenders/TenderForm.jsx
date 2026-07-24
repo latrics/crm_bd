@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Field from '../common/Field.jsx';
-import { T_STATUSES, T_EMD, T_JV, T_PORTALS } from '../../constants/index.js';
+import { T_STATUSES, T_EMD, T_JV } from '../../constants/index.js';
 import useCRM from '../../hooks/useCRM.js';
 import { createTender, updateTender } from '../../api/tendersApi.js';
 import useToast from '../../hooks/useToast.js';
@@ -69,21 +69,11 @@ export default function TenderForm({ initialData, onClose }) {
         <Field label="Authority" value={formData.authority} onChange={e => handleChange('authority', e.target.value)} required />
         <Field 
           label="Portal" 
-          type="select" 
-          options={T_PORTALS} 
-          value={T_PORTALS.includes(formData.portal) || !formData.portal ? formData.portal : 'Others'} 
+          value={formData.portal || ''} 
           onChange={e => handleChange('portal', e.target.value)} 
+          placeholder="Enter portal (e.g. GEM, Pureways, CPPP)"
         />
       </div>
-
-      {formData.portal === 'Others' && (
-        <Field 
-          label="Custom Portal Name" 
-          value={formData.portal === 'Others' ? '' : formData.portal} 
-          onChange={e => handleChange('portal', e.target.value)} 
-          placeholder="Type portal name..." 
-        />
-      )}
 
       <Field 
         label="Doc Link (URL for Tender Docs)" 

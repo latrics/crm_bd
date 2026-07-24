@@ -266,22 +266,65 @@ export default function ImportWizard({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
       <div className="w-[800px] max-w-full">
-        <div className="mb-6 flex justify-between items-center border-b pb-4 border-brand-border">
+        <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 border-brand-border gap-4">
           <h2 className="text-xl font-serif font-bold text-brand-text">Bulk Lead Import</h2>
-          <div className="flex gap-2 text-sm text-brand-silver font-bold">
-            <span className={step === 1 ? 'text-brand-red' : ''}>1. Upload</span> / 
-            <span className={step === 2 ? 'text-brand-red' : ''}>2. Map Fields</span> / 
-            <span className={step === 3 ? 'text-brand-red' : ''}>3. Preview</span> / 
-            <span className={step === 4 ? 'text-brand-red' : ''}>4. Result</span>
-          </div>
+        </div>
+
+        {/* VISUAL PROGRESS STEPPER */}
+        <div className="flex items-center justify-between w-full max-w-xl mx-auto mb-8 mt-2 relative px-4">
+          {/* Background line */}
+          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-100 -translate-y-1/2 z-0"></div>
+          {/* Active progress line */}
+          <div 
+            className="absolute top-1/2 left-0 h-0.5 bg-brand-red -translate-y-1/2 z-0 transition-all duration-300"
+            style={{ width: `${((step - 1) / 3) * 100}%` }}
+          ></div>
+
+          {[
+            { num: 1, label: 'Upload' },
+            { num: 2, label: 'Map Fields' },
+            { num: 3, label: 'Preview' },
+            { num: 4, label: 'Results' }
+          ].map((s) => (
+            <div key={s.num} className="flex flex-col items-center z-10">
+              <div 
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border shrink-0 transition-all shadow-sm ${
+                  step >= s.num 
+                    ? 'bg-brand-red border-brand-red text-white' 
+                    : 'bg-white border-brand-border text-brand-silver'
+                }`}
+              >
+                {step > s.num ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  s.num
+                )}
+              </div>
+              <span 
+                className={`text-[9px] font-black uppercase tracking-wider mt-2.5 px-2.5 py-0.5 rounded-md transition-all ${
+                  step === s.num 
+                    ? 'text-brand-red bg-brand-redLight/40 border border-brand-red/10' 
+                    : 'text-brand-silver bg-white border border-brand-border/40'
+                }`}
+              >
+                {s.label}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* STEP 1: UPLOAD */}
         {step === 1 && (
-          <div className="flex flex-col items-center justify-center py-10">
+          <div className="flex flex-col items-center justify-center py-6">
             <div className="border-2 border-dashed border-brand-border bg-brand-surfaceAlt rounded-xl w-full p-12 text-center relative hover:bg-brand-border/20 transition cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <input type="file" accept=".xlsx, .xls, .csv" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-              <div className="text-4xl mb-4">📄</div>
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-brand-redLight/50 border border-brand-red/10 text-brand-red mb-4 shadow-sm">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
               <h3 className="font-bold text-brand-text mb-2">Click or Drag & Drop file here</h3>
               <p className="text-sm text-brand-silver">Supports .xlsx, .xls, .csv</p>
             </div>
@@ -433,10 +476,14 @@ export default function ImportWizard({ isOpen, onClose }) {
         {/* STEP 4: RESULT */}
         {step === 4 && importResult && (
           <div className="text-center py-8">
-            <div className="text-5xl mb-4">🎉</div>
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-50 border border-green-200 text-green-600 mb-6 shadow-sm">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
             <h3 className="text-2xl font-serif font-black text-brand-text mb-2">Import Completed Successfully</h3>
             
-            <div className="bg-brand-surfaceAlt rounded-xl p-6 inline-block text-left min-w-[300px] mt-6">
+            <div className="bg-brand-surfaceAlt border border-brand-border rounded-xl p-6 inline-block text-left min-w-[320px] mt-6 shadow-xs">
               <div className="flex justify-between mb-3 text-sm">
                 <span className="text-brand-silver font-bold">Rows Found:</span>
                 <span className="font-bold">{importResult.totalFound}</span>
