@@ -21,7 +21,7 @@ export default function AdminMasterData() {
   ];
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="mb-4">
         <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Master Data Configuration</h1>
         <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Manage stages • statuses • sectors</p>

@@ -21,7 +21,7 @@ export default function AdminOwnership() {
   ];
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="mb-4">
         <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Ownership & Reassignment</h1>
         <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Transfer records • bulk reassignment</p>

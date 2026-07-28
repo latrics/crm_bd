@@ -3,6 +3,7 @@ import useCRM from '../../hooks/useCRM.js';
 import { DEAL_STAGES, DEAL_COLORS } from '../../constants/index.js';
 import DocsPanel from '../docs/DocsPanel.jsx';
 import { Clock } from 'lucide-react';
+import { fmt } from '../../utils/formatters.js';
 
 export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, onStageUpdate, search, activeStageFilter, selectedDeals = [], onToggleSelect, onToggleSelectAll }) {
   const { state } = useCRM();
@@ -85,10 +86,27 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
           return `${diffDays} days left`;
         };
         
+        const isWon = deal.stage === 'Won';
+        const isLost = deal.stage === 'Lost';
+        
+        let cardStyle = {};
+        if (isWon) {
+          cardStyle = {
+            backgroundColor: '#e8f5e9',
+            borderColor: '#c8e6c9'
+          };
+        } else if (isLost) {
+          cardStyle = {
+            backgroundImage: 'repeating-linear-gradient(45deg, #fef2f2, #fef2f2 10px, #fee2e2 10px, #fee2e2 20px)',
+            borderColor: '#fca5a5'
+          };
+        }
+
         return (
           <div 
             key={deal._id} 
-            className="bg-white border border-brand-border rounded-crm shadow-sm transition-all relative overflow-hidden"
+            style={cardStyle}
+            className={`bg-white border border-brand-border rounded-crm shadow-sm transition-all relative overflow-hidden ${isWon ? '' : isLost ? '' : 'hover:bg-brand-red/[0.01]'}`}
           >
             {deal.stage === 'Won' && (
               <div className="absolute top-0 left-0 w-full h-1 bg-green-100 border-b border-green-500/20" />
@@ -174,7 +192,7 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
               </div>
 
               {/* Deal Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-3.5 px-5 bg-gray-50/50 border border-gray-100 rounded-xl">
                 <div>
                   <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Company</span>
                   <span className="text-xs font-bold text-brand-text truncate block">{deal.company || '--'}</span>
@@ -189,7 +207,7 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
                 </div>
                 <div>
                   <span className="text-[8px] font-black text-brand-silver uppercase tracking-widest block mb-0.5">Deal Value</span>
-                  <span className="text-xs font-bold text-green-600">₹{deal.value ? Number(deal.value).toLocaleString('en-IN') : '0'}</span>
+                  <span className="text-xs font-bold text-brand-text">{fmt(deal.value)}</span>
                 </div>
               </div>
 

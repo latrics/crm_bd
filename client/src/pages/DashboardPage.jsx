@@ -222,7 +222,7 @@ export default function DashboardPage() {
   const maxOwnerCount = Math.max(...leadsByOwner.map(o => o.count), 1);
 
   return (
-    <div className="max-w-[1200px] mx-auto pb-12 px-6">
+    <div className="w-full pb-12">
       <PageHeader 
         title="Overview" 
         subtitle="Live analytics • all data auto-saved"

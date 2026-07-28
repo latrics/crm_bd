@@ -2,23 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --brand-red: #DA291C;
+  --brand-red-light: #FEF2F2;
+  --brand-red-border: #FECACA;
+  --brand-bg: #F8F9FA;
+  --brand-surface: #FFFFFF;
+  --brand-text: #54585A;
+  --brand-border: #C7C9C7;
+  --app-radius: 1.5rem;
+}
+
+/* Dark Mode Support */
+body.dark-mode {
+  --brand-bg: #0F172A;
+  --brand-surface: #1E293B;
+  --brand-text: #F1F5F9;
+  --brand-border: #334155;
+  background-color: #0F172A !important;
+  color: #F1F5F9 !important;
+}
+
+body.dark-mode .bg-white {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+}
+
+body.dark-mode .border-brand-border\/60,
+body.dark-mode .border-slate-200,
+body.dark-mode .border-brand-border {
+  border-color: #334155 !important;
+}
+
+body.dark-mode .text-slate-800,
+body.dark-mode .text-brand-text {
+  color: #F1F5F9 !important;
+}
+
+body.dark-mode .text-brand-silver {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode nav {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+}
+
 @keyframes slideIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
 @keyframes spin { to { transform:rotate(360deg); } }
-
-/* For deals kanban hover states or tender tables */
-.hover\:bg-brand-red\/5:hover {
-  background-color: rgb(218 41 28 / 0.05);
-}
 
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
+  font-family: inherit;
 }
 
 body {
-  @apply bg-[#F8F9FA] text-brand-text;
+  background-color: var(--brand-bg);
+  color: var(--brand-text);
   margin: 0;
   min-height: 100vh;
+}
+
+/* Dynamic theme color background utilities */
+.bg-brand-red {
+  background-color: var(--brand-red) !important;
+}
+.text-brand-red {
+  color: var(--brand-red) !important;
+}
+.border-brand-red {
+  border-color: var(--brand-red) !important;
+}
+.bg-brand-redLight {
+  background-color: var(--brand-red-light) !important;
 }
 
 /* Futuristic sleek scrollbar style */
@@ -39,4 +96,13 @@ body {
 }
 .sleek-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #CBD5E1;
+}
+
+/* Hide scrollbars completely class */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;  /* IE/Edge */
+  scrollbar-width: none !important;  /* Firefox */
 }

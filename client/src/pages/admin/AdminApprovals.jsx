@@ -87,7 +87,7 @@ export default function AdminApprovals() {
   ];
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Approval Center</h1>

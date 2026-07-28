@@ -5,6 +5,28 @@ import { daysBetween } from '../../utils/dateHelpers.js';
 import Badge from '../common/Badge.jsx';
 import { T_COLORS } from '../../constants/index.js';
 
+const checkIsLink = (val) => {
+  if (!val) return false;
+  const trimmed = val.trim();
+  if (/^https?:\/\//i.test(trimmed)) return true;
+  if (/^www\./i.test(trimmed)) return true;
+  if (!trimmed.includes(' ') && trimmed.includes('.')) {
+    const parts = trimmed.split('.');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart.length >= 2 && /^[a-zA-Z]+$/.test(lastPart)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const getHref = (val) => {
+  if (!val) return '';
+  const trimmed = val.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
+
 export default function TenderView({ 
   onTenderClick, 
   search = '', 
@@ -136,22 +158,40 @@ export default function TenderView({
                 </td>
                 <td className="py-5 px-5 max-w-[200px] truncate" title={t.portal}>
                   {t.portal ? (
-                    <span className="px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-full text-[9px] uppercase font-bold text-gray-700">
-                      {t.portal}
-                    </span>
+                    checkIsLink(t.portal) ? (
+                      <a
+                        href={getHref(t.portal)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[11px] font-medium text-brand-text hover:text-brand-red hover:underline transition-colors"
+                      >
+                        {t.portal}
+                      </a>
+                    ) : (
+                      <span className="text-[11px] font-medium text-brand-text">
+                        {t.portal}
+                      </span>
+                    )
                   ) : '--'}
                 </td>
                 <td className="py-5 px-5 whitespace-nowrap">
                   {t.doc_link ? (
-                    <a
-                      href={t.doc_link.startsWith('http') ? t.doc_link : `https://${t.doc_link}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-brand-red hover:text-red-700 bg-brand-redLight/40 px-2.5 py-1 rounded border border-brand-red/20 transition-all"
-                    >
-                      Docs ↗
-                    </a>
+                    checkIsLink(t.doc_link) ? (
+                      <a
+                        href={getHref(t.doc_link)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[11px] font-medium text-brand-text hover:text-brand-red hover:underline transition-colors"
+                      >
+                        Docs
+                      </a>
+                    ) : (
+                      <span className="text-[11px] font-medium text-brand-text">
+                        {t.doc_link}
+                      </span>
+                    )
                   ) : (
                     <span className="text-xs text-brand-silver">--</span>
                   )}

@@ -41,7 +41,7 @@ export default function AdminLayout() {
       {/* Main Content Area */}
       <div className="flex pt-16 h-screen">
         <AdminSidebar />
-        <main className="flex-1 ml-64 overflow-y-auto p-8">
+        <main className="flex-1 ml-64 overflow-y-auto px-6 py-6">
           <Outlet />
         </main>
       </div>

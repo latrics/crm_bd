@@ -208,7 +208,7 @@ export default function AdminUsers() {
   ];
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex justify-between items-end mb-4 gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">User Management</h1>

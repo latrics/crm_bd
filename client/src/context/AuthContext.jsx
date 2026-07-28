@@ -18,6 +18,8 @@ function authReducer(state, action) {
   switch (action.type) {
     case 'LOGIN_SUCCESS':
       return { ...state, user: action.payload, isAuthenticated: true, loading: false, error: null, connectionError: false };
+    case 'UPDATE_PROFILE':
+      return { ...state, user: { ...state.user, ...action.payload } };
     case 'LOGOUT':
       return { ...state, user: null, isAuthenticated: false, loading: false, error: null, connectionError: false };
     case 'AUTH_ERROR':
@@ -92,7 +94,12 @@ export function AuthProvider({ children }) {
           const res = await authApi.syncUser(clerkUser.id, email, name);
           if (!hasSynced.current) console.log('Backend user sync success:', res.user);
           hasSynced.current = true;
-          dispatch({ type: 'LOGIN_SUCCESS', payload: res.user });
+          
+          // Merge with locally stored profile details
+          const key = `latrics_crm_user_profile_${email.toLowerCase()}`;
+          const stored = JSON.parse(localStorage.getItem(key) || '{}');
+          const mergedUser = { ...res.user, ...stored };
+          dispatch({ type: 'LOGIN_SUCCESS', payload: mergedUser });
         } catch (err) {
           console.error('Failed to load user from backend:', err);
           console.log('SYNC_USER_ERROR_DETAILS', { 
@@ -162,11 +169,21 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
+  const updateProfile = (updatedFields) => {
+    dispatch({ type: 'UPDATE_PROFILE', payload: updatedFields });
+    if (state.user?.email) {
+      const key = `latrics_crm_user_profile_${state.user.email.toLowerCase()}`;
+      const stored = JSON.parse(localStorage.getItem(key) || '{}');
+      const merged = { ...stored, ...updatedFields };
+      localStorage.setItem(key, JSON.stringify(merged));
+    }
+  };
+
   const loadingState = !isClerkAuthLoaded || !isClerkUserLoaded || state.loading;
   console.log('AuthContext render state:', { loadingState, stateLoading: state.loading, isClerkAuthLoaded, isClerkUserLoaded, isAuthenticated: state.isAuthenticated, error: state.error, connectionError: state.connectionError });
 
   return (
-    <AuthContext.Provider value={{ ...state, loading: loadingState, login, logout, clearError }}>
+    <AuthContext.Provider value={{ ...state, loading: loadingState, login, logout, clearError, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

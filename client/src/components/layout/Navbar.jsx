@@ -3,10 +3,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import useCRM from '../../hooks/useCRM.js';
 import UserMenu from './UserMenu.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useTheme } from '../../context/ThemeContext.jsx';
 
 export default function Navbar() {
   const { state } = useCRM();
   const { user, logout } = useAuth();
+  const { settings } = useTheme();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -25,6 +27,15 @@ export default function Navbar() {
     navigate('/login');
   };
 
+  // Enforcing standard 64px (px-6 sm:px-12 lg:px-16) side padding globally
+  const paddingClass = settings.paddingX === '32px' 
+    ? 'px-4 sm:px-8' 
+    : settings.paddingX === '48px' 
+    ? 'px-6 sm:px-12' 
+    : settings.paddingX === '80px' 
+    ? 'px-8 sm:px-20' 
+    : 'px-6 sm:px-12 lg:px-16'; // Standard 64px (px-16) default
+
   const navClass = ({ isActive }) =>
     `flex items-center gap-2 px-1 pb-4 pt-5 font-bold text-xs uppercase tracking-widest ${isActive ? 'text-brand-red border-b-2 border-brand-red' : 'text-brand-silver hover:text-brand-text'} transition-all`;
   
@@ -32,35 +43,47 @@ export default function Navbar() {
     `px-2 py-0.5 rounded-full text-[10px] ml-1 ${isActive ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt text-brand-silver'}`;
 
   return (
-    <nav className="border-b border-brand-border bg-white sticky top-0 z-50 shadow-sm mb-8">
-      <div className="max-w-[1250px] mx-auto px-6 flex justify-between items-center h-16">
-        <div className="flex items-center gap-12 h-full">
+    <nav className="border-b border-brand-border bg-white sticky top-0 z-50 shadow-sm transition-all duration-150">
+      <div className={`w-full ${paddingClass} flex justify-between items-center h-16`}>
+        <div className="flex items-center gap-8 md:gap-12 h-full">
           <div 
-            onClick={() => window.location.reload()}
+            onClick={() => navigate('/dashboard')}
             className="font-serif text-xl font-black text-brand-red tracking-wide flex items-center border-r-2 border-brand-red pr-6 h-8 cursor-pointer select-none"
           >
-            LATRICS <span className="font-sans text-[10px] font-bold text-brand-silver tracking-normal ml-2">CRM</span>
+            LATRICS
           </div>
-          <div className="flex items-center gap-8 self-end -mb-[1px] h-full">
-            <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
+          <div className="flex items-center gap-6 h-full overflow-x-auto scrollbar-none">
+            <NavLink to="/dashboard" className={navClass}>
+              Dashboard
+            </NavLink>
             <NavLink to="/leads" className={navClass}>
               {({ isActive }) => (
-                <>Leads <span className={badgeClass(isActive)}>{state.leads.filter(l => l.status !== 'Converted').length}</span></>
+                <>
+                  <span>Leads</span>
+                  <span className={badgeClass(isActive)}>{state.leads.length}</span>
+                </>
               )}
             </NavLink>
             <NavLink to="/deals" className={navClass}>
               {({ isActive }) => (
-                <>Deals <span className={badgeClass(isActive)}>{state.deals.length}</span></>
+                <>
+                  <span>Deals</span>
+                  <span className={badgeClass(isActive)}>{state.deals.length}</span>
+                </>
               )}
             </NavLink>
             <NavLink to="/tenders" className={navClass}>
               {({ isActive }) => (
-                <>Tender <span className={badgeClass(isActive)}>{state.tenders.length}</span></>
+                <>
+                  <span>Tenders</span>
+                  <span className={badgeClass(isActive)}>{state.tenders.length}</span>
+                </>
               )}
             </NavLink>
           </div>
         </div>
-        
+
+        {/* User Menu & Profile Dropdown */}
         <div className="flex items-center gap-3">
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-notifications'))}
@@ -72,7 +95,7 @@ export default function Navbar() {
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-brand-red rounded-full border border-white animate-pulse" />
             )}
           </button>
-          <UserMenu />
+          <UserMenu unreadCount={unreadCount} />
         </div>
       </div>
     </nav>

@@ -77,7 +77,7 @@ export default function AdminRoles() {
   ];
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="mb-4">
         <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Roles & Permissions</h1>
         <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Reference matrix for system access levels</p>

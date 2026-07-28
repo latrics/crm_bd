@@ -394,7 +394,7 @@ export default function LeadsPage() {
 
   if (state.loading) {
     return (
-      <div className="max-w-[1200px] mx-auto pb-12 px-6">
+      <div className="w-full pb-12">
         <PageHeader 
           title="Lead Management" 
           subtitle="BANT scoring • pipeline stages • auto-saved"
@@ -409,7 +409,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto pb-12 px-6">
+    <div className="w-full pb-12">
       <PageHeader 
         title="Lead Management" 
         subtitle="BANT scoring • pipeline stages • auto-saved"

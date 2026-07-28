@@ -237,7 +237,7 @@ export default function TenderPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto pb-12">
+    <div className="w-full pb-12">
       <PageHeader 
         title="Tender Management" 
         subtitle="Tender tracking • Latrics Tender ID • Portals • Persistent Storage"

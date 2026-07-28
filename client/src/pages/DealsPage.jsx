@@ -253,7 +253,7 @@ export default function DealsPage() {
 
   if (state.loading) {
     return (
-      <div className="max-w-[1200px] mx-auto pb-12 px-6">
+      <div className="w-full pb-12">
         <PageHeader 
           title="Deal Pipeline" 
           subtitle="Pipeline stages • auto-saved"
@@ -268,7 +268,7 @@ export default function DealsPage() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto pb-12 px-6">
+    <div className="w-full pb-12">
       <PageHeader 
         title="Deal Pipeline" 
         subtitle="Pipeline stages • auto-saved"
