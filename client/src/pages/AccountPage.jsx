@@ -7,8 +7,10 @@ import axios from 'axios';
 import { 
   Check, X, Monitor, Smartphone, Users, Target, 
   Percent, Trophy, Folder, TrendingUp, HelpCircle, LogOut, 
-  MoreVertical, User, UserCircle, Palette, Shield, Bug, Trash2, Bell
+  MoreVertical, User, UserCircle, Palette, Shield, Bug, Trash2, Bell,
+  Mail, Phone, Camera, Image as ImageIcon
 } from 'lucide-react';
+import latricsWhiteLogo from '../assets/images/Latrics_white_logo_full.svg';
 
 // Helper to detect actual browser & OS from navigator.userAgent
 function detectCurrentDevice() {
@@ -63,12 +65,12 @@ async function fetchRealUserLocation() {
 export default function AccountPage() {
   const { settings } = useTheme();
   const paddingClassNeg = settings.paddingX === '32px'
-    ? 'lg:-mx-8 lg:px-4'
+    ? 'lg:-ml-8'
     : settings.paddingX === '48px'
-    ? 'lg:-mx-12 lg:px-6'
+    ? 'lg:-ml-12'
     : settings.paddingX === '80px'
-    ? 'lg:-mx-20 lg:px-8'
-    : 'lg:-mx-16 lg:px-6';
+    ? 'lg:-ml-20'
+    : 'lg:-ml-16';
 
   const crmContext = useCRM();
   const state = crmContext?.state || { leads: [], deals: [], tenders: [], docs: [] };
@@ -243,7 +245,7 @@ export default function AccountPage() {
   };
 
   return (
-    <div className={`w-full lg:h-[calc(100vh-160px)] animate-in fade-in duration-200 flex flex-col lg:flex-row gap-8 overflow-hidden ${paddingClassNeg}`}>
+    <div className={`lg:h-[calc(100vh-112px)] animate-in fade-in duration-200 flex flex-col lg:block overflow-hidden ${paddingClassNeg}`}>
       
       {/* Left Settings Sidebar */}
       <aside className="w-full lg:w-64 shrink-0 flex flex-col justify-between pb-2 lg:pb-0 lg:fixed lg:top-16 lg:left-0 lg:h-[calc(100vh-64px)] lg:bg-white lg:border-r lg:border-gray-100 lg:z-10 lg:overflow-y-auto lg:pt-5 lg:pb-8 lg:px-4">
@@ -315,268 +317,308 @@ export default function AccountPage() {
       </aside>
 
       {/* Right Main Account Content Area (100% fits screen, non-scrollable) */}
-      <main className="flex-1 min-w-0 flex flex-col gap-4 overflow-hidden h-full lg:pl-64">
+      <main className="w-full flex flex-col gap-4 overflow-hidden h-full lg:pl-[280px]">
         
-        {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <div>
-            <h1 className="text-lg font-serif font-black text-brand-text leading-tight">Account Overview</h1>
-            <p className="text-[11px] text-brand-silver font-medium mt-0.5">View your account details, role, activity and sessions.</p>
-          </div>
-        </div>
-
-        {/* Responsive Grid Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 overflow-hidden h-full pb-2">
+        {/* Content Wrapper (Hidden Scrollbar) */}
+        <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 scrollbar-none pb-8">
           
-          {/* Main Left Section */}
-          <div className="xl:col-span-2 flex flex-col gap-4 overflow-hidden">
+          {/* Top Row Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-10 gap-4 flex-1">
             
-            {/* User Details Banner Card */}
-            <div className="bg-white border border-brand-border/60 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row gap-6 items-start md:items-center">
-              {/* Profile Avatar Picture */}
-              <div className="w-20 h-20 rounded-full border border-slate-100 bg-slate-100 flex items-center justify-center text-3xl font-serif font-bold text-slate-700 shadow-inner shrink-0 self-center">
-                {initial}
-              </div>
-
-              {/* Middle Profile Info */}
-              <div className="flex-1 min-w-0 border-b md:border-b-0 md:border-r border-brand-border/60 pb-4 md:pb-0 md:pr-6 flex flex-col items-center md:items-start text-center md:text-left">
-                <h2 className="font-serif text-2xl font-black text-brand-text truncate leading-tight">
-                  {user.name}
-                </h2>
-
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full uppercase">
-                    <Check className="w-2.5 h-2.5 shrink-0" /> Verified Account
-                  </span>
-                  <span className="inline-block text-[9px] font-black tracking-widest bg-rose-50 text-brand-red px-2 py-0.5 rounded-md uppercase border border-rose-100">
-                    {user.role}
-                  </span>
-                </div>
-
-                <div className="text-xs font-medium text-brand-silver mt-2.5 flex flex-col gap-1">
-                  <span className="truncate">{user.email}</span>
-                  <span className="text-slate-600 font-semibold">{user.phone || '+91 98765 43210'}</span>
-                </div>
-              </div>
-
-              {/* Right Key-Value Metadata Grid */}
-              <div className="flex-1 w-full grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <div>
-                  <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Employee ID</span>
-                  <span className="font-bold text-slate-800 text-sm">{employeeId}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Department</span>
-                  <span className="font-bold text-slate-800 text-sm">{user.department || 'Business Development'}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Reporting Manager</span>
-                  <span className="font-bold text-slate-800 text-sm">{reportingManager}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Office Location</span>
-                  <span className="font-bold text-slate-800 text-sm">{user.location || realLocation}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Joined On</span>
-                  <span className="font-bold text-slate-800 text-sm">{joinedDate}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Last Login</span>
-                  <span className="font-bold text-slate-800 text-sm">{lastActiveDate}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Statistics Section (Hides Notifications and conditionally filters Activity Score) */}
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[10px] font-bold text-brand-text uppercase tracking-widest">
-                {isAdminOrSuper ? "System Statistics (Admin View)" : "My Personal Performance"}
-              </h3>
+            {/* Left Column (Banner & Stats) - takes 7/10 width on desktop */}
+            <div className="xl:col-span-7 flex flex-col gap-4 h-full">
               
-              <div className={`grid gap-3 ${isAdminOrSuper ? 'grid-cols-5' : 'grid-cols-3 md:grid-cols-6'}`}>
-                {/* Stat 1: Leads Created */}
-                <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-brand-redLight/60 border border-brand-red/10 flex items-center justify-center text-brand-red shrink-0">
-                    <Users className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-brand-silver uppercase tracking-wider block">Leads</span>
-                    <span className="text-sm font-serif font-black text-brand-text">{leadsCreated}</span>
-                  </div>
+              {/* User Details Banner Card */}
+              <div className="bg-white border border-brand-border/60 rounded-3xl overflow-hidden shadow-xs flex flex-col relative shrink-0">
+                
+                {/* Dynamic Abstract Gradient Banner Background */}
+                <div className="relative h-28 w-full bg-gradient-to-r from-violet-500/20 via-pink-500/10 to-brand-red/10 overflow-hidden flex items-center justify-between px-8">
+                  {/* Latrics Logo Watermark in Banner */}
+                  <img 
+                    src={latricsWhiteLogo} 
+                    className="absolute right-8 top-1/2 -translate-y-1/2 h-10 opacity-30 select-none pointer-events-none filter brightness-0" 
+                    alt="Latrics Logo" 
+                  />
+
+                  {/* Change Banner Button */}
+                  <button className="absolute right-4 bottom-4 px-3 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-slate-200/50 text-xs font-bold text-slate-700 flex items-center gap-1.5 backdrop-blur-xs transition-colors cursor-pointer shadow-xs">
+                    <ImageIcon className="w-3.5 h-3.5 text-slate-600" /> 
+                    <span>Change Banner</span>
+                  </button>
                 </div>
 
-                {/* Stat 2: Deals Won */}
-                <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
-                    <Target className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-brand-silver uppercase tracking-wider block">Won</span>
-                    <span className="text-sm font-serif font-black text-brand-text">{dealsWon}</span>
-                  </div>
+                {/* Overlapping Profile Picture Avatar */}
+                <div className="absolute left-8 top-14 w-20 h-20 rounded-full border-4 border-white bg-slate-100 flex items-center justify-center text-3xl font-serif font-black text-slate-700 shadow-md shrink-0 z-10 select-none">
+                  {initial}
+                  
+                  {/* Floating Upload Camera Icon Button */}
+                  <button className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white border border-slate-200/80 shadow-md flex items-center justify-center text-slate-600 hover:text-brand-red hover:scale-105 transition-all cursor-pointer">
+                    <Camera className="w-3 h-3" />
+                  </button>
                 </div>
 
-                {/* Stat 3: Open Deals */}
-                <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
-                    <Percent className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-brand-silver uppercase tracking-wider block">Open</span>
-                    <span className="text-sm font-serif font-black text-brand-text">{openDeals}</span>
-                  </div>
-                </div>
+                {/* User Metadata & Data Grid Section */}
+                <div className="pt-10 pb-5 px-8 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                  
+                  {/* Left Profile details column */}
+                  <div className="flex-1 min-w-0 flex flex-col items-center md:items-start text-center md:text-left">
+                    <div className="flex items-center gap-2.5">
+                      <h2 className="font-serif text-lg font-black text-brand-text truncate leading-tight">
+                        {user.name}
+                      </h2>
+                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full uppercase">
+                        <Check className="w-2.5 h-2.5 shrink-0" /> Verified
+                      </span>
+                      <span className="inline-block text-xs font-bold tracking-widest bg-rose-50 text-brand-red px-2 py-0.5 rounded-md uppercase border border-rose-100">
+                        {user.role}
+                      </span>
+                    </div>
 
-                {/* Stat 4: Assigned Tenders */}
-                <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
-                    <Trophy className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-brand-silver uppercase tracking-wider block">Tenders</span>
-                    <span className="text-sm font-serif font-black text-brand-text">{assignedTenders}</span>
-                  </div>
-                </div>
+                    {/* Subtitle */}
+                    <p className="text-sm text-brand-silver font-semibold mt-1 flex items-center gap-1.5">
+                      <span className="text-slate-700">{user.designation || (user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'administrator' ? 'Administrator' : 'Sales Executive')}</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{user.department || 'Business Development'}</span>
+                    </p>
 
-                {/* Stat 5: Pending Leads */}
-                <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
-                    <Folder className="w-3.5 h-3.5" />
+                    {/* Contact Row */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-xs text-slate-500 font-semibold">
+                      <span className="flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-slate-400" /> 
+                        {user.email}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" /> 
+                        {user.phone || '+91 98765 43210'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-brand-silver uppercase tracking-wider block">Pending</span>
-                    <span className="text-sm font-serif font-black text-brand-text">{pendingLeads}</span>
-                  </div>
-                </div>
 
-                {/* Stat 6: Activity Score - Conditionally shown */}
-                {!isAdminOrSuper && (
-                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                      <TrendingUp className="w-3.5 h-3.5" />
+                  {/* Right Metadata Grid (3 rows, 2 columns) */}
+                  <div className="flex-1 w-full grid grid-cols-2 gap-x-6 gap-y-3.5 border-t md:border-t-0 md:border-l border-brand-border/60 pt-4 md:pt-0 md:pl-8">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 whitespace-nowrap">Employee ID</span>
+                      <span className="text-sm font-semibold text-slate-800">{employeeId}</span>
                     </div>
                     <div>
-                      <span className="text-[8px] font-bold text-brand-silver uppercase tracking-wider block">Score</span>
-                      <span className="text-sm font-serif font-black text-brand-text">{activityScore}%</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 whitespace-nowrap">Reporting Manager</span>
+                      <span className="text-sm font-semibold text-slate-800">{reportingManager}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 whitespace-nowrap">Office Location</span>
+                      <span className="text-sm font-semibold text-slate-800 block truncate" title={user.location || realLocation}>
+                        {user.location || realLocation}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 whitespace-nowrap">Joined On</span>
+                      <span className="text-sm font-semibold text-slate-800">{joinedDate}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 whitespace-nowrap">Last Login</span>
+                      <span className="text-sm font-semibold text-slate-800">{lastActiveDate}</span>
                     </div>
                   </div>
-                )}
+
+                </div>
+
               </div>
-            </div>
 
-            {/* Role & Permission Summary Grid */}
-            <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs">
-              <h3 className="text-[10px] font-bold text-brand-text uppercase tracking-widest mb-0.5">Role & Permission Summary</h3>
-              <p className="text-[9px] text-brand-silver font-medium mb-3">Your role defines what actions you can perform in the CRM.</p>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {permissions.map((p, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    {p.allowed ? (
-                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
-                        <Check className="w-2 h-2" />
-                      </div>
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center shrink-0">
-                        <X className="w-2 h-2" />
-                      </div>
-                    )}
-                    <span className="text-[11px] font-medium text-slate-700 truncate">{p.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right Column: Sessions & Audit History */}
-          <div className="flex flex-col gap-4" ref={menuRef}>
-            
-            {/* Active Sessions Card */}
-            <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs relative">
-              <h3 className="text-[10px] font-bold text-brand-text uppercase tracking-widest mb-0.5">Active Sessions</h3>
-              <p className="text-[9px] text-brand-silver font-medium mb-3">Your currently active device sessions.</p>
-
+              {/* Statistics Section (Hides Notifications and conditionally filters Activity Score) */}
               <div className="flex flex-col gap-2">
-                {sessions.map(s => {
-                  const isCurrent = s.isCurrent;
-                  const Icon = isCurrent ? (deviceInfo.isMobile ? Smartphone : Monitor) : (s.icon || Monitor);
-                  const browserTitle = isCurrent ? deviceInfo.name : s.browser;
-                  const locationText = realLocation;
-                  const isMenuOpen = activeMenuSessionId === s.id;
+                <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest">
+                  {isAdminOrSuper ? "System Statistics (Admin View)" : "My Personal Performance"}
+                </h3>
+                
+                <div className={`grid gap-3 ${isAdminOrSuper ? 'grid-cols-5' : 'grid-cols-3 md:grid-cols-6'}`}>
+                  {/* Stat 1: Leads Created */}
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-brand-redLight/60 border border-brand-red/10 flex items-center justify-center text-brand-red shrink-0">
+                      <Users className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Leads</span>
+                      <span className="text-base font-serif font-black text-brand-text">{leadsCreated}</span>
+                    </div>
+                  </div>
 
-                  return (
-                    <div key={s.id} className="flex items-start gap-2.5 pb-2.5 border-b border-brand-border/40 last:border-0 last:pb-0 relative">
-                      <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-500 shrink-0 shadow-xs mt-0.5">
-                        <Icon className="w-3.5 h-3.5" />
+                  {/* Stat 2: Deals Won */}
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
+                      <Target className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Won</span>
+                      <span className="text-base font-serif font-black text-brand-text">{dealsWon}</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 3: Open Deals */}
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
+                      <Percent className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Open</span>
+                      <span className="text-base font-serif font-black text-brand-text">{openDeals}</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 4: Assigned Tenders */}
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
+                      <Trophy className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Tenders</span>
+                      <span className="text-base font-serif font-black text-brand-text">{assignedTenders}</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 5: Pending Leads */}
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
+                      <Folder className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Pending</span>
+                      <span className="text-base font-serif font-black text-brand-text">{pendingLeads}</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 6: Activity Score - Conditionally shown */}
+                  {!isAdminOrSuper && (
+                    <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                        <TrendingUp className="w-3.5 h-3.5" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <h4 className="text-[11px] font-bold text-slate-800 truncate pr-1">{browserTitle}</h4>
-                          <span className="text-[7px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200/50 px-1.5 py-0.5 rounded-full uppercase shrink-0">
-                            Current
-                          </span>
-                        </div>
-                        <p className="text-[9px] text-brand-silver mt-0.5 truncate">{locationText}</p>
-                      </div>
-
-                      {/* 3-Dots Action Button */}
-                      <div className="relative shrink-0 mt-0.5">
-                        <button
-                          onClick={() => setActiveMenuSessionId(isMenuOpen ? null : s.id)}
-                          className="p-1 rounded-lg hover:bg-slate-100 text-brand-silver hover:text-slate-700 transition-colors border-none bg-transparent cursor-pointer"
-                        >
-                          <MoreVertical className="w-3 h-3" />
-                        </button>
-
-                        {isMenuOpen && (
-                          <div className="absolute right-0 top-5 w-40 bg-white border border-brand-border rounded-lg shadow-lg z-30 p-1">
-                            <button
-                              onClick={() => handleRemoveSession(s.id, isCurrent)}
-                              className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-md transition-colors border-none bg-transparent cursor-pointer text-left"
-                            >
-                              <Trash2 className="w-3 h-3 shrink-0" />
-                              <span>Log out session</span>
-                            </button>
-                          </div>
-                        )}
+                      <div>
+                        <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Score</span>
+                        <span className="text-base font-serif font-black text-brand-text">{activityScore}%</span>
                       </div>
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
 
-              <button 
-                onClick={handleLogoutAll}
-                className="w-full mt-3 bg-transparent border border-rose-200 hover:bg-rose-50/50 text-rose-500 font-bold text-[10px] rounded-xl py-1.5 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <LogOut className="w-3 h-3" />
-                <span>Log out from all devices</span>
-              </button>
+              {/* Role & Permission Summary */}
+              <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs flex-1 flex flex-col">
+                <div>
+                  <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest mb-0.5">Role & Permission Summary</h3>
+                  <p className="text-xs text-brand-silver font-medium mb-3">Your role defines what actions you can perform in the CRM.</p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 w-full">
+                  {permissions.map((p, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      {p.allowed ? (
+                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Check className="w-2 h-2" />
+                        </div>
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center shrink-0">
+                          <X className="w-2 h-2" />
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-slate-700 truncate">{p.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
-            {/* Login History Card */}
-            <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs">
-              <h3 className="text-[10px] font-bold text-brand-text uppercase tracking-widest mb-0.5">Login History</h3>
-              <p className="text-[9px] text-brand-silver font-medium mb-3">Recent account access history.</p>
+            {/* Right Column (Sessions & Logs) - takes 3/10 width on desktop */}
+            <div className="xl:col-span-3 flex flex-col gap-4 h-full" ref={menuRef}>
+              
+              {/* Active Sessions Card */}
+              <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs relative flex-1 flex flex-col">
+                <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest mb-0.5">Active Sessions</h3>
+                <p className="text-xs text-brand-silver font-medium mb-3">Your currently active device sessions.</p>
 
-              <div className="flex flex-col gap-2.5">
-                {loginHistory.map((item) => (
-                  <div key={item.id} className="flex justify-between items-start gap-2 text-[11px]">
-                    <div>
-                      <h4 className="font-bold text-slate-800">{item.time}</h4>
-                      <p className="text-[9px] text-brand-silver mt-0.5 truncate">{item.location} &bull; {item.device}</p>
-                    </div>
-                    <span className="text-[7px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200/50 px-1.5 py-0.5 rounded-md uppercase shrink-0">
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
+                <div className="flex flex-col gap-2">
+                  {sessions.map(s => {
+                    const isCurrent = s.isCurrent;
+                    const Icon = isCurrent ? (deviceInfo.isMobile ? Smartphone : Monitor) : (s.icon || Monitor);
+                    const browserTitle = isCurrent ? deviceInfo.name : s.browser;
+                    const locationText = realLocation;
+                    const isMenuOpen = activeMenuSessionId === s.id;
+
+                    return (
+                      <div key={s.id} className="flex items-start gap-2.5 pb-2.5 border-b border-brand-border/40 last:border-0 last:pb-0 relative">
+                        <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-500 shrink-0 shadow-xs mt-0.5">
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <h4 className="text-sm font-bold text-slate-800 truncate pr-1">{browserTitle}</h4>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/50 px-2 py-0.5 rounded-full uppercase shrink-0">
+                              Current
+                            </span>
+                          </div>
+                          <p className="text-xs text-brand-silver mt-0.5 truncate">{locationText}</p>
+                        </div>
+
+                        {/* 3-Dots Action Button */}
+                        <div className="relative shrink-0 mt-0.5">
+                          <button
+                            onClick={() => setActiveMenuSessionId(isMenuOpen ? null : s.id)}
+                            className="p-1 rounded-lg hover:bg-slate-100 text-brand-silver hover:text-slate-700 transition-colors border-none bg-transparent cursor-pointer"
+                          >
+                            <MoreVertical className="w-3 h-3" />
+                          </button>
+
+                          {isMenuOpen && (
+                            <div className="absolute right-0 top-5 w-40 bg-white border border-brand-border rounded-lg shadow-lg z-30 p-1">
+                              <button
+                                onClick={() => handleRemoveSession(s.id, isCurrent)}
+                                className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-md transition-colors border-none bg-transparent cursor-pointer text-left"
+                              >
+                                <Trash2 className="w-3 h-3 shrink-0" />
+                                <span>Log out session</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button 
+                  onClick={handleLogoutAll}
+                  className="w-full mt-auto pt-4 bg-transparent border border-rose-200 hover:bg-rose-50/50 text-rose-500 font-bold text-xs rounded-xl py-1.5 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Log out from all devices</span>
+                </button>
               </div>
+
+              {/* Login History Card */}
+              <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs flex-1 flex flex-col">
+                <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest mb-0.5">Login History</h3>
+                <p className="text-xs text-brand-silver font-medium mb-3">Recent account access history.</p>
+
+                <div className="flex flex-col gap-2.5">
+                  {loginHistory.map((item) => (
+                    <div key={item.id} className="flex justify-between items-start gap-2 text-sm">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-800 text-sm">{item.time}</h4>
+                        <p className="text-xs text-brand-silver mt-0.5 truncate">{item.location} &bull; {item.device}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/50 px-2 py-0.5 rounded-md uppercase shrink-0">
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
           </div>
+
+
 
         </div>
 

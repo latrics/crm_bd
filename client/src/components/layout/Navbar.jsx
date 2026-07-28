@@ -43,7 +43,7 @@ export default function Navbar() {
     `px-2 py-0.5 rounded-full text-[10px] ml-1 ${isActive ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt text-brand-silver'}`;
 
   return (
-    <nav className="border-b border-brand-border bg-white sticky top-0 z-50 shadow-sm transition-all duration-150">
+    <nav className="border-b border-brand-border bg-white fixed top-0 left-0 w-full z-50 shadow-sm transition-all duration-150">
       <div className={`w-full ${paddingClass} flex justify-between items-center h-16`}>
         <div className="flex items-center gap-8 md:gap-12 h-full">
           <div 

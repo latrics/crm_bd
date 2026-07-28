@@ -7,22 +7,22 @@ export default function SettingsLayout({ children }) {
   const sidebarLinks = [
     { to: '/account', label: 'Account', icon: User },
     { to: '/profile', label: 'Profile', icon: UserCircle },
-    { to: '/notifications', label: 'Notifications', icon: Bell, isExternal: true },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/appearance', label: 'Appearance', icon: Palette },
     { to: '/security', label: 'Security', icon: Shield },
     { to: '/bug-center', label: 'Bug Center', icon: Bug },
   ];
 
   const paddingClassNeg = settings.paddingX === '32px'
-    ? 'lg:-mx-8 lg:px-4'
+    ? 'lg:-ml-8'
     : settings.paddingX === '48px'
-    ? 'lg:-mx-12 lg:px-6'
+    ? 'lg:-ml-12'
     : settings.paddingX === '80px'
-    ? 'lg:-mx-20 lg:px-8'
-    : 'lg:-mx-16 lg:px-6';
+    ? 'lg:-ml-20'
+    : 'lg:-ml-16';
 
   return (
-    <div className={`flex flex-col lg:flex-row gap-8 w-full animate-in fade-in duration-200 ${paddingClassNeg}`}>
+    <div className={`flex flex-col lg:block animate-in fade-in duration-200 ${paddingClassNeg}`}>
       {/* Sidebar Navigation */}
       <aside className="w-full lg:w-64 shrink-0 flex flex-col justify-between pb-2 lg:pb-0 lg:fixed lg:top-16 lg:left-0 lg:h-[calc(100vh-64px)] lg:bg-white lg:border-r lg:border-gray-100 lg:z-10 lg:overflow-y-auto lg:pt-5 lg:pb-8 lg:px-4">
         {/* Navigation list */}
@@ -95,7 +95,7 @@ export default function SettingsLayout({ children }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 flex flex-col justify-start lg:pl-64">
+      <main className="w-full flex flex-col justify-start lg:pl-[280px]">
         {children || <Outlet />}
       </main>
     </div>

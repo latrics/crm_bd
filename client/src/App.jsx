@@ -31,7 +31,6 @@ import AdminOwnership from './pages/admin/AdminOwnership.jsx';
 import AdminRoles from './pages/admin/AdminRoles.jsx';
 import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 import SyncAuthPage from './pages/SyncAuthPage.jsx';
-import ReportBugWidget from './components/common/ReportBugWidget.jsx';
 
 function AppLayout() {
   const { settings } = useTheme();
@@ -48,7 +47,7 @@ function AppLayout() {
   return (
     <>
       <Navbar />
-      <div className={`w-full ${paddingClass} py-6 transition-all duration-150`}>
+      <div className={`w-full ${paddingClass} pt-[88px] pb-6 transition-all duration-150`}>
         <Outlet />
       </div>
       <Notifications />
@@ -101,7 +100,7 @@ export default function App() {
                   <Route path="/leads" element={<LeadsPage />} />
                   <Route path="/deals" element={<DealsPage />} />
                   <Route path="/tenders" element={<TenderPage />} />
-                  <Route path="/notifications" element={<NotificationsPage />} />
+                  <Route path="/notifications" element={<SettingsLayout><NotificationsPage /></SettingsLayout>} />
                   
                   {/* Top-Level User Account & Settings Routes */}
                   <Route path="/account" element={<AccountPage />} />
@@ -115,7 +114,6 @@ export default function App() {
                 </Route>
               </Routes>
               <Toast />
-              <ReportBugWidget />
             </div>
           </CRMProvider>
         </ThemeProvider>

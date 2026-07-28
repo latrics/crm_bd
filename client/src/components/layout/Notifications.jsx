@@ -370,9 +370,16 @@ export default function Notifications() {
   }, [highlightedLeadId]);
 
   const openFullscreen = (filter) => {
-    setActiveFilter(filter);
-    setIsExpanded(true);
     setIsOpen(false);
+    let targetTab = 'All';
+    if (filter === 'urgent') targetTab = 'Unread';
+    else if (filter === 'pending') targetTab = 'Unread';
+    else if (filter === 'assigned') targetTab = 'Leads';
+    else if (filter === 'all') targetTab = 'All';
+    else {
+      targetTab = filter.charAt(0).toUpperCase() + filter.slice(1);
+    }
+    navigate('/notifications', { state: { activeTab: targetTab } });
   };
 
   const closeFullscreen = () => {
@@ -382,15 +389,16 @@ export default function Notifications() {
   // Notification Row Click Handler
   const handleNotificationClick = (n) => {
     markAsRead(n.id);
-    setActiveFilter('assigned');
-    if (n.leadDbId) {
-      const index = assignedLeads.findIndex(l => l._id === n.leadDbId);
-      if (index !== -1) {
-        const targetPage = Math.floor(index / rowsPerPage) + 1;
-        setCurrentPage(targetPage);
-      }
-      setHighlightedLeadId(n.leadDbId);
+    setIsOpen(false);
+    let targetTab = 'All';
+    if (n.type === 'urgent' || n.type === 'warning') {
+      targetTab = 'System';
+    } else if (n.type === 'info' || n.type === 'assignment') {
+      targetTab = 'Leads';
+    } else if (n.type === 'success') {
+      targetTab = 'Tenders';
     }
+    navigate('/notifications', { state: { activeTab: targetTab } });
   };
 
   // Lead Card Actions
@@ -1248,15 +1256,7 @@ export default function Notifications() {
                   <div 
                     key={`${card.id}-${idx}`}
                     onClick={() => {
-                      if (card.owner) {
-                        setSelectedOwner(card.owner);
-                      }
-                      setActiveFilter('assigned');
-                      setIsExpanded(true);
-                      setIsOpen(false);
-                      if (card.leadDbId) {
-                        setHighlightedLeadId(card.leadDbId);
-                      }
+                      openFullscreen('assigned');
                     }}
                     className="bg-white border border-brand-border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer group flex items-center justify-between"
                   >
@@ -1345,18 +1345,7 @@ export default function Notifications() {
                       <div 
                         key={n.id}
                         onClick={() => {
-                          markAsRead(n.id);
-                          setIsOpen(false);
-                          setIsExpanded(true);
-                          setActiveFilter('assigned');
-                          if (n.leadDbId) {
-                            const index = assignedLeads.findIndex(l => l._id === n.leadDbId);
-                            if (index !== -1) {
-                              const targetPage = Math.floor(index / rowsPerPage) + 1;
-                              setCurrentPage(targetPage);
-                            }
-                            setHighlightedLeadId(n.leadDbId);
-                          }
+                          handleNotificationClick(n);
                         }}
                         className={`bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-3 items-start border-brand-border relative ${
                           isUnread ? 'border-l-4 border-l-brand-red' : ''
