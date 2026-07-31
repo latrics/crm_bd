@@ -32,14 +32,18 @@ export default function DashboardPage() {
     return dDate >= start && dDate <= end;
   });
 
-  const totalLeadsValue = leads.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+  const activeLeadsList = leads.filter(l => l && l.status !== 'Converted');
+  const activeLeadsValue = activeLeadsList.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+  const negotiationDealsList = deals.filter(d => d && d.stage === 'Negotiation');
+  const negotiationDealsValue = negotiationDealsList.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+
+  const pipelineValue = activeLeadsValue + negotiationDealsValue;
   const wonDeals = deals.filter(d => d && d.stage === 'Won');
   const wonValue = wonDeals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
   const lostDeals = deals.filter(d => d && d.stage === 'Lost');
   const lostValue = lostDeals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
-  const pipelineValue = totalLeadsValue - wonValue - lostValue;
   const convertedLeads = leads.filter(l => l && l.status === 'Converted').length;
-  const activeLeads = leads.filter(l => l && l.status !== 'Converted').length;
+  const activeLeads = activeLeadsList.length;
 
   const topKpis = [
     { label: 'Leads Added', value: leads.length, icon: Users, color: 'bg-brand-surfaceAlt text-brand-silver' },
@@ -211,16 +215,27 @@ export default function DashboardPage() {
   });
 
   const revTrendDataPipeline = buckets.map((b, i) => {
-    let leadSum = 0;
+    let activeLeadsSum = 0;
     leads.forEach(l => {
-      if (l.createdAt) {
+      if (l.createdAt && l.status !== 'Converted') {
         const lDate = new Date(l.createdAt);
         if (lDate >= b.startD && lDate <= b.endD) {
-          leadSum += l.value || 0;
+          activeLeadsSum += l.value || 0;
         }
       }
     });
-    return leadSum - revTrendDataWon[i] - revTrendDataLost[i];
+
+    let negotiationDealsSum = 0;
+    deals.forEach(d => {
+      const dDate = new Date(d.close_date || d.createdAt);
+      if (!isNaN(dDate) && d.stage === 'Negotiation') {
+        if (dDate >= b.startD && dDate <= b.endD) {
+          negotiationDealsSum += d.value || 0;
+        }
+      }
+    });
+
+    return activeLeadsSum + negotiationDealsSum;
   });
 
 
