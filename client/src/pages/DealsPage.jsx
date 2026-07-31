@@ -31,6 +31,7 @@ export default function DealsPage() {
   const [activeTab, setActiveTab] = useState('kanban'); // kanban or list
   const [activeStageFilter, setActiveStageFilter] = useState('all');
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState(null); // 'asc' | 'desc' | null
 
   useEffect(() => {
     if (location.state?.highlightDealId) {
@@ -114,6 +115,7 @@ export default function DealsPage() {
       close_date: '',
       owner: '', 
       source: '',
+      broughtBy: '',
       sector: '', 
       businessModel: '',
       businessModelDetail: '',
@@ -251,7 +253,7 @@ export default function DealsPage() {
     }
   };
 
-  if (state.loading) {
+  if (state.loadingDeals) {
     return (
       <div className="w-full pb-12">
         <PageHeader 
@@ -336,13 +338,12 @@ export default function DealsPage() {
               />
             </div>
             
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
-              <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-              <span className="hidden sm:inline">Filters</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
-              <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
-              <span className="hidden sm:inline">Sort</span>
+            <button 
+              onClick={() => setSortOrder(prev => prev === null ? 'desc' : prev === 'desc' ? 'asc' : null)}
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-bold transition-all shadow-sm ${sortOrder ? 'bg-brand-redLight text-brand-red border-brand-red/20' : 'bg-white text-brand-text border-brand-border hover:bg-gray-50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+              <span className="hidden sm:inline">Sort {sortOrder === 'desc' ? '(High to Low)' : sortOrder === 'asc' ? '(Low to High)' : ''}</span>
             </button>
           </div>
 
@@ -414,6 +415,7 @@ export default function DealsPage() {
           onStageUpdate={handleStageUpdate}
           activeStageFilter={activeStageFilter}
           search={search} 
+          sortOrder={sortOrder}
           selectedDeals={selectedDeals}
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
@@ -426,6 +428,7 @@ export default function DealsPage() {
           onStageUpdate={handleStageUpdate}
           activeStageFilter={activeStageFilter}
           search={search}
+          sortOrder={sortOrder}
           selectedDeals={selectedDeals}
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
@@ -462,6 +465,9 @@ export default function DealsPage() {
               <Field label="Deal Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.source) || !formData.source ? formData.source : 'Others'} onChange={e => handleChange('source', e.target.value)} />
               {(formData.source === 'Others' || (formData.source && !FLAT_SOURCES.includes(formData.source))) && (
                 <Field label="Custom Source" value={formData.source === 'Others' ? '' : formData.source} onChange={e => handleChange('source', e.target.value)} placeholder="Type custom source..." />
+              )}
+              {formData.source && (
+                <Field label="Brought By" value={formData.broughtBy || ''} onChange={e => handleChange('broughtBy', e.target.value)} placeholder="Who brought the lead..." />
               )}
             </div>
             <div className="flex flex-col gap-2">

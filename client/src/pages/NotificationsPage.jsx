@@ -18,7 +18,7 @@ const initialNotifications = [
   {
     id: 'notif-1',
     title: 'Your deletion request for LTR-TND-000003 was Rejected',
-    message: 'Your request has been reviewed and rejected by Admin.',
+    message: 'Your deletion request for Tender LTR-TND-000003, originally submitted by end-user Aditya Paul (Tender Executive), has been reviewed and rejected by head-user Snigdha Kundu (Administrator) due to missing supporting logs.',
     category: 'System',
     time: '5d ago',
     read: false,
@@ -27,7 +27,7 @@ const initialNotifications = [
   {
     id: 'notif-2',
     title: 'Lead updated: SECON Pvt. Ltd.',
-    message: 'Lead details have been updated.',
+    message: 'The lead info for SECON Pvt. Ltd., owned by end-user Aditya Paul (Sales Representative), has been updated with the latest activity details and reviewed by head-user Snigdha Kundu (Sales Head).',
     category: 'Leads',
     time: '6d ago',
     read: false,
@@ -36,7 +36,7 @@ const initialNotifications = [
   {
     id: 'notif-3',
     title: 'Lead updated: Mythri Infrastructure and Mining India Private Limited',
-    message: 'Lead information has been updated.',
+    message: 'The lead profile for Mythri Infrastructure and Mining India Private Limited, managed by end-user Aditya Paul (Lead Owner), was updated with status change logs by head-user Snigdha Kundu (Sales Manager).',
     category: 'Leads',
     time: '6d ago',
     read: false,
@@ -45,7 +45,7 @@ const initialNotifications = [
   {
     id: 'notif-4',
     title: 'Lead updated: Binani Industries Ltd. (Braj Binani Group)',
-    message: 'Lead details have been updated.',
+    message: 'The lead details for Binani Industries Ltd. (Braj Binani Group), assigned to end-user Aditya Paul (Account Manager), were successfully modified and verified by head-user Snigdha Kundu (Sales Admin).',
     category: 'Deals',
     time: '6d ago',
     read: false,
@@ -54,7 +54,7 @@ const initialNotifications = [
   {
     id: 'notif-5',
     title: 'Tender LTR-TND-000015 status changed to "Submitted"',
-    message: 'Tender status has been updated by Snigdha Kundu.',
+    message: 'The bidding status of Tender LTR-TND-000015, prepared by end-user Snigdha Kundu (Bid Planner), has been changed to "Submitted" and finalized by head-user Aditya Paul (Operations Director).',
     category: 'Tenders',
     time: '1w ago',
     read: true,
@@ -67,6 +67,7 @@ export default function NotificationsPage() {
   const location = useLocation();
   const [notifications, setNotifications] = useState(initialNotifications);
   const [activeTab, setActiveTab] = useState('All');
+  const [expandedNotifId, setExpandedNotifId] = useState(null);
 
   // Sync activeTab from location state (for navigation from sidebar)
   useEffect(() => {
@@ -158,7 +159,7 @@ export default function NotificationsPage() {
                 }`}
               >
                 <span>{tab}</span>
-                <span className={`w-4.5 h-4.5 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0 ${
+                <span className={`min-w-[20px] h-5 px-1.5 py-0.5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 transition-colors ${
                   isActive ? 'bg-brand-red text-white' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {count}
@@ -178,7 +179,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Notifications List Container */}
-      <div className="flex flex-col gap-3.5 min-h-[300px]" ref={menuRef}>
+      <div className="bg-white border border-brand-border/60 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-xs" ref={menuRef}>
         {paginatedNotifications.length > 0 ? (
           paginatedNotifications.map((n) => {
             // Icon assignment based on category / type
@@ -192,78 +193,96 @@ export default function NotificationsPage() {
               iconClass = 'bg-emerald-50 border-emerald-100 text-emerald-500';
             }
 
+            const isExpanded = expandedNotifId === n.id;
             const isMenuOpen = activeMenuId === n.id;
 
             return (
               <div 
                 key={n.id} 
-                className={`bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs flex items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 relative ${
-                  !n.read ? 'border-l-4 border-l-brand-red' : ''
-                }`}
+                className="p-3.5 flex flex-col gap-2 transition-all duration-150 hover:bg-slate-50/50 relative cursor-pointer"
+                onClick={() => {
+                  setExpandedNotifId(isExpanded ? null : n.id);
+                  if (!n.read) {
+                    setNotifications(prev => prev.map(item => 
+                      item.id === n.id ? { ...item, read: true } : item
+                    ));
+                  }
+                }}
+                onMouseLeave={() => setExpandedNotifId(null)}
               >
-                {/* Left Side: Icon & Details */}
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${iconClass}`}>
-                    <Icon className="w-5 h-5" />
+                <div className="flex items-center justify-between gap-4 w-full">
+                  {/* Left Side: Icon & Details */}
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconClass}`}>
+                      <Icon className="w-4.5 h-4.5" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-slate-800 leading-snug flex items-center gap-1.5 flex-wrap">
+                        <span>{n.title}</span>
+                        {!n.read && (
+                          <span className="w-1.5 h-1.5 bg-brand-red rounded-full inline-block shrink-0" title="Unread" />
+                        )}
+                      </h4>
+                      <span className="text-[10px] text-brand-silver font-semibold mt-0.5 block">
+                        {n.time}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-slate-800 leading-snug truncate md:whitespace-normal">
-                      {n.title}
-                    </h4>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                      {n.message}
-                    </p>
-                    <span className="text-[10px] text-brand-silver font-semibold mt-1.5 block">
-                      {n.time}
-                    </span>
+                  {/* Right Side: 3-Dots actions menu */}
+                  <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Context menu for delete/read toggle */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveMenuId(isMenuOpen ? null : n.id)}
+                        className="p-1.5 rounded-lg hover:bg-slate-100 text-brand-silver hover:text-slate-700 transition-colors border-none bg-transparent cursor-pointer"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div className="absolute right-0 top-6 w-44 bg-white border border-brand-border rounded-xl shadow-lg z-30 p-1">
+                          <button
+                            onClick={() => handleToggleRead(n.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer text-left"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                            <span>{n.read ? 'Mark as unread' : 'Mark as read'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(n.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer text-left"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                            <span>Delete notification</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Right Side: Read Dot & 3-Dots actions menu */}
-                <div className="flex items-center gap-3 shrink-0">
-                  {/* Status indicator dot */}
-                  <span 
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      !n.read ? 'bg-brand-red' : 'bg-slate-200'
-                    }`}
-                    title={!n.read ? 'Unread' : 'Read'}
-                  />
-
-                  {/* Context menu for delete/read toggle */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setActiveMenuId(isMenuOpen ? null : n.id)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 text-brand-silver hover:text-slate-700 transition-colors border-none bg-transparent cursor-pointer"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {isMenuOpen && (
-                      <div className="absolute right-0 top-6 w-44 bg-white border border-brand-border rounded-xl shadow-lg z-30 p-1">
-                        <button
-                          onClick={() => handleToggleRead(n.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer text-left"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                          <span>{n.read ? 'Mark as unread' : 'Mark as read'}</span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(n.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer text-left"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-                          <span>Delete notification</span>
-                        </button>
-                      </div>
-                    )}
+                {/* Dropdown detailed message */}
+                <div 
+                  className="grid transition-all duration-200 ease-in-out overflow-hidden"
+                  style={{
+                    gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                    opacity: isExpanded ? 1 : 0,
+                    marginTop: isExpanded ? '4px' : '0px'
+                  }}
+                >
+                  <div className="overflow-hidden pl-13 pr-4">
+                    <p className="text-xs text-slate-600 bg-slate-50 border border-slate-100 p-2.5 rounded-lg leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+                      {n.message}
+                    </p>
                   </div>
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-brand-border/60 rounded-3xl p-6 shadow-xs">
+          <div className="flex flex-col items-center justify-center py-16 text-center p-6">
             <Folder className="w-12 h-12 text-slate-300 mb-3" />
             <h3 className="text-sm font-bold text-slate-700">No notifications found</h3>
             <p className="text-xs text-brand-silver mt-1">There are no activities matching this filter.</p>

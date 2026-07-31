@@ -33,6 +33,7 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState(null); // 'asc' | 'desc' | null
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
   const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -198,7 +199,7 @@ export default function LeadsPage() {
 
   const openNew = () => {
     setSelectedLead(null);
-    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', owner: '', industry: '', businessModel: '', businessModelDetail: '', bio: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadline: '' });
+    setFormData({ decisionMaker: '', company: '', email: '', phone: '', value: 0, status: 'Leads', outbound: '', broughtBy: '', owner: '', industry: '', businessModel: '', businessModelDetail: '', bio: '', remarks: '', city: '', state: '', designation: '', bant_b: 0, bant_a: 0, bant_n: 0, bant_t: 0, deadline: '' });
     setErrors({});
     setModalOpen(true);
   };
@@ -392,7 +393,7 @@ export default function LeadsPage() {
     }
   };
 
-  if (state.loading) {
+  if (state.loadingLeads) {
     return (
       <div className="w-full pb-12">
         <PageHeader 
@@ -486,13 +487,12 @@ export default function LeadsPage() {
               )}
             </div>
             
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
-              <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-              <span className="hidden sm:inline">Filters</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
-              <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
-              <span className="hidden sm:inline">Sort</span>
+            <button 
+              onClick={() => setSortOrder(prev => prev === null ? 'desc' : prev === 'desc' ? 'asc' : null)}
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-bold transition-all shadow-sm ${sortOrder ? 'bg-brand-redLight text-brand-red border-brand-red/20' : 'bg-white text-brand-text border-brand-border hover:bg-gray-50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+              <span className="hidden sm:inline">Sort {sortOrder === 'desc' ? '(High to Low)' : sortOrder === 'asc' ? '(Low to High)' : ''}</span>
             </button>
           </div>
 
@@ -595,6 +595,7 @@ export default function LeadsPage() {
         activeTab={activeTab} 
         activeStatusFilter={activeStatusFilter}
         search={search} 
+        sortOrder={sortOrder}
         selectedLeads={selectedLeads}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
@@ -627,6 +628,9 @@ export default function LeadsPage() {
               {(formData.outbound === 'Others' || (formData.outbound && !FLAT_SOURCES.includes(formData.outbound))) && (
                 <Field label="Custom Source" value={formData.outbound === 'Others' ? '' : formData.outbound} onChange={e => handleChange('outbound', e.target.value)} placeholder="Type custom source..." />
               )}
+              {formData.outbound && (
+                <Field label="Brought By" value={formData.broughtBy || ''} onChange={e => handleChange('broughtBy', e.target.value)} placeholder="Who brought the lead..." />
+              )}
             </div>
             <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
             <div className="flex flex-col gap-2">
@@ -652,19 +656,21 @@ export default function LeadsPage() {
                 />
               )}
             </div>
-            <div className="flex flex-col gap-1">
-              <Field 
-                label="Deadline" 
-                type="date" 
-                value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''} 
-                onChange={e => handleChange('deadline', e.target.value)} 
-              />
-              {formData.deadline && (
-                <span className="text-[10px] font-bold text-brand-silver ml-1">
-                  Current: {new Date(formData.deadline).toLocaleDateString()} ({formatTimeLeft(formData.deadline)})
-                </span>
-              )}
-            </div>
+            {formData.status === 'Leads' && (
+              <div className="flex flex-col gap-1">
+                <Field 
+                  label="Deadline" 
+                  type="date" 
+                  value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''} 
+                  onChange={e => handleChange('deadline', e.target.value)} 
+                />
+                {formData.deadline && (
+                  <span className="text-[10px] font-bold text-brand-silver ml-1">
+                    Current: {new Date(formData.deadline).toLocaleDateString()} ({formatTimeLeft(formData.deadline)})
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <Field label="Bio" type="textarea" value={formData.bio || ''} onChange={e => handleChange('bio', e.target.value)} placeholder="Input custom bio notes..." />
           <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleChange('remarks', e.target.value)} />
@@ -744,12 +750,14 @@ export default function LeadsPage() {
               />
             )}
           </div>
-          <Field 
-            label="Deadline" 
-            type="date" 
-            value={bulkUpdateData.deadline ? new Date(bulkUpdateData.deadline).toISOString().split('T')[0] : ''} 
-            onChange={e => setBulkUpdateData({ ...bulkUpdateData, deadline: e.target.value })} 
-          />
+          {(!bulkUpdateData.status || bulkUpdateData.status === 'Leads') && (
+            <Field 
+              label="Deadline" 
+              type="date" 
+              value={bulkUpdateData.deadline ? new Date(bulkUpdateData.deadline).toISOString().split('T')[0] : ''} 
+              onChange={e => setBulkUpdateData({ ...bulkUpdateData, deadline: e.target.value })} 
+            />
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-8">

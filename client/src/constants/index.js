@@ -14,7 +14,7 @@ export const SOURCES = [
   }
 ];
 export const FLAT_SOURCES = ['Inbound', 'LinkedIn', 'Referral', 'Website', 'Cold Email', 'Events', 'Others'];
-export const OWNERS = ['Sivaram B', 'Sureka Suresh', 'Rajib Saikia'];
+export const OWNERS = ['Sivaram B', 'Sureka Suresh', 'Rajib Saikia', 'Sanjay Pathak'];
 export const SECTORS = ['Mining', 'Highway & Railways', 'Urban Development', 'Energy & Utilities', 'Water Resources', 'Emergency Services', 'Others'];
 export const BUSINESS_MODELS = ['Joint ownership', 'Drone Sales', 'Service project'];
 export const DOC_TYPES = ['Quotation', 'Agreement', 'Purchase Order', 'Contract', 'Others'];
@@ -34,7 +34,7 @@ export const STG_COLORS = {
 };
 
 export const DEAL_COLORS = { Negotiation: '#54585A', Won: '#DA291C', Lost: '#8A8D8F' };
-export const OWN_COLORS = { 'Sivaram B': '#DA291C', 'Sureka Suresh': '#54585A', 'Rajib Saikia': '#16a34a' };
+export const OWN_COLORS = { 'Sivaram B': '#DA291C', 'Sureka Suresh': '#54585A', 'Rajib Saikia': '#16a34a', 'Sanjay Pathak': '#4F46E5' };
 
 export const BANT_TABS = [
   { key: 'all', label: 'All Leads', range: null },

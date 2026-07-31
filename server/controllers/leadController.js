@@ -78,7 +78,9 @@ export const updateLead = asyncHandler(async (req, res) => {
       const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true, session });
       
       const deals = await Deal.create([{
+        _id: lead._id,
         from_lead_id: lead._id,
+        dealId: lead.leadId,
         title: `${lead.decisionMaker || 'Lead'} - ${lead.company}`,
         company: lead.company,
         contact: lead.decisionMaker,
@@ -89,6 +91,7 @@ export const updateLead = asyncHandler(async (req, res) => {
         state: lead.state,
         sector: lead.industry,
         source: lead.outbound,
+        broughtBy: lead.broughtBy,
         businessModel: lead.businessModel,
         businessModelDetail: lead.businessModelDetail,
         notes: [lead.bio ? `Bio: ${lead.bio}` : '', lead.remarks ? `Remarks: ${lead.remarks}` : ''].filter(Boolean).join('\n\n'),
@@ -116,7 +119,15 @@ export const updateLead = asyncHandler(async (req, res) => {
   let msg = `Lead updated: ${lead.company}`;
   let type = 'info';
   
-  if (ownerChanged) {
+  const statusChangedToCommunicatedOrLater = 
+    req.body.status !== undefined && 
+    req.body.status !== existingLead.status && 
+    ['Communicated', 'Discussion', 'Pricing / Quote', 'Demo', 'Closure', 'Converted'].includes(req.body.status);
+
+  if (statusChangedToCommunicatedOrLater) {
+    msg = `Congrats! Task completed successfully within the deadline for lead ${lead.company}.`;
+    type = 'success';
+  } else if (ownerChanged) {
     msg = `Lead ${lead.company} assigned to ${lead.owner}`;
     type = 'assignment';
   }
@@ -187,7 +198,9 @@ export const convertLead = asyncHandler(async (req, res) => {
     if (!lead) throw new Error('Lead not found');
 
     const deal = await Deal.create([{
+      _id: lead._id,
       from_lead_id: lead._id,
+      dealId: lead.leadId,
       title: `${lead.decisionMaker || 'Lead'} - ${lead.company}`,
       company: lead.company,
       contact: lead.decisionMaker,
@@ -198,6 +211,7 @@ export const convertLead = asyncHandler(async (req, res) => {
       state: lead.state,
       sector: lead.industry,
       source: lead.outbound,
+      broughtBy: lead.broughtBy,
       businessModel: lead.businessModel,
       businessModelDetail: lead.businessModelDetail,
       notes: lead.remarks,
@@ -303,7 +317,15 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
   
   let msg = `${leads.length} leads bulk updated`;
   let type = 'info';
-  if (updateData.owner) {
+  
+  const statusChangedToCommunicatedOrLater = 
+    updateData.status !== undefined && 
+    ['Communicated', 'Discussion', 'Pricing / Quote', 'Demo', 'Closure', 'Converted'].includes(updateData.status);
+
+  if (statusChangedToCommunicatedOrLater) {
+    msg = `Congrats! Tasks completed successfully within the deadline for ${leads.length} leads.`;
+    type = 'success';
+  } else if (updateData.owner) {
     msg = `${leads.length} leads assigned to ${updateData.owner}`;
     type = 'assignment';
   }

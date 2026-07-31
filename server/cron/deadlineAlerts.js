@@ -12,7 +12,7 @@ cron.schedule('*/5 * * * *', async () => {
     const leads24h = await Lead.find({
       deadline: { $lte: time24h, $gt: now },
       alert24hSent: false,
-      status: { $nin: ['Closure', 'Converted'] }
+      status: 'Leads'
     });
 
     for (const lead of leads24h) {
@@ -26,7 +26,7 @@ cron.schedule('*/5 * * * *', async () => {
     const leads1h = await Lead.find({
       deadline: { $lte: time1h, $gt: now },
       alert1hSent: false,
-      status: { $nin: ['Closure', 'Converted'] }
+      status: 'Leads'
     });
 
     for (const lead of leads1h) {
@@ -46,7 +46,7 @@ cron.schedule('0 9 * * *', async () => {
     const now = new Date();
     const overdueLeads = await Lead.find({
       deadline: { $lt: now },
-      status: { $nin: ['Closure', 'Converted'] }
+      status: 'Leads'
     });
 
     if (overdueLeads.length === 0) return;

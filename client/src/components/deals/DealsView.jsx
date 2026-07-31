@@ -5,7 +5,7 @@ import DocsPanel from '../docs/DocsPanel.jsx';
 import { Clock } from 'lucide-react';
 import { fmt } from '../../utils/formatters.js';
 
-export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, onStageUpdate, search, activeStageFilter, selectedDeals = [], onToggleSelect, onToggleSelectAll }) {
+export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, onStageUpdate, search, activeStageFilter, sortOrder, selectedDeals = [], onToggleSelect, onToggleSelectAll }) {
   const { state } = useCRM();
   const [expandedDocs, setExpandedDocs] = useState({});
   const [pageSize, setPageSize] = useState(10);
@@ -28,6 +28,21 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
   // Active Stage filter
   if (activeStageFilter && activeStageFilter !== 'all') {
     filteredDeals = (filteredDeals || []).filter(d => d && d.stage === activeStageFilter);
+  }
+
+  // Sorting
+  if (sortOrder) {
+    filteredDeals.sort((a, b) => {
+      const valA = a?.value || 0;
+      const valB = b?.value || 0;
+      if (sortOrder === 'desc') return valB - valA;
+      return valA - valB;
+    });
+  } else {
+    // Default fallback to keep latest deals first
+    filteredDeals.sort((a, b) => {
+      return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
+    });
   }
 
   const toggleDocs = (id) => {

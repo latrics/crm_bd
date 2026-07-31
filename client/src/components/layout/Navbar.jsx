@@ -4,11 +4,12 @@ import useCRM from '../../hooks/useCRM.js';
 import UserMenu from './UserMenu.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
   const { state } = useCRM();
   const { user, logout } = useAuth();
-  const { settings } = useTheme();
+  const { settings, updateSetting } = useTheme();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -85,6 +86,18 @@ export default function Navbar() {
 
         {/* User Menu & Profile Dropdown */}
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => updateSetting('mode', settings.mode === 'dark' ? 'light' : 'dark')}
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm cursor-pointer text-brand-silver bg-transparent"
+            title={settings.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {settings.mode === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700 shrink-0" />
+            )}
+          </button>
+
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-notifications'))}
             className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm relative cursor-pointer"

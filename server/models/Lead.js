@@ -9,6 +9,7 @@ const leadSchema = new mongoose.Schema({
   status:       { type: String, enum: ['Leads','Communicated','Discussion','Pricing / Quote','Demo','Closure', 'Converted'], default: 'Leads' },
   value:        { type: Number, default: 0 },
   outbound:     { type: String }, // Removed enum to support custom 'Others' sources
+  broughtBy:    { type: String },
   owner:        { type: String },
   industry:     { type: String, enum: ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','Others'] },
   businessModel: { type: String },
@@ -27,5 +28,8 @@ const leadSchema = new mongoose.Schema({
   alert24hSent: { type: Boolean, default: false },
   alert1hSent: { type: Boolean, default: false }
 }, { timestamps: true });
+
+leadSchema.index({ createdAt: -1 });
+leadSchema.index({ status: 1, deadline: 1 });
 
 export default mongoose.model('Lead', leadSchema);

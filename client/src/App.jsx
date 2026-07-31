@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Monitor } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { CRMProvider } from './context/CRMContext.jsx';
 import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
@@ -52,6 +54,61 @@ function AppLayout() {
       </div>
       <Notifications />
     </>
+  );
+}
+
+function ResponsiveBlocker() {
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Typically desktop/laptop starts at 1024px
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  if (!isMobileOrTablet) return null;
+
+  return (
+    <div className="fixed inset-0 bg-[#07090e] text-white z-[999999] flex flex-col items-center justify-center p-6 text-center select-none font-sans overflow-hidden">
+      {/* Ambient Gradient Glows */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(218,41,28,0.06)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-[radial-gradient(circle,rgba(124,58,237,0.04)_0%,transparent_70%)] pointer-events-none" />
+
+      <div className="max-w-sm w-full bg-[#0d111a]/40 border border-white/[0.06] rounded-2xl p-8 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative z-10 flex flex-col items-center gap-6">
+        
+        {/* Sleek Minimal Icon Container */}
+        <div className="w-12 h-12 rounded-full border border-white/[0.08] bg-white/[0.02] flex items-center justify-center text-slate-300 shadow-[0_0_15px_rgba(255,255,255,0.02)]">
+          <Monitor className="w-5 h-5 text-slate-300 stroke-[1.5]" />
+        </div>
+        
+        {/* Sleek Minimal Text */}
+        <div className="space-y-1.5">
+          <h2 className="text-xs font-bold tracking-[0.25em] text-white uppercase">
+            Desktop Recommended
+          </h2>
+          <p className="text-[10px] text-brand-red font-semibold tracking-[0.15em] uppercase">
+            Latrics CRM
+          </p>
+        </div>
+
+        <p className="text-xs text-slate-400 leading-relaxed font-normal px-2">
+          This system is optimized for high-density desktop displays. Please sign in on a laptop or desktop computer for the full workspace experience.
+        </p>
+
+        {/* Divider */}
+        <div className="w-12 h-[1px] bg-white/[0.08]" />
+
+        {/* Sleek Resolution Indicator */}
+        <div className="text-[9px] text-slate-500 font-medium tracking-wider uppercase">
+          Min Width: 1024px
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -114,6 +171,7 @@ export default function App() {
                 </Route>
               </Routes>
               <Toast />
+              <ResponsiveBlocker />
             </div>
           </CRMProvider>
         </ThemeProvider>

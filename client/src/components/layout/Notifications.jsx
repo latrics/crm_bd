@@ -140,7 +140,7 @@ export default function Notifications() {
       const ownerLeads = state.leads.filter(l => isMatch(l.owner, owner)) || [];
       const pending = ownerLeads.filter(l => l.status === 'Leads').length;
       const urgent = ownerLeads.filter(l => {
-        if (l.status === 'Closure' || l.status === 'Converted') return false;
+        if (l.status !== 'Leads') return false;
         if (!l.deadline) return false;
         const timeLeft = new Date(l.deadline) - new Date();
         return timeLeft <= 7 * 24 * 60 * 60 * 1000;
@@ -166,9 +166,9 @@ export default function Notifications() {
     ['Communicated', 'Discussion', 'Pricing / Quote', 'Demo'].includes(l.status)
   );
   
-  // Urgent leads: deadline within 7 days (or overdue) and not closed/converted
+  // Urgent leads: deadline within 7 days (or overdue) and status is 'Leads'
   const urgentLeads = assignedLeads.filter(l => {
-    if (l.status === 'Closure' || l.status === 'Converted') return false;
+    if (l.status !== 'Leads') return false;
     if (!l.deadline) return false;
     const timeLeft = new Date(l.deadline) - new Date();
     return timeLeft < 7 * 24 * 60 * 60 * 1000;
@@ -179,7 +179,7 @@ export default function Notifications() {
   // For normal users: only assigned urgent leads
   const actionUrgentLeads = isAdminOrSuperAdmin
     ? (state.leads?.filter(l => {
-        if (l.status === 'Closure' || l.status === 'Converted') return false;
+        if (l.status !== 'Leads') return false;
         if (!l.deadline) return false;
         const timeLeft = new Date(l.deadline) - new Date();
         return timeLeft < 7 * 24 * 60 * 60 * 1000;
@@ -255,7 +255,7 @@ export default function Notifications() {
       OWNERS.forEach(owner => {
         const ownerLeads = state.leads.filter(l => isMatch(l.owner, owner)) || [];
         const hasUrgent = ownerLeads.some(l => {
-          if (l.status === 'Closure' || l.status === 'Converted') return false;
+          if (l.status !== 'Leads') return false;
           if (!l.deadline) return false;
           const timeLeft = new Date(l.deadline) - new Date();
           return timeLeft <= 24 * 60 * 60 * 1000;
@@ -313,9 +313,8 @@ export default function Notifications() {
     const handleOpen = () => setIsOpen(true);
     const handleClose = () => setIsOpen(false);
     const handleOpenFullscreen = () => {
-      setActiveFilter('all');
-      setIsExpanded(true);
       setIsOpen(false);
+      navigate('/notifications');
     };
 
     window.addEventListener('toggle-notifications', handleToggle);
@@ -619,447 +618,7 @@ export default function Notifications() {
       </div>
     );
   };
-
-  // Full Screen expanded page layout matching the sketch
-  if (isExpanded) {
-    return (
-      <div className="fixed inset-0 bg-brand-bg z-[9999] overflow-auto flex flex-col font-sans">
-        {/* Top Header */}
-        <header className="border-b border-brand-border bg-white h-16 shrink-0 sticky top-0 z-50">
-          <div className="max-w-[1400px] mx-auto px-6 h-full flex justify-between items-center">
-            {/* Left Brand and Breadcrumb (Click logo to reload page) */}
-            <div className="flex items-center gap-6">
-              <div 
-                onClick={() => window.location.reload()}
-                className="font-serif text-xl font-black text-brand-red tracking-wide flex items-center border-r-2 border-brand-red pr-6 h-8 cursor-pointer select-none"
-              >
-                LATRICS <span className="font-sans text-[10px] font-bold text-brand-silver tracking-normal ml-2">CRM</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-bold text-brand-silver uppercase tracking-wider">
-                <span onClick={closeFullscreen} className="cursor-pointer hover:text-brand-text transition-colors">CRM</span>
-                <span className="text-gray-300">/</span>
-                <span className="text-brand-text">notification</span>
-              </div>
-            </div>
-            
-            {/* Right Profile & Back button */}
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={closeFullscreen}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-xl border border-brand-border text-brand-silver text-xs font-bold hover:bg-brand-surfaceAlt hover:text-brand-text transition-all shadow-sm cursor-pointer"
-              >
-                Back to CRM
-              </button>
-              <UserMenu />
-            </div>
-          </div>
-        </header>
-
-        {/* Content Container */}
-        <main className="flex-1 max-w-[1400px] mx-auto w-full p-6 flex flex-col gap-6">
-          {/* Changed layout grid from 3-6-3 to 2-7-3 as requested (smaller left column, original size right column) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Left Sidebar Columns (width: 2/12) */}
-            <div className="lg:col-span-2 flex flex-col gap-3">
-              {/* All Notifications Button with Count Badge */}
-              <button
-                onClick={() => setActiveFilter('all')}
-                className={`w-full border rounded-crm p-3 flex items-center justify-center gap-2 font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-sm ${
-                  activeFilter === 'all' 
-                    ? 'bg-brand-charcoal text-white border-brand-charcoal' 
-                    : 'bg-white border-brand-border text-brand-text hover:border-brand-silver'
-                }`}
-              >
-                <span>All Notifications</span>
-                {unreadCount > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeFilter === 'all' ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt text-brand-silver'}`}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Card 1: Assigned Leads */}
-              {isAdminOrSuperAdmin ? (
-                <div className="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-1 sleek-scrollbar">
-                  <div className="text-[10px] text-brand-silver uppercase tracking-widest font-black mb-1 ml-1">Select Owner</div>
-                  {OWNERS.map(owner => (
-                    <button
-                      key={owner}
-                      onClick={() => {
-                        setSelectedOwner(owner);
-                        setActiveFilter('assigned');
-                      }}
-                      className={`w-full border rounded-crm p-3 flex flex-col gap-2 text-left transition-all ${
-                        selectedOwner === owner 
-                          ? 'border-brand-red ring-2 ring-brand-red/10 bg-brand-redLight/10' 
-                          : 'border-brand-border bg-white hover:border-brand-silver'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-brand-surfaceAlt flex items-center justify-center font-bold text-[10px] border border-brand-border text-brand-text shrink-0">
-                          {owner.charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-black text-brand-text truncate">{getShortName(owner)}</div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1 text-[8px] font-bold text-center">
-                        <div className="bg-blue-50 text-blue-600 py-0.5 rounded" title="Assigned">
-                          A:{ownerStats[owner]?.assigned || 0}
-                        </div>
-                        <div className="bg-amber-50 text-amber-600 py-0.5 rounded" title="Pending">
-                          P:{ownerStats[owner]?.pending || 0}
-                        </div>
-                        <div className="bg-red-50 text-brand-red py-0.5 rounded" title="Urgent">
-                          U:{ownerStats[owner]?.urgent || 0}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div 
-                    onClick={() => setActiveFilter('assigned')}
-                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
-                      activeFilter === 'assigned' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                    }`}
-                  >
-                    <div className="font-serif text-2xl font-black text-brand-charcoal mb-1">
-                      {assignedLeads.length}
-                    </div>
-                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Assigned Leads</div>
-                  </div>
-
-                  {/* Card 2: Yet to Contact */}
-                  <div 
-                    onClick={() => setActiveFilter('pending')}
-                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
-                      activeFilter === 'pending' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                    }`}
-                  >
-                    <div className="font-serif text-2xl font-black text-brand-blue mb-1">
-                      {yetToContactLeads.length}
-                    </div>
-                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Yet to contact</div>
-                  </div>
-
-                  {/* Card 3: Contacted */}
-                  <div 
-                    onClick={() => setActiveFilter('contacted')}
-                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md ${
-                      activeFilter === 'contacted' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                    }`}
-                  >
-                    <div className="font-serif text-2xl font-black text-brand-charcoal mb-1">
-                      {contactedLeads.length}
-                    </div>
-                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Contacted</div>
-                  </div>
-
-                  {/* Card 4: Urgent This Week */}
-                  <div 
-                    onClick={() => setActiveFilter('urgent')}
-                    className={`bg-white border rounded-crm p-3.5 shadow-sm text-center cursor-pointer transition-all hover:shadow-md relative ${
-                      activeFilter === 'urgent' ? 'border-brand-red ring-2 ring-brand-red/10' : 'border-brand-border'
-                    }`}
-                  >
-                    {urgentLeads.length > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-red rounded-full border-2 border-white shadow-md animate-pulse z-10" />
-                    )}
-                    <div className="font-serif text-2xl font-black text-brand-red mb-1">
-                      {urgentLeads.length}
-                    </div>
-                    <div className="text-[9px] font-bold text-brand-silver uppercase tracking-wider">Urgent this week</div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Center Column - Notifications / Leads List (width: 7/12) */}
-            <div className="lg:col-span-7 bg-white border border-brand-border rounded-crm p-6 shadow-sm flex flex-col h-[480px]">
-              <div className="border-b border-brand-border pb-4 mb-4 shrink-0">
-                <h2 className="font-serif text-xl font-black text-brand-text capitalize">
-                  {activeFilter === 'all' ? 'All Notifications' : activeFilter === 'assigned' ? 'Assigned Leads' : activeFilter === 'pending' ? 'Yet to contact' : activeFilter === 'contacted' ? 'Contacted' : 'Urgent this week'}
-                </h2>
-                {isAdminOrSuperAdmin && (
-                  <div className="flex gap-1.5 mt-3 overflow-x-auto sleek-scrollbar pb-1">
-                    {[
-                      { key: 'all', label: `All Alerts (${unreadCount})` },
-                      { key: 'assigned', label: `Assigned (${assignedLeads.length})` },
-                      { key: 'pending', label: `Pending (${yetToContactLeads.length})` },
-                      { key: 'contacted', label: `Contacted (${contactedLeads.length})` },
-                      { key: 'urgent', label: `Urgent (${urgentLeads.length})` }
-                    ].map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveFilter(tab.key)}
-                        className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
-                          activeFilter === tab.key
-                            ? 'bg-brand-charcoal text-white border-brand-charcoal'
-                            : 'bg-brand-surfaceAlt text-brand-text border-brand-border hover:border-brand-silver'
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* List */}
-              <div className="flex-1 overflow-y-auto pr-2 min-h-0 divide-y divide-brand-border sleek-scrollbar">
-                {paginatedItems.length > 0 ? (
-                  activeFilter === 'all' ? (
-                    paginatedItems.map((n) => {
-                      const isUnread = !n.isRead;
-                      return (
-                        <div 
-                          key={n.id} 
-                          onClick={() => handleNotificationClick(n)}
-                          className={`py-4 flex gap-4 items-start hover:bg-brand-surfaceAlt/30 px-3 rounded-xl transition-colors cursor-pointer border-b border-brand-border/40 last:border-b-0 relative group`}
-                        >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm ${n.color}`}>
-                            {n.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-xs leading-relaxed flex items-center gap-2 ${isUnread ? 'font-black text-brand-text' : 'font-bold text-brand-silver'}`}>
-                              <span className="truncate">{n.message}</span>
-                              {isUnread && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-brand-red shrink-0" title="Unread"></span>
-                              )}
-                            </p>
-                            <span className="text-[9px] text-brand-silver mt-1 block font-bold">{n.time}</span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    paginatedItems.map((lead) => renderLeadCard(lead))
-                  )
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center py-12 text-center text-brand-silver">
-                    <Sparkles className="w-8 h-8 text-brand-silver/60 mb-2" />
-                    <p className="text-xs font-bold uppercase tracking-wider">No records found</p>
-                    <p className="text-[10px] mt-1">Everything is caught up!</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Pagination Section */}
-              {totalItems > 0 && (
-                <div className="border-t border-brand-border pt-4 mt-6 flex justify-between items-center text-xs text-brand-silver font-bold shrink-0">
-                  {/* Rows per page selector */}
-                  <div className="flex items-center gap-2">
-                    <span>Rows per page:</span>
-                    <select 
-                      value={rowsPerPage} 
-                      onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                      className="border border-brand-border rounded px-2 py-1 text-xs text-brand-text cursor-pointer focus:outline-none"
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                    </select>
-                  </div>
-
-                  {/* Range and counts */}
-                  <div>
-                    Showing {Math.min(totalItems, (currentPage - 1) * rowsPerPage + 1)} to {Math.min(totalItems, currentPage * rowsPerPage)} of {totalItems}
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 border border-brand-border rounded hover:border-brand-silver disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                    >
-                      Prev
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 border border-brand-border rounded hover:border-brand-silver disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Column - Assigned Member Details (width: 3/12) */}
-            <div className="lg:col-span-3 bg-white border border-brand-border rounded-crm p-6 shadow-sm flex flex-col items-center text-center">
-              <span className="text-[9px] font-bold text-brand-silver uppercase tracking-widest mb-6">Assigned Member</span>
-              
-              {/* Avatar circle */}
-              <div className="w-20 h-20 rounded-full bg-brand-redLight border border-brand-red/20 text-brand-red flex items-center justify-center font-serif text-3xl font-black mb-4 shadow-sm select-none">
-                {(user?.name || 'A').substring(0, 1).toUpperCase()}
-              </div>
-
-              {/* Info */}
-              <h3 className="font-serif text-lg font-black text-brand-text mb-1">{user?.name || 'Anonymous User'}</h3>
-              <p className="text-xs text-brand-silver">{user?.email || 'no-email@latrics.com'}</p>
-              <span className="text-[9px] font-bold text-brand-silver uppercase tracking-wider bg-brand-surfaceAlt px-2 py-0.5 rounded-full mt-2">
-                {user?.role || 'User'}
-              </span>
-
-              {/* Status and Last Active */}
-              <div className="w-full border-t border-brand-border my-6 pt-4 flex flex-col gap-2.5 text-xs text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-brand-silver font-semibold">Status</span>
-                  <span className="flex items-center text-green-600 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
-                    Active
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-brand-silver font-semibold">Last active</span>
-                  <span className="text-brand-text font-bold">Today {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="w-full flex flex-col gap-2">
-                <button 
-                  onClick={() => { setIsExpanded(false); navigate('/profile'); }}
-                  className="w-full bg-brand-surfaceAlt border border-brand-border hover:bg-brand-lightGrey text-brand-text text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-xl transition-colors cursor-pointer"
-                >
-                  View profile
-                </button>
-                <button className="w-full bg-brand-surfaceAlt border border-brand-border hover:bg-brand-lightGrey text-brand-text text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-xl transition-colors cursor-pointer">
-                  View activity
-                </button>
-                <button 
-                  onClick={() => { setIsExpanded(false); navigate('/profile'); }}
-                  className="w-full bg-brand-surfaceAlt border border-brand-border hover:bg-brand-lightGrey text-brand-text text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-xl transition-colors cursor-pointer"
-                >
-                  Reset Password
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Bottom Panel - Stats */}
-          <div className="bg-white border border-brand-border rounded-crm p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-brand-silver uppercase tracking-widest mb-4">Stats</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              
-              {/* Stat 1 */}
-              <div className="bg-brand-surfaceAlt/40 rounded-xl p-4 border border-brand-border/60">
-                <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider">Total Leads</span>
-                <div className="font-serif text-2xl font-black text-brand-charcoal mt-1">
-                  {state.leads?.length || 0}
-                </div>
-              </div>
-
-              {/* Stat 2 */}
-              <div className="bg-brand-surfaceAlt/40 rounded-xl p-4 border border-brand-border/60">
-                <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider">Pending Tasks</span>
-                <div className="font-serif text-2xl font-black text-brand-blue mt-1">
-                  {yetToContactLeads.length}
-                </div>
-              </div>
-
-              {/* Stat 3 */}
-              <div className="bg-brand-surfaceAlt/40 rounded-xl p-4 border border-brand-border/60">
-                <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider">Urgent Alerts</span>
-                <div className="font-serif text-2xl font-black text-brand-red mt-1">
-                  {urgentLeads.length}
-                </div>
-              </div>
-
-              {/* Stat 4 */}
-              <div className="bg-brand-surfaceAlt/40 rounded-xl p-4 border border-brand-border/60">
-                <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider">Lead converted to deals</span>
-                <div className="font-serif text-2xl font-black text-green-600 mt-1">
-                  {state.leads?.filter(l => l.status === 'Converted').length || 0}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </main>
-
-        {/* Local Edit Lead Modal inside Notifications Page Overlay */}
-        <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-serif font-bold text-brand-text">Edit Lead</h2>
-          </div>
-
-          <form onSubmit={handleEditSubmit} className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Decision Maker" value={formData.decisionMaker} onChange={e => handleFormChange('decisionMaker', e.target.value)} error={errors.decisionMaker} />
-              <Field label="Title / Designation" value={formData.designation} onChange={e => handleFormChange('designation', e.target.value)} />
-              <Field label="Company" value={formData.company} onChange={e => handleFormChange('company', e.target.value)} error={errors.company} required />
-              <Field label="Email" value={formData.email} onChange={e => handleFormChange('email', e.target.value)} error={errors.email} required />
-              <Field label="Phone" value={formData.phone} onChange={e => handleFormChange('phone', e.target.value)} />
-              <Field label="City" value={formData.city} onChange={e => handleFormChange('city', e.target.value)} />
-              <Field label="State" value={formData.state} onChange={e => handleFormChange('state', e.target.value)} />
-              <Field label="Value (Rs.)" type="number" value={formData.value} onChange={e => handleFormChange('value', e.target.value)} />
-              <Field label="Status" type="select" options={LEAD_STAGES} value={formData.status} onChange={e => handleFormChange('status', e.target.value)} />
-              <div className="flex flex-col gap-2">
-                <Field label="Lead Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.outbound) || !formData.outbound ? formData.outbound : 'Others'} onChange={e => handleFormChange('outbound', e.target.value)} />
-                {(formData.outbound === 'Others' || (formData.outbound && !FLAT_SOURCES.includes(formData.outbound))) && (
-                  <Field label="Custom Source" value={formData.outbound === 'Others' ? '' : formData.outbound} onChange={e => handleFormChange('outbound', e.target.value)} placeholder="Type custom source..." />
-                )}
-              </div>
-              <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleFormChange('owner', e.target.value)} />
-              <div className="flex flex-col gap-2">
-                <Field label="Industry" type="select" options={SECTORS} value={SECTORS.includes(formData.industry) || !formData.industry ? formData.industry : 'Others'} onChange={e => handleFormChange('industry', e.target.value)} />
-                {(formData.industry === 'Others' || (formData.industry && !SECTORS.includes(formData.industry))) && (
-                  <Field label="Custom Industry" value={formData.industry === 'Others' ? '' : formData.industry} onChange={e => handleFormChange('industry', e.target.value)} placeholder="Type custom industry..." />
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Field label="Business Model" type="select" options={BUSINESS_MODELS} value={formData.businessModel || ''} onChange={e => handleFormChange('businessModel', e.target.value)} />
-                {formData.businessModel && (
-                  <Field 
-                    label={
-                      formData.businessModel.toLowerCase().includes('joint') 
-                        ? 'Joint Ownership Details' 
-                        : formData.businessModel.toLowerCase().includes('drone') 
-                        ? 'Drone Sales Details' 
-                        : 'Service Project Details'
-                    } 
-                    value={formData.businessModelDetail || ''} 
-                    onChange={e => handleFormChange('businessModelDetail', e.target.value)} 
-                    placeholder={`Enter details for ${formData.businessModel}...`} 
-                  />
-                )}
-              </div>
-              <div className="flex flex-col gap-1">
-                <Field 
-                  label="Deadline" 
-                  type="date" 
-                  value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''} 
-                  onChange={e => handleFormChange('deadline', e.target.value)} 
-                />
-                {formData.deadline && (
-                  <span className="text-[9px] font-bold text-brand-silver ml-1">
-                    Current: {new Date(formData.deadline).toLocaleDateString()} ({formatTimeLeft(formData.deadline)})
-                  </span>
-                )}
-              </div>
-            </div>
-            <Field label="Bio" type="textarea" value={formData.bio || ''} onChange={e => handleFormChange('bio', e.target.value)} placeholder="Input custom bio notes..." />
-            <Field label="Remarks" type="textarea" value={formData.remarks} onChange={e => handleFormChange('remarks', e.target.value)} />
-
-            <BANTSection lead={formData} onChange={handleFormChange} />
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button type="button" onClick={() => setModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2">Cancel</button>
-              <button type="submit" className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Save Lead</button>
-            </div>
-          </form>
-        </Modal>
-
-      </div>
-    );
-  }
+  // Full Screen expanded page layout has been removed. `/notifications` route is the only notification page. }
 
   // Sidebar Drawer View
   return (
@@ -1336,8 +895,7 @@ export default function Notifications() {
                 <span className="text-[10px] text-brand-silver uppercase tracking-widest font-bold">Recent Notifications</span>
                 <div className="h-px bg-brand-border flex-1"></div>
               </div>
-
-              <div className="flex flex-col gap-2">
+              <div className="bg-white border border-brand-border/60 rounded-xl divide-y divide-slate-100 overflow-hidden shadow-xs">
                 {allNotifications.slice(0, 5).length > 0 ? (
                   allNotifications.slice(0, 5).map(n => {
                     const isUnread = !n.isRead;
@@ -1347,25 +905,23 @@ export default function Notifications() {
                         onClick={() => {
                           handleNotificationClick(n);
                         }}
-                        className={`bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-3 items-start border-brand-border relative ${
-                          isUnread ? 'border-l-4 border-l-brand-red' : ''
-                        }`}
+                        className="p-3 hover:bg-slate-50/50 transition-all cursor-pointer flex gap-3 items-center relative"
                       >
-                        <div className="text-base leading-none pt-0.5">{n.icon}</div>
+                        <div className="text-base leading-none shrink-0">{n.icon}</div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs leading-normal ${isUnread ? 'font-black text-brand-text' : 'font-bold text-brand-silver'}`}>
-                            {n.message}
+                          <p className={`text-xs leading-normal flex items-center gap-1.5 flex-wrap ${isUnread ? 'font-black text-brand-text' : 'font-bold text-brand-silver'}`}>
+                            <span>{n.message}</span>
+                            {isUnread && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-red shrink-0" />
+                            )}
                           </p>
-                          <span className="text-[9px] text-brand-silver font-bold block mt-1">{n.time}</span>
+                          <span className="text-[9px] text-brand-silver font-bold block mt-0.5">{n.time}</span>
                         </div>
-                        {isUnread && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-brand-red shrink-0 self-center"></span>
-                        )}
                       </div>
                     );
                   })
                 ) : (
-                  <div className="bg-white border border-brand-border rounded-xl p-4 text-center text-brand-silver text-xs">
+                  <div className="bg-white p-4 text-center text-brand-silver text-xs">
                     No recent notifications.
                   </div>
                 )}

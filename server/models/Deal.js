@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const dealSchema = new mongoose.Schema({
   from_lead_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
+  dealId:       { type: String, unique: true, sparse: true },
   title:        { type: String, required: true, trim: true },
   company:      String,
   contact:      String,
@@ -17,10 +18,13 @@ const dealSchema = new mongoose.Schema({
   owner:        { type: String },
   sector:       String,
   source:       String,
+  broughtBy:    String,
   businessModel: { type: String },
   businessModelDetail: { type: String },
   notes:        String,
 }, { timestamps: true });
+
+dealSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Deal', dealSchema);
 

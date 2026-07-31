@@ -143,7 +143,7 @@ export default function UserMenu({ unreadCount: propUnreadCount }) {
             <button
               onClick={() => {
                 setIsOpen(false);
-                window.dispatchEvent(new CustomEvent('open-notifications-fullscreen'));
+                navigate('/notifications');
               }}
               className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-surfaceAlt/80 rounded-xl transition-colors border-none bg-transparent cursor-pointer text-left w-full"
             >

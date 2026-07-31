@@ -12,7 +12,8 @@ export default function DealsListView({
   activeStageFilter, 
   selectedDeals = [], 
   onToggleSelect, 
-  onToggleSelectAll 
+  onToggleSelectAll,
+  sortOrder
 }) {
   const { state } = useCRM();
   const [pageSize, setPageSize] = useState(10);
@@ -34,6 +35,21 @@ export default function DealsListView({
   
   if (activeStageFilter && activeStageFilter !== 'all') {
     filteredDeals = filteredDeals.filter(d => d && d.stage === activeStageFilter);
+  }
+
+  // Sorting
+  if (sortOrder) {
+    filteredDeals.sort((a, b) => {
+      const valA = a?.value || 0;
+      const valB = b?.value || 0;
+      if (sortOrder === 'desc') return valB - valA;
+      return valA - valB;
+    });
+  } else {
+    // Default fallback to keep latest deals first
+    filteredDeals.sort((a, b) => {
+      return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
+    });
   }
 
   const formatDate = (dateString) => {

@@ -7,7 +7,7 @@ import DocsPanel from '../docs/DocsPanel.jsx';
 import { Clock } from 'lucide-react';
 import { fmt } from '../../utils/formatters.js';
 
-export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, activeTab, search, activeStatusFilter, selectedLeads = [], onToggleSelect, onToggleSelectAll }) {
+export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, activeTab, search, activeStatusFilter, sortOrder, selectedLeads = [], onToggleSelect, onToggleSelectAll }) {
   const { state } = useCRM();
   const [expandedDocs, setExpandedDocs] = useState({});
   const [pageSize, setPageSize] = useState(10);
@@ -59,13 +59,22 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
     filteredLeads = (filteredLeads || []).filter(l => l && l.status === activeStatusFilter);
   }
 
-  // Always sort by leadId descending so latest lead ID (e.g. LED-000068) is at the top
-  filteredLeads.sort((a, b) => {
-    const numA = parseInt((a?.leadId || '').replace(/\D/g, ''), 10) || 0;
-    const numB = parseInt((b?.leadId || '').replace(/\D/g, ''), 10) || 0;
-    if (numA !== numB) return numB - numA;
-    return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
-  });
+  // Sorting
+  if (sortOrder) {
+    filteredLeads.sort((a, b) => {
+      const valA = a?.value || 0;
+      const valB = b?.value || 0;
+      if (sortOrder === 'desc') return valB - valA;
+      return valA - valB;
+    });
+  } else {
+    // Always sort by leadId descending so latest lead ID (e.g. LED-000068) is at the top
+    filteredLeads.sort((a, b) => {
+      const numA = parseInt((a?.leadId || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b?.leadId || '').replace(/\D/g, ''), 10) || 0;
+      return numB - numA;
+    });
+  }
 
   const toggleDocs = (id) => {
     setExpandedDocs(prev => ({ ...prev, [id]: !prev[id] }));

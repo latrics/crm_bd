@@ -158,6 +158,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    if (state.user?.email) {
+      const emailKey = state.user.email.toLowerCase();
+      localStorage.setItem(`latrics_logged_out_event_${emailKey}`, 'true');
+      sessionStorage.removeItem(`latrics_session_active_${emailKey}`);
+    }
     if (signOut) {
       await signOut();
     }

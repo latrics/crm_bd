@@ -44,7 +44,7 @@ export default function AdminUsers() {
       } catch (err) {
         console.error('Silent users update failed', err);
       }
-    }, 4000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, []);

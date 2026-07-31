@@ -32,10 +32,12 @@ export default function DashboardPage() {
     return dDate >= start && dDate <= end;
   });
 
+  const totalLeadsValue = leads.reduce((acc, curr) => acc + (curr?.value || 0), 0);
   const wonDeals = deals.filter(d => d && d.stage === 'Won');
-  const pipelineValue = deals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
   const wonValue = wonDeals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
-  const leadsValue = leads.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+  const lostDeals = deals.filter(d => d && d.stage === 'Lost');
+  const lostValue = lostDeals.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+  const pipelineValue = totalLeadsValue - wonValue - lostValue;
   const convertedLeads = leads.filter(l => l && l.status === 'Converted').length;
   const activeLeads = leads.filter(l => l && l.status !== 'Converted').length;
 
@@ -48,9 +50,9 @@ export default function DashboardPage() {
 
   const bottomKpis = [
     { label: 'Leads Added', value: leads.length, sub: 'total in range', icon: 'bg-brand-silver' },
-    { label: 'Weighted Forecast', value: fmt(leadsValue), sub: 'total lead value', icon: 'bg-brand-silver' },
-    { label: 'Pipeline Value', value: fmt(pipelineValue), sub: `${deals.length} active deals`, icon: 'bg-brand-silver' },
+    { label: 'Pipeline Value', value: fmt(pipelineValue), sub: 'unwon potential', icon: 'bg-brand-silver' },
     { label: 'Won Revenue', value: fmt(wonValue), sub: `${wonDeals.length} deals won`, icon: 'bg-brand-red', highlight: true },
+    { label: 'Lost Revenue', value: fmt(lostValue), sub: `${lostDeals.length} deals lost`, icon: 'bg-brand-silver' },
     { label: 'Total Documents', value: (state.docs || []).length, sub: 'all time', icon: 'bg-brand-silver' },
   ];
 
@@ -196,16 +198,31 @@ export default function DashboardPage() {
     });
     return sum;
   });
-  const revTrendDataWeighted = buckets.map(b => {
+
+  const revTrendDataLost = buckets.map(b => {
     let sum = 0;
     deals.forEach(d => {
       const dDate = new Date(d.close_date || d.createdAt);
-      if (!isNaN(dDate) && dDate >= b.startD && dDate <= b.endD) {
-        sum += ((d.value || 0) * (d.probability || 0) / 100);
+      if (!isNaN(dDate) && d.stage === 'Lost' && dDate >= b.startD && dDate <= b.endD) {
+        sum += d.value || 0;
       }
     });
     return sum;
   });
+
+  const revTrendDataPipeline = buckets.map((b, i) => {
+    let leadSum = 0;
+    leads.forEach(l => {
+      if (l.createdAt) {
+        const lDate = new Date(l.createdAt);
+        if (lDate >= b.startD && lDate <= b.endD) {
+          leadSum += l.value || 0;
+        }
+      }
+    });
+    return leadSum - revTrendDataWon[i] - revTrendDataLost[i];
+  });
+
 
   const pipelineDistData = LEAD_STAGES.map(stage => leads.filter(l => l.status === stage).length);
 
@@ -383,6 +400,20 @@ export default function DashboardPage() {
                 labels: revTrendLabels,
                 datasets: [
                   { 
+                    label: 'Pipeline', 
+                    data: revTrendDataPipeline, 
+                    borderColor: '#54585A', 
+                    backgroundColor: 'rgba(84, 88, 90, 0.03)', 
+                    borderWidth: 3,
+                    tension: 0.4,
+                    pointRadius: (ctx) => (ctx.raw > 0 ? 5 : 0),
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#54585A',
+                    pointBorderColor: '#FFFFFF',
+                    pointBorderWidth: 2,
+                    fill: true
+                  },
+                  { 
                     label: 'Won', 
                     data: revTrendDataWon, 
                     borderColor: '#DA291C', 
@@ -397,18 +428,18 @@ export default function DashboardPage() {
                     fill: true
                   },
                   { 
-                    label: 'Weighted', 
-                    data: revTrendDataWeighted, 
-                    borderColor: '#54585A', 
-                    backgroundColor: 'transparent', 
-                    borderWidth: 2,
-                    borderDash: [5, 5],
+                    label: 'Lost', 
+                    data: revTrendDataLost, 
+                    borderColor: '#F9B3B3', 
+                    backgroundColor: 'rgba(249, 179, 179, 0.03)', 
+                    borderWidth: 3,
                     tension: 0.4,
-                    pointRadius: (ctx) => (ctx.raw > 0 ? 4 : 0),
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#54585A',
+                    pointRadius: (ctx) => (ctx.raw > 0 ? 5 : 0),
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#F9B3B3',
                     pointBorderColor: '#FFFFFF',
-                    pointBorderWidth: 1.5
+                    pointBorderWidth: 2,
+                    fill: true
                   }
                 ]
               }} 

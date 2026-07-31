@@ -82,7 +82,7 @@ export default function AdminOverview() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchSilentData, 4000);
+    const interval = setInterval(fetchSilentData, 20000);
     return () => clearInterval(interval);
   }, []);
 

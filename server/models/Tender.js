@@ -21,4 +21,6 @@ const tenderSchema = new mongoose.Schema({
   notes:            String,
 }, { timestamps: true });
 
+tenderSchema.index({ createdAt: -1 });
+
 export default mongoose.model('Tender', tenderSchema);

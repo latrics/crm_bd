@@ -1,14 +1,14 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { User, UserCircle, Bell, Palette, Shield, Bug, HelpCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 
 export default function SettingsLayout({ children }) {
+  const navigate = useNavigate();
   const { settings } = useTheme();
   const sidebarLinks = [
     { to: '/account', label: 'Account', icon: User },
     { to: '/profile', label: 'Profile', icon: UserCircle },
     { to: '/notifications', label: 'Notifications', icon: Bell },
-    { to: '/appearance', label: 'Appearance', icon: Palette },
     { to: '/security', label: 'Security', icon: Shield },
     { to: '/bug-center', label: 'Bug Center', icon: Bug },
   ];
@@ -85,7 +85,7 @@ export default function SettingsLayout({ children }) {
             <div>
               <h4 className="text-[11px] font-bold text-brand-text">Need Help?</h4>
               <span 
-                onClick={() => window.dispatchEvent(new CustomEvent('open-notifications-fullscreen'))}
+                onClick={() => navigate('/notifications')}
                 className="text-[9px] font-bold text-brand-silver hover:text-brand-red cursor-pointer flex items-center gap-1 mt-0.5"
               >
                 Visit Help Center <span className="text-[10px]">&rarr;</span>
