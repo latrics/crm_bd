@@ -84,7 +84,7 @@ export default function DealsListView({
               <th className="py-4 px-5 whitespace-nowrap">PROBABILITY</th>
               <th className="py-4 px-5 whitespace-nowrap">STAGE</th>
               <th className="py-4 px-5 whitespace-nowrap">OWNER</th>
-              <th className="py-4 px-5 whitespace-nowrap">EXPECTED CLOSE</th>
+              <th className="py-4 px-5 whitespace-nowrap">ADDED DATE</th>
               <th className="py-4 px-5 text-right whitespace-nowrap">ACTIONS</th>
             </tr>
           </thead>
@@ -150,7 +150,7 @@ export default function DealsListView({
                   </div>
                 </td>
                 <td className="py-5 px-5 whitespace-nowrap text-[11px] text-brand-text">
-                  {formatDate(deal.close_date)}
+                  {formatDate(deal.close_date || deal.createdAt)}
                 </td>
                 <td className="py-5 px-5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-2">

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import useCRM from '../../hooks/useCRM.js';
 import { DEAL_STAGES, DEAL_COLORS } from '../../constants/index.js';
 import DocsPanel from '../docs/DocsPanel.jsx';
-import { Clock } from 'lucide-react';
 import { fmt } from '../../utils/formatters.js';
 
 export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, onStageUpdate, search, activeStageFilter, sortOrder, selectedDeals = [], onToggleSelect, onToggleSelectAll }) {
@@ -88,18 +87,7 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
           return name;
         };
 
-        const formatTimeLeft = (deadlineString) => {
-          if (!deadlineString) return '';
-          const diffMs = new Date(deadlineString) - new Date();
-          if (diffMs <= 0) return 'Overdue';
-          const diffHours = Math.round(diffMs / 3600000);
-          if (diffHours < 24) {
-            if (diffHours <= 0) return 'Due now';
-            return `${diffHours}h left`;
-          }
-          const diffDays = Math.round(diffMs / 86400000);
-          return `${diffDays} days left`;
-        };
+
         
         const isWon = deal.stage === 'Won';
         const isLost = deal.stage === 'Lost';
@@ -150,19 +138,7 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
                       {deal.title || 'Unnamed Deal'}
                     </h4>
                     <div className="text-[10px] text-brand-silver font-bold mt-1.5 flex items-center gap-2 flex-wrap">
-                      <span>Added: {formatDate(deal.createdAt)}</span>
-                      {deal.close_date && (
-                        <>
-                          <span className="text-gray-300">•</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
-                            new Date(deal.close_date) - new Date() <= 24 * 60 * 60 * 1000
-                              ? 'bg-brand-redLight text-brand-red animate-pulse'
-                              : 'bg-amber-50 text-amber-600 border border-amber-200'
-                          }`}>
-                            <Clock className="w-3 h-3 shrink-0" /> {formatTimeLeft(deal.close_date)}
-                          </span>
-                        </>
-                      )}
+                      <span>Added: {formatDate(deal.close_date || deal.createdAt)}</span>
                     </div>
                   </div>
                 </div>
