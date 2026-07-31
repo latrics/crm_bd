@@ -61,7 +61,7 @@ export default function Navbar() {
               {({ isActive }) => (
                 <>
                   <span>Leads</span>
-                  <span className={badgeClass(isActive)}>{state.leads.length}</span>
+                  <span className={badgeClass(isActive)}>{(state.leads || []).filter(l => l && l.status !== 'Converted').length}</span>
                 </>
               )}
             </NavLink>

@@ -99,6 +99,7 @@ export const updateLead = asyncHandler(async (req, res) => {
         value: lead.value,
         probability: 50,
         stage: 'Negotiation',
+        close_date: new Date().toISOString().split('T')[0],
       }], { session });
       
       deal = deals[0];
@@ -219,6 +220,7 @@ export const convertLead = asyncHandler(async (req, res) => {
       value: lead.value,
       probability: 50,
       stage: 'Negotiation',
+      close_date: new Date().toISOString().split('T')[0],
     }], { session });
 
     await session.commitTransaction();
