@@ -42,7 +42,7 @@ export default function TenderForm({ initialData, onClose }) {
       }
       onClose();
     } catch (err) {
-      setError(err.message || 'An error occurred');
+      setError(err.response?.data?.message || err.message || 'An error occurred');
     }
   };
 

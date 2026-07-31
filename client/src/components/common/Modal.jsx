@@ -18,12 +18,12 @@ export default function Modal({ isOpen, onClose, children }) {
             return input.value;
           });
         }
-      }, 50);
+      }, 150);
       return () => clearTimeout(timer);
     } else {
       initialValuesRef.current = null;
     }
-  }, [isOpen, children]);
+  }, [isOpen]);
 
   const checkFormDirty = () => {
     const el = containerRef.current;

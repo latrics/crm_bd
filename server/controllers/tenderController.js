@@ -66,7 +66,14 @@ export const getTenders = asyncHandler(async (req, res) => {
 });
 
 export const createTender = asyncHandler(async (req, res) => {
-  if (req.body.latrics_tender_id) {
+  if (!req.body.latrics_tender_id || !req.body.latrics_tender_id.trim()) {
+    const counter = await Counter.findByIdAndUpdate(
+      { _id: 'latricsTenderId' },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    req.body.latrics_tender_id = `LAT-${String(counter.seq).padStart(6, '0')}`;
+  } else {
     req.body.latrics_tender_id = req.body.latrics_tender_id.trim();
   }
 
@@ -110,7 +117,14 @@ export const importTenders = asyncHandler(async (req, res) => {
       }
 
       // 1. Latrics Tender ID Sequence
-      if (tenderData.latrics_tender_id) {
+      if (!tenderData.latrics_tender_id || !tenderData.latrics_tender_id.trim()) {
+        const counter = await Counter.findByIdAndUpdate(
+          { _id: 'latricsTenderId' },
+          { $inc: { seq: 1 } },
+          { new: true, upsert: true }
+        );
+        tenderData.latrics_tender_id = `LAT-${String(counter.seq).padStart(6, '0')}`;
+      } else {
         tenderData.latrics_tender_id = tenderData.latrics_tender_id.trim();
       }
 

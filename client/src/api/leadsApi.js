@@ -8,6 +8,7 @@ export const getLeads = async () => {
   try {
     return await api.get('/leads');
   } catch (err) {
+    if (err.response) throw err;
     console.warn('Backend down, loading from localStorage');
     return { success: true, data: getLocal('leads') };
   }
@@ -17,6 +18,7 @@ export const createLead = async (data) => {
   try {
     return await api.post('/leads', data);
   } catch (err) {
+    if (err.response) throw err;
     console.warn('Backend down, saving to localStorage');
     const leads = getLocal('leads');
     const newLead = { ...data, _id: 'local_' + Date.now(), createdAt: new Date().toISOString() };
@@ -30,6 +32,7 @@ export const updateLead = async (id, data) => {
   try {
     return await api.put(`/leads/${id}`, data);
   } catch (err) {
+    if (err.response) throw err;
     console.warn('Backend down, updating in localStorage');
     let leads = getLocal('leads');
     leads = leads.map(l => l._id === id ? { ...l, ...data } : l);
@@ -42,6 +45,7 @@ export const deleteLead = async (id) => {
   try {
     return await api.delete(`/leads/${id}`);
   } catch (err) {
+    if (err.response) throw err;
     console.warn('Backend down, deleting from localStorage');
     let leads = getLocal('leads');
     leads = leads.filter(l => l._id !== id);
@@ -83,6 +87,7 @@ export const deleteMultipleLeads = async (ids) => {
   try {
     return await api.post('/leads/bulk-delete', { ids });
   } catch (err) {
+    if (err.response) throw err;
     console.warn('Backend down, deleting from localStorage');
     let leads = getLocal('leads');
     leads = leads.filter(l => !ids.includes(l._id));
