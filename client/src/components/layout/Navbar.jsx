@@ -48,7 +48,7 @@ export default function Navbar() {
       <div className={`w-full ${paddingClass} flex justify-between items-center h-16`}>
         <div className="flex items-center gap-8 md:gap-12 h-full">
           <div 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => window.location.reload()}
             className="font-serif text-xl font-black text-brand-red tracking-wide flex items-center border-r-2 border-brand-red pr-6 h-8 cursor-pointer select-none"
           >
             LATRICS
