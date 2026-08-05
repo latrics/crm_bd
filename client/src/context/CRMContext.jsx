@@ -3,12 +3,13 @@ import { getLeads } from '../api/leadsApi.js';
 import { getDeals } from '../api/dealsApi.js';
 import { getDocs } from '../api/docsApi.js';
 import { getTenders } from '../api/tendersApi.js';
+import { getOwners } from '../api/authApi.js';
 
 export const CRMContext = createContext();
 
 const initialState = {
-  leads: [], deals: [], docs: [], tenders: [],
-  loadingLeads: true, loadingDeals: true, loadingDocs: true, loadingTenders: true,
+  leads: [], deals: [], docs: [], tenders: [], owners: [],
+  loadingLeads: true, loadingDeals: true, loadingDocs: true, loadingTenders: true, loadingOwners: true,
   syncing: false
 };
 
@@ -33,6 +34,7 @@ function crmReducer(state, action) {
     case 'UPDATE_TENDER': return { ...state, tenders: state.tenders.map(t => t._id === action.payload._id ? action.payload : t) };
     case 'DELETE_TENDER': return { ...state, tenders: state.tenders.filter(t => t._id !== action.payload) };
 
+    case 'SET_OWNERS':    return { ...state, owners: action.payload, loadingOwners: false };
     case 'SET_SYNCING':   return { ...state, syncing: action.payload };
     default:              return state;
   }
@@ -60,6 +62,7 @@ export function CRMProvider({ children }) {
         loadCollection(getDeals, 'SET_DEALS'),
         loadCollection(getDocs, 'SET_DOCS'),
         loadCollection(getTenders, 'SET_TENDERS'),
+        loadCollection(getOwners, 'SET_OWNERS'),
       ]);
     }
 

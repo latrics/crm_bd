@@ -14,8 +14,8 @@ export default function AdminUsers() {
   const [showResetModal, setShowResetModal] = useState(false);
 
   // Form states
-  const [addForm, setAddForm] = useState({ name: '', email: '', password: '', role: 'member' });
-  const [editForm, setEditForm] = useState({ id: '', name: '', email: '', role: 'member' });
+  const [addForm, setAddForm] = useState({ name: '', email: '', password: '', role: 'member', isOwner: false });
+  const [editForm, setEditForm] = useState({ id: '', name: '', email: '', role: 'member', isOwner: false });
   const [resetForm, setResetForm] = useState({ id: '', name: '', password: '', confirmPassword: '' });
 
   const [formError, setFormError] = useState('');
@@ -84,7 +84,7 @@ export default function AdminUsers() {
       const res = await createUser(addForm);
       if (res.success) {
         setShowAddModal(false);
-        setAddForm({ name: '', email: '', password: '', role: 'member' });
+        setAddForm({ name: '', email: '', password: '', role: 'member', isOwner: false });
         fetchUsers();
       }
     } catch (err) {
@@ -102,7 +102,8 @@ export default function AdminUsers() {
       const res = await updateUser(editForm.id, {
         name: editForm.name,
         email: editForm.email,
-        role: editForm.role
+        role: editForm.role,
+        isOwner: editForm.role === 'manager' ? editForm.isOwner : false
       });
       if (res.success) {
         setShowEditModal(false);
@@ -282,9 +283,16 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border whitespace-nowrap ${getRoleBadgeStyle(user.role)}`}>
-                        {displayRole(user.role)}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border whitespace-nowrap ${getRoleBadgeStyle(user.role)}`}>
+                          {displayRole(user.role)}
+                        </span>
+                        {user.isOwner && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border bg-amber-50 text-amber-600 border-amber-100 whitespace-nowrap">
+                            Owner
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-brand-charcoal">
                       {user.role?.toLowerCase() === 'member' || user.role?.toLowerCase() === 'manager' ? 'Admin' :
@@ -337,7 +345,7 @@ export default function AdminUsers() {
                             <button 
                               onClick={() => {
                                 setFormError('');
-                                setEditForm({ id: user._id, name: user.name, email: user.email, role: user.role });
+                                setEditForm({ id: user._id, name: user.name, email: user.email, role: user.role, isOwner: user.isOwner || false });
                                 setShowEditModal(true);
                               }}
                               className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg text-brand-charcoal hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all whitespace-nowrap"
@@ -446,7 +454,7 @@ export default function AdminUsers() {
                 <label className="block text-[10px] font-bold text-brand-silver uppercase tracking-wider mb-1.5">Assign Role</label>
                 <select
                   value={addForm.role}
-                  onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
+                  onChange={(e) => setAddForm({ ...addForm, role: e.target.value, isOwner: e.target.value === 'manager' ? addForm.isOwner : false })}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-brand-red/50 bg-white text-brand-charcoal font-semibold cursor-pointer"
                 >
                   <option value="member">Member</option>
@@ -455,6 +463,21 @@ export default function AdminUsers() {
                   <option value="superadmin">Super Admin</option>
                 </select>
               </div>
+
+              {addForm.role === 'manager' && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="add-is-owner"
+                    checked={addForm.isOwner}
+                    onChange={(e) => setAddForm({ ...addForm, isOwner: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-[#DA291C] focus:ring-[#DA291C]/[0.2] focus:ring-2 accent-[#DA291C] cursor-pointer"
+                  />
+                  <label htmlFor="add-is-owner" className="text-xs font-bold text-brand-charcoal cursor-pointer">
+                    Assign as Lead/Deal Owner
+                  </label>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -517,7 +540,7 @@ export default function AdminUsers() {
                 <label className="block text-[10px] font-bold text-brand-silver uppercase tracking-wider mb-1.5">Assign Role</label>
                 <select
                   value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value, isOwner: e.target.value === 'manager' ? editForm.isOwner : false })}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-brand-red/50 bg-white text-brand-charcoal font-semibold cursor-pointer"
                 >
                   <option value="member">Member</option>
@@ -526,6 +549,21 @@ export default function AdminUsers() {
                   <option value="superadmin">Super Admin</option>
                 </select>
               </div>
+
+              {editForm.role === 'manager' && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="edit-is-owner"
+                    checked={editForm.isOwner}
+                    onChange={(e) => setEditForm({ ...editForm, isOwner: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-[#DA291C] focus:ring-[#DA291C]/[0.2] focus:ring-2 accent-[#DA291C] cursor-pointer"
+                  />
+                  <label htmlFor="edit-is-owner" className="text-xs font-bold text-brand-charcoal cursor-pointer">
+                    Assign as Lead/Deal Owner
+                  </label>
+                </div>
+              )}
 
               <button
                 type="submit"

@@ -5,6 +5,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import Counter from '../models/Counter.js';
 import ApprovalRequest from '../models/ApprovalRequest.js';
 import mongoose from 'mongoose';
+import Doc from '../models/Doc.js';
 
 import { createNotification } from './notificationController.js';
 
@@ -30,15 +31,29 @@ export const createLead = asyncHandler(async (req, res) => {
   if (req.body.owner) {
     req.body.assignedAt = new Date();
   }
+  if (req.user) {
+    req.body.addedBy = req.user.name || req.user.email;
+  }
 
   const lead = await Lead.create(req.body);
   
-  await createNotification({
-    message: `New lead assigned to you: ${lead.company}`,
-    type: 'info',
-    recipientUser: lead.owner,
-    relatedId: lead._id
-  });
+  if (lead.addedBy) {
+    await createNotification({
+      message: `Lead successfully created: ${lead.company}`,
+      type: 'success',
+      recipientUser: lead.addedBy,
+      relatedId: lead._id
+    });
+  }
+
+  if (lead.owner) {
+    await createNotification({
+      message: `New lead assigned to you: ${lead.company}`,
+      type: 'assignment',
+      recipientUser: lead.owner,
+      relatedId: lead._id
+    });
+  }
 
   res.status(201).json({ success: true, data: lead });
 });
@@ -68,16 +83,17 @@ export const updateLead = asyncHandler(async (req, res) => {
     }
   }
 
-  // Handle automatic conversion to Deal if status becomes Closure
+  // Handle automatic conversion to Deal if status becomes Closure or Converted AND no Deal exists yet
+  const dealExists = await Deal.exists({ from_lead_id: req.params.id });
+  const shouldConvert = (req.body.status === 'Closure' || req.body.status === 'Converted') && !dealExists;
+
   let deal = null;
-  if (req.body.status === 'Closure' && existingLead.status !== 'Closure' && existingLead.status !== 'Converted') {
+  if (shouldConvert) {
     req.body.status = 'Converted'; // Transition internally to Converted
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
-      const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true, session });
+      const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
       
-      const deals = await Deal.create([{
+      deal = await Deal.create({
         _id: lead._id,
         from_lead_id: lead._id,
         dealId: lead.leadId,
@@ -100,17 +116,16 @@ export const updateLead = asyncHandler(async (req, res) => {
         probability: 50,
         stage: 'Negotiation',
         close_date: new Date().toISOString().split('T')[0],
-      }], { session });
+      });
       
-      deal = deals[0];
-      await session.commitTransaction();
-      session.endSession();
+      await Doc.updateMany(
+        { entity_id: lead._id, entity_type: 'lead' },
+        { entity_type: 'deal' }
+      );
       
       await createNotification({ message: `Congrats! Lead ${lead.company} converted to Deal.`, type: 'success', recipientUser: lead.owner, relatedId: lead._id });
       return res.json({ success: true, data: lead, deal });
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ success: false, message: 'Failed to convert to Deal: ' + error.message });
     }
   }
@@ -128,12 +143,41 @@ export const updateLead = asyncHandler(async (req, res) => {
   if (statusChangedToCommunicatedOrLater) {
     msg = `Congrats! Task completed successfully within the deadline for lead ${lead.company}.`;
     type = 'success';
+    if (lead.owner) {
+      await createNotification({ message: msg, type: type, recipientUser: lead.owner, relatedId: lead._id });
+    }
   } else if (ownerChanged) {
-    msg = `Lead ${lead.company} assigned to ${lead.owner}`;
-    type = 'assignment';
+    if (existingLead.owner) {
+      await createNotification({
+        message: `Lead ${lead.company} reassigned to ${lead.owner || 'Unassigned'}`,
+        type: 'info',
+        recipientUser: existingLead.owner,
+        relatedId: lead._id
+      });
+    }
+    if (lead.owner) {
+      await createNotification({
+        message: `Lead ${lead.company} assigned to you (previously owned by ${existingLead.owner || 'Unassigned'})`,
+        type: 'assignment',
+        recipientUser: lead.owner,
+        relatedId: lead._id
+      });
+    }
+  } else {
+    if (lead.owner) {
+      await createNotification({ message: msg, type: type, recipientUser: lead.owner, relatedId: lead._id });
+    }
   }
-  
-  await createNotification({ message: msg, type: type, recipientUser: lead.owner, relatedId: lead._id });
+
+  // Notify creator if status updated to Communicated or later
+  if (statusChangedToCommunicatedOrLater && lead.addedBy && lead.addedBy !== lead.owner) {
+    await createNotification({
+      message: `Progress Update: Lead ${lead.company} is now ${lead.status} (added by you)`,
+      type: 'info',
+      recipientUser: lead.addedBy,
+      relatedId: lead._id
+    });
+  }
 
   res.json({ success: true, data: lead });
 });
@@ -156,6 +200,7 @@ export const deleteLead = asyncHandler(async (req, res) => {
   }
 
   await Lead.findByIdAndDelete(req.params.id);
+  await Deal.deleteOne({ from_lead_id: req.params.id });
   await createNotification({ message: `Lead deleted: ${lead.company}`, type: 'warning', recipientUser: lead.owner, relatedId: lead._id });
   
   res.json({ success: true, data: {} });
@@ -185,6 +230,7 @@ export const deleteMultipleLeads = asyncHandler(async (req, res) => {
   }
 
   const result = await Lead.deleteMany({ _id: { $in: ids } });
+  await Deal.deleteMany({ from_lead_id: { $in: ids } });
   
   await createNotification({ message: `${ids.length} leads deleted`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
   
@@ -223,6 +269,12 @@ export const convertLead = asyncHandler(async (req, res) => {
       close_date: new Date().toISOString().split('T')[0],
     }], { session });
 
+    await Doc.updateMany(
+      { entity_id: lead._id, entity_type: 'lead' },
+      { entity_type: 'deal' },
+      { session }
+    );
+
     await session.commitTransaction();
     session.endSession();
     
@@ -256,12 +308,23 @@ export const importLeads = asyncHandler(async (req, res) => {
     if (newLead.owner) {
       newLead.assignedAt = new Date();
     }
+    if (req.user) {
+      newLead.addedBy = req.user.name || req.user.email;
+    }
     return newLead;
   });
 
   const insertedLeads = await Lead.insertMany(leadsToInsert);
   
   await createNotification({ message: `${insertedLeads.length} leads were imported into the system by ${req.user.name || req.user.email}.`, type: 'info', recipientRoles: ['Super Admin', 'Admin'] });
+
+  if (req.user) {
+    await createNotification({
+      message: `Your import of ${insertedLeads.length} leads was completed successfully.`,
+      type: 'success',
+      recipientUser: req.user.name || req.user.email
+    });
+  }
 
   res.status(201).json({ 
     success: true, 
@@ -286,6 +349,14 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     res.status(400);
     throw new Error('Please provide an array of lead IDs to update');
+  }
+
+  const statusChangedToClosureOrConverted = 
+    updateData.status !== undefined && 
+    ['Closure', 'Converted'].includes(updateData.status);
+
+  if (statusChangedToClosureOrConverted) {
+    updateData.status = 'Converted';
   }
 
   const leads = await Lead.find({ _id: { $in: ids } });
@@ -316,6 +387,62 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
   }
 
   const updatedLeads = await Lead.find({ _id: { $in: ids } });
+
+  if (statusChangedToClosureOrConverted) {
+    const existingDeals = await Deal.find({ from_lead_id: { $in: ids } }).select('from_lead_id').lean();
+    const existingDealLeadIds = new Set(existingDeals.map(d => String(d.from_lead_id)));
+    
+    const dealsToCreate = [];
+    for (const lead of updatedLeads) {
+      if (!existingDealLeadIds.has(String(lead._id))) {
+        dealsToCreate.push({
+          _id: lead._id,
+          from_lead_id: lead._id,
+          dealId: lead.leadId,
+          title: `${lead.decisionMaker || 'Lead'} - ${lead.company}`,
+          company: lead.company,
+          contact: lead.decisionMaker,
+          designation: lead.designation,
+          email: lead.email,
+          phone: lead.phone,
+          city: lead.city,
+          state: lead.state,
+          sector: lead.industry,
+          source: lead.outbound,
+          broughtBy: lead.broughtBy,
+          businessModel: lead.businessModel,
+          businessModelDetail: lead.businessModelDetail,
+          notes: [lead.bio ? `Bio: ${lead.bio}` : '', lead.remarks ? `Remarks: ${lead.remarks}` : ''].filter(Boolean).join('\n\n'),
+          owner: lead.owner,
+          value: lead.value,
+          probability: 50,
+          stage: 'Negotiation',
+          close_date: new Date().toISOString().split('T')[0],
+        });
+      }
+    }
+    
+    if (dealsToCreate.length > 0) {
+      await Deal.insertMany(dealsToCreate);
+      
+      const newDealIds = dealsToCreate.map(d => d._id);
+      await Doc.updateMany(
+        { entity_id: { $in: newDealIds }, entity_type: 'lead' },
+        { entity_type: 'deal' }
+      );
+
+      for (const deal of dealsToCreate) {
+        if (deal.owner) {
+          await createNotification({ 
+            message: `Congrats! Lead ${deal.company} converted to Deal.`, 
+            type: 'success', 
+            recipientUser: deal.owner, 
+            relatedId: deal.from_lead_id 
+          });
+        }
+      }
+    }
+  }
   
   let msg = `${leads.length} leads bulk updated`;
   let type = 'info';
@@ -325,14 +452,45 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
     ['Communicated', 'Discussion', 'Pricing / Quote', 'Demo', 'Closure', 'Converted'].includes(updateData.status);
 
   if (statusChangedToCommunicatedOrLater) {
-    msg = `Congrats! Tasks completed successfully within the deadline for ${leads.length} leads.`;
-    type = 'success';
+    const leadsByOwner = leads.reduce((acc, lead) => {
+      if (lead.owner) {
+        acc[lead.owner] = (acc[lead.owner] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    for (const [owner, count] of Object.entries(leadsByOwner)) {
+      await createNotification({
+        message: `Congrats! Tasks completed successfully within the deadline for ${count} of your leads.`,
+        type: 'success',
+        recipientUser: owner
+      });
+    }
   } else if (updateData.owner) {
-    msg = `${leads.length} leads assigned to ${updateData.owner}`;
-    type = 'assignment';
+    for (const lead of leads) {
+      if (lead.owner && lead.owner !== updateData.owner) {
+        await createNotification({
+          message: `Lead ${lead.company} reassigned to ${updateData.owner}`,
+          type: 'info',
+          recipientUser: lead.owner,
+          relatedId: lead._id
+        });
+      }
+    }
+    await createNotification({
+      message: `${leads.length} leads assigned to you by ${req.user ? (req.user.name || req.user.email) : 'System'}`,
+      type: 'assignment',
+      recipientUser: updateData.owner
+    });
+  } else {
+    if (req.user) {
+      await createNotification({
+        message: `${leads.length} leads successfully bulk updated.`,
+        type: 'info',
+        recipientUser: req.user.name || req.user.email
+      });
+    }
   }
-  
-  await createNotification({ message: msg, type: type, recipientUser: updateData.owner || null });
 
   res.json({ 
     success: true, 

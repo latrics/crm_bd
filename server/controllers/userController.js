@@ -46,6 +46,10 @@ export const getUser = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 export const createUser = asyncHandler(async (req, res) => {
   // Check if user has permission to create users
+  if (req.body.isOwner && req.body.role !== 'manager') {
+    return res.status(400).json({ success: false, message: 'Owner status can only be assigned to users with the Manager role' });
+  }
+
   const user = await User.create({
     ...req.body,
     createdBy: req.user.id
@@ -61,6 +65,13 @@ export const updateUser = asyncHandler(async (req, res) => {
   
   if (!user) {
     return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  const targetRole = req.body.role !== undefined ? req.body.role : user.role;
+  const targetIsOwner = req.body.isOwner !== undefined ? req.body.isOwner : user.isOwner;
+
+  if (targetIsOwner && targetRole !== 'manager') {
+    return res.status(400).json({ success: false, message: 'Owner status can only be assigned to users with the Manager role' });
   }
 
   // If password is included in request, assign it to trigger pre-save hashing hook

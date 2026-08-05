@@ -11,6 +11,7 @@ const tenderSchema = new mongoose.Schema({
   location:         String,
   opening_date:     String,
   closing_date:     String,
+  alert48hSent:     { type: Boolean, default: false },
   amount:           { type: Number, default: 0 },
   emd:              { type: String, enum: ['EMD Paid','EMD NA','EMD Exempted'] },
   emd_amount:       { type: Number, default: 0 },
@@ -19,6 +20,8 @@ const tenderSchema = new mongoose.Schema({
   status:           { type: String, enum: ['New','Under Preparation','Submitted','Evaluation','Awarded','Won','Lost'] },
   awarded_company:  String,
   notes:            String,
+  owner:            { type: String },
+  addedBy:          { type: String },
 }, { timestamps: true });
 
 tenderSchema.index({ createdAt: -1 });

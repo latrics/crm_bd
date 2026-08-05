@@ -44,7 +44,7 @@ export const updateApproval = asyncHandler(async (req, res) => {
   await request.save();
 
   // Notify the manager who raised it
-  await createNotification({ message: `Your deletion request for ${request.recordName} was ${status}`, type: status === 'Approved' ? 'success' : 'warning', recipientUser: request.raisedBy });
+  await createNotification({ message: `Your ${request.type} request for ${request.recordName} was ${status}`, type: status === 'Approved' ? 'success' : 'warning', recipientUser: request.raisedBy });
 
   res.json({ success: true, data: request });
 });

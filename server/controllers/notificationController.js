@@ -18,13 +18,17 @@ export const getNotifications = async (req, res, next) => {
   try {
     const { role, userName } = req.query; // Send from client to filter relevant notifications
 
-    let queryRoles = ['All'];
+    let queryRoles = ['All', 'all'];
     if (role) {
-      if (role.toLowerCase() === 'superadmin' || role.toLowerCase() === 'super admin') {
+      const lowerRole = role.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (lowerRole === 'superadmin') {
         queryRoles.push('Super Admin', 'superadmin');
-      }
-      if (role.toLowerCase() === 'admin') {
+      } else if (lowerRole === 'admin') {
         queryRoles.push('Admin', 'admin');
+      } else if (lowerRole === 'manager') {
+        queryRoles.push('Manager', 'manager');
+      } else if (lowerRole === 'member') {
+        queryRoles.push('Member', 'member');
       }
     }
 

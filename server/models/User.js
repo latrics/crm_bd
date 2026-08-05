@@ -36,6 +36,10 @@ const UserSchema = new mongoose.Schema({
     enum: ['superadmin', 'admin', 'manager', 'member'],
     required: true
   },
+  isOwner: {
+    type: Boolean,
+    default: false
+  },
   isActive: {
     type: Boolean,
     default: true

@@ -88,7 +88,30 @@ export const createTender = asyncHandler(async (req, res) => {
     req.body.tender_no = req.body.tender_id || req.body.latrics_tender_id || 'TND-UNNAMED';
   }
 
+  if (req.user) {
+    req.body.addedBy = req.user.name || req.user.email;
+  }
+
   const tender = await Tender.create(req.body);
+
+  if (tender.addedBy) {
+    await createNotification({
+      message: `Tender successfully created: ${tender.tender_no}`,
+      type: 'success',
+      recipientUser: tender.addedBy,
+      relatedId: tender._id
+    });
+  }
+
+  if (tender.owner) {
+    await createNotification({
+      message: `New Tender assigned to you: ${tender.tender_no}`,
+      type: 'assignment',
+      recipientUser: tender.owner,
+      relatedId: tender._id
+    });
+  }
+
   res.status(201).json({ success: true, data: tender });
 });
 
@@ -222,12 +245,32 @@ export const importTenders = asyncHandler(async (req, res) => {
         tenderData.emd_amount = isNaN(parsedEmdAmount) ? 0 : parsedEmdAmount;
       }
 
+      if (req.user) {
+        tenderData.addedBy = req.user.name || req.user.email;
+      }
+
       // 8. Create tender in MongoDB
       const tender = await Tender.create(tenderData);
       createdTenders.push(tender);
     } catch (err) {
       console.error(`Error importing tender row ${i + 1}:`, err.message);
       errors.push({ row: i + 1, message: err.message });
+    }
+  }
+
+  if (createdTenders.length > 0) {
+    await createNotification({
+      message: `${createdTenders.length} tenders were imported into the system by ${req.user.name || req.user.email}.`,
+      type: 'info',
+      recipientRoles: ['Super Admin', 'Admin']
+    });
+
+    if (req.user) {
+      await createNotification({
+        message: `Your import of ${createdTenders.length} tenders was completed successfully.`,
+        type: 'success',
+        recipientUser: req.user.name || req.user.email
+      });
     }
   }
 
@@ -240,8 +283,78 @@ export const importTenders = asyncHandler(async (req, res) => {
 });
 
 export const updateTender = asyncHandler(async (req, res) => {
+  const existingTender = await Tender.findById(req.params.id);
+  if (!existingTender) return res.status(404).json({ success: false, message: 'Tender not found' });
+
+  const ownerChanged = req.body.owner !== undefined && req.body.owner !== existingTender.owner;
+  const statusChanged = req.body.status !== undefined && req.body.status !== existingTender.status;
+
   const tender = await Tender.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-  if (!tender) return res.status(404).json({ success: false, message: 'Tender not found' });
+
+  if (ownerChanged) {
+    if (existingTender.owner) {
+      await createNotification({
+        message: `Tender ${tender.tender_no} reassigned to ${tender.owner || 'Unassigned'}`,
+        type: 'info',
+        recipientUser: existingTender.owner,
+        relatedId: tender._id
+      });
+    }
+    if (tender.owner) {
+      await createNotification({
+        message: `Tender ${tender.tender_no} assigned to you (previously owned by ${existingTender.owner || 'Unassigned'})`,
+        type: 'assignment',
+        recipientUser: tender.owner,
+        relatedId: tender._id
+      });
+    }
+  } else if (statusChanged) {
+    const importantStatuses = ['Submitted', 'Awarded', 'Won', 'Lost'];
+    if (importantStatuses.includes(tender.status)) {
+      if (tender.owner) {
+        await createNotification({
+          message: `Tender ${tender.tender_no} status changed to ${tender.status}`,
+          type: tender.status === 'Won' || tender.status === 'Awarded' ? 'success' : (tender.status === 'Lost' ? 'warning' : 'info'),
+          recipientUser: tender.owner,
+          relatedId: tender._id
+        });
+      }
+      await createNotification({
+        message: `Tender Alert: ${tender.tender_no} status updated to ${tender.status} by ${tender.owner || 'Unassigned'}`,
+        type: tender.status === 'Won' || tender.status === 'Awarded' ? 'success' : (tender.status === 'Lost' ? 'warning' : 'info'),
+        recipientRoles: ['Super Admin', 'Admin']
+      });
+    } else {
+      if (tender.owner) {
+        await createNotification({
+          message: `Tender ${tender.tender_no} status updated to ${tender.status}`,
+          type: 'info',
+          recipientUser: tender.owner,
+          relatedId: tender._id
+        });
+      }
+    }
+  } else {
+    if (tender.owner) {
+      await createNotification({
+        message: `Tender updated: ${tender.tender_no}`,
+        type: 'info',
+        recipientUser: tender.owner,
+        relatedId: tender._id
+      });
+    }
+  }
+
+  // Notify creator on status progress
+  if (statusChanged && tender.addedBy && tender.addedBy !== tender.owner) {
+    await createNotification({
+      message: `Progress Update: Tender ${tender.tender_no} status is now ${tender.status} (added by you)`,
+      type: 'info',
+      recipientUser: tender.addedBy,
+      relatedId: tender._id
+    });
+  }
+
   res.json({ success: true, data: tender });
 });
 

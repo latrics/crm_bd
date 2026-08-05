@@ -8,7 +8,7 @@ import Modal from '../common/Modal.jsx';
 import Field from '../common/Field.jsx';
 import UserMenu from './UserMenu.jsx';
 import BANTSection from '../leads/BANTSection.jsx';
-import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../../constants/index.js';
+import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../../constants/index.js';
 import { updateLead, deleteLead } from '../../api/leadsApi.js';
 import { getNotifications, markNotificationAsRead } from '../../api/notificationsApi.js';
 import useToast from '../../hooks/useToast.js';
@@ -74,13 +74,13 @@ export default function Notifications() {
   // Initialize selectedOwner on load or change
   useEffect(() => {
     if (user) {
-      if (isAdminOrSuperAdmin && OWNERS && OWNERS.length > 0) {
-        setSelectedOwner(OWNERS[0]);
+      if (isAdminOrSuperAdmin && state.owners && state.owners.length > 0) {
+        setSelectedOwner(state.owners[0].name);
       } else {
         setSelectedOwner(user.name);
       }
     }
-  }, [user]);
+  }, [user, state.owners]);
 
   const markAsRead = async (id) => {
     try {
@@ -135,8 +135,9 @@ export default function Notifications() {
 
   // Calculate owner workload statistics (Admins / Super Admins only)
   const ownerStats = {};
-  if (isAdminOrSuperAdmin && state.leads && OWNERS) {
-    OWNERS.forEach(owner => {
+  if (isAdminOrSuperAdmin && state.leads && state.owners) {
+    state.owners.forEach(ownerObj => {
+      const owner = ownerObj.name;
       const ownerLeads = state.leads.filter(l => isMatch(l.owner, owner)) || [];
       const pending = ownerLeads.filter(l => l.status === 'Leads').length;
       const urgent = ownerLeads.filter(l => {
@@ -250,9 +251,10 @@ export default function Notifications() {
   // Get banner content to display conditionally
   const getBannerContent = () => {
     if (isAdminOrSuperAdmin) {
-      if (!OWNERS || !state.leads) return null;
+      if (!state.owners || !state.leads) return null;
       const ownersWithUrgent = [];
-      OWNERS.forEach(owner => {
+      state.owners.forEach(ownerObj => {
+        const owner = ownerObj.name;
         const ownerLeads = state.leads.filter(l => isMatch(l.owner, owner)) || [];
         const hasUrgent = ownerLeads.some(l => {
           if (l.status !== 'Leads') return false;
@@ -734,41 +736,44 @@ export default function Notifications() {
           {/* Stats Row */}
           {isAdminOrSuperAdmin ? (
             <div className="flex flex-col gap-2.5 mb-6">
-              {OWNERS.map(owner => (
-                <button
-                  key={owner}
-                  onClick={() => {
-                    setSelectedOwner(owner);
-                    openFullscreen('assigned');
-                  }}
-                  className={`w-full border rounded-crm p-3.5 flex items-center justify-between text-left transition-all ${
-                    selectedOwner === owner 
-                      ? 'border-brand-red ring-2 ring-brand-red/10 bg-brand-redLight/10' 
-                      : 'border-brand-border bg-white hover:border-brand-silver'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-surfaceAlt flex items-center justify-center font-bold text-xs border border-brand-border text-brand-text shrink-0">
-                      {owner.charAt(0)}
+              {(state.owners || []).map(ownerObj => {
+                const owner = ownerObj.name;
+                return (
+                  <button
+                    key={owner}
+                    onClick={() => {
+                      setSelectedOwner(owner);
+                      openFullscreen('assigned');
+                    }}
+                    className={`w-full border rounded-crm p-3.5 flex items-center justify-between text-left transition-all ${
+                      selectedOwner === owner 
+                        ? 'border-brand-red ring-2 ring-brand-red/10 bg-brand-redLight/10' 
+                        : 'border-brand-border bg-white hover:border-brand-silver'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-brand-surfaceAlt flex items-center justify-center font-bold text-xs border border-brand-border text-brand-text shrink-0">
+                        {owner.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-brand-text">{getShortName(owner)}</div>
+                        <div className="text-[10px] text-brand-silver font-bold">Owner</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-brand-text">{getShortName(owner)}</div>
-                      <div className="text-[10px] text-brand-silver font-bold">Owner</div>
+                    <div className="flex gap-2 text-[10px] font-bold shrink-0">
+                      <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded" title="Assigned">
+                        A: {ownerStats[owner]?.assigned || 0}
+                      </span>
+                      <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded" title="Pending">
+                        P: {ownerStats[owner]?.pending || 0}
+                      </span>
+                      <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded flex items-center gap-0.5" title="Urgent">
+                        U: {ownerStats[owner]?.urgent || 0}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex gap-2 text-[10px] font-bold shrink-0">
-                    <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded" title="Assigned">
-                      A: {ownerStats[owner]?.assigned || 0}
-                    </span>
-                    <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded" title="Pending">
-                      P: {ownerStats[owner]?.pending || 0}
-                    </span>
-                    <span className="bg-red-50 text-brand-red px-1.5 py-0.5 rounded" title="Urgent">
-                      U: {ownerStats[owner]?.urgent || 0}
-                    </span>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3 mb-6">

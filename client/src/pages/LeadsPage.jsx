@@ -12,7 +12,7 @@ import Confirm from '../components/common/Confirm.jsx';
 import ImportWizard from '../components/leads/ImportWizard.jsx';
 import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads } from '../api/leadsApi.js';
 import useToast from '../hooks/useToast.js';
-import { LEAD_STAGES, SOURCES, FLAT_SOURCES, OWNERS, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../constants/index.js';
+import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
 
 export default function LeadsPage() {
@@ -26,6 +26,7 @@ export default function LeadsPage() {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [formSubmitting, setFormSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -122,7 +123,9 @@ export default function LeadsPage() {
   const statusStats = LEAD_STAGES.map(stage => ({
     key: stage,
     label: stage.toUpperCase(),
-    count: state.leads.filter(l => l.status === stage).length,
+    count: stage === 'Closure'
+      ? state.leads.filter(l => l.status === 'Closure' || l.status === 'Converted').length
+      : state.leads.filter(l => l.status === stage).length,
     color: STG_COLORS[stage] || '#8A8D8F'
   }));
 
@@ -233,6 +236,7 @@ export default function LeadsPage() {
       return;
     }
 
+    setFormSubmitting(true);
     try {
       let finalData = { ...formData };
 
@@ -254,6 +258,8 @@ export default function LeadsPage() {
       setModalOpen(false);
     } catch (err) {
       addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error saving lead' });
+    } finally {
+      setFormSubmitting(false);
     }
   };
 
@@ -632,7 +638,7 @@ export default function LeadsPage() {
                 <Field label="Brought By" value={formData.broughtBy || ''} onChange={e => handleChange('broughtBy', e.target.value)} placeholder="Who brought the lead..." />
               )}
             </div>
-            <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
+            <Field label="Owner" type="select" options={(state.owners || []).map(o => o.name)} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
             <div className="flex flex-col gap-2">
               <Field label="Industry" type="select" options={SECTORS} value={SECTORS.includes(formData.industry) || !formData.industry ? formData.industry : 'Others'} onChange={e => handleChange('industry', e.target.value)} />
               {(formData.industry === 'Others' || (formData.industry && !SECTORS.includes(formData.industry))) && (
@@ -679,7 +685,13 @@ export default function LeadsPage() {
 
           <div className="flex justify-end gap-3 mt-6">
             <button type="button" onClick={() => setModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2">Cancel</button>
-            <button type="submit" className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Save Lead</button>
+            <button 
+              type="submit" 
+              disabled={formSubmitting} 
+              className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+            >
+              {formSubmitting ? 'Saving...' : 'Save Lead'}
+            </button>
           </div>
         </form>
 
@@ -721,7 +733,7 @@ export default function LeadsPage() {
           <Field 
             label="Owner" 
             type="select" 
-            options={OWNERS} 
+            options={(state.owners || []).map(o => o.name)} 
             value={bulkUpdateData.owner} 
             onChange={e => setBulkUpdateData({ ...bulkUpdateData, owner: e.target.value })} 
           />

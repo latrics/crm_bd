@@ -179,3 +179,11 @@ export const syncUser = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get all active owners
+// @route   GET /api/v1/auth/owners
+// @access  Private
+export const getOwners = asyncHandler(async (req, res) => {
+  const owners = await User.find({ isOwner: true, isActive: true }).select('name email').lean();
+  res.status(200).json({ success: true, data: owners });
+});
+

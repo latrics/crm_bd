@@ -8,7 +8,7 @@ import ChartCard from '../components/charts/ChartCard.jsx';
 import ChartCanvas from '../components/charts/ChartCanvas.jsx';
 import { getQuickRange, daysBetween } from '../utils/dateHelpers.js';
 import { fmt } from '../utils/formatters.js';
-import { LEAD_STAGES, OWNERS } from '../constants/index.js';
+import { LEAD_STAGES } from '../constants/index.js';
 import { Users, Target, Percent, Trophy } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -53,11 +53,11 @@ export default function DashboardPage() {
   ];
 
   const bottomKpis = [
-    { label: 'Leads Added', value: leads.length, sub: 'total in range', icon: 'bg-brand-silver' },
+    { label: 'Active Leads', value: activeLeads, sub: 'not yet converted', icon: 'bg-brand-silver' },
     { label: 'Pipeline Value', value: fmt(pipelineValue), sub: 'unwon potential', icon: 'bg-brand-silver' },
     { label: 'Won Revenue', value: fmt(wonValue), sub: `${wonDeals.length} deals won`, icon: 'bg-brand-red', highlight: true },
     { label: 'Lost Revenue', value: fmt(lostValue), sub: `${lostDeals.length} deals lost`, icon: 'bg-brand-silver' },
-    { label: 'Total Documents', value: (state.docs || []).length, sub: 'all time', icon: 'bg-brand-silver' },
+    { label: 'Total Documents', value: (state.docs || []).filter(d => d.entity_type === 'deal').length, sub: 'all time', icon: 'bg-brand-silver' },
   ];
 
   const dealPipeline = [
@@ -239,10 +239,15 @@ export default function DashboardPage() {
   });
 
 
-  const pipelineDistData = LEAD_STAGES.map(stage => leads.filter(l => l.status === stage).length);
+  const pipelineDistData = LEAD_STAGES.map(stage => {
+    if (stage === 'Closure') {
+      return leads.filter(l => l.status === 'Closure' || l.status === 'Converted').length;
+    }
+    return leads.filter(l => l.status === stage).length;
+  });
 
   const allUniqueOwners = Array.from(new Set([
-    ...OWNERS.filter(o => o !== 'Others'),
+    ...(state.owners || []).map(o => o.name),
     ...leads.map(l => l.owner).filter(Boolean)
   ]));
 

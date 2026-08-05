@@ -11,7 +11,7 @@ import DocsPanel from '../components/docs/DocsPanel.jsx';
 import Confirm from '../components/common/Confirm.jsx';
 import { createDeal, updateDeal, deleteDeal, revertDeal } from '../api/dealsApi.js';
 import useToast from '../hooks/useToast.js';
-import { DEAL_STAGES, LEAD_STAGES, OWNERS, SECTORS, DEAL_COLORS, SOURCES, FLAT_SOURCES, BUSINESS_MODELS } from '../constants/index.js';
+import { DEAL_STAGES, LEAD_STAGES, SECTORS, DEAL_COLORS, SOURCES, FLAT_SOURCES, BUSINESS_MODELS } from '../constants/index.js';
 
 export default function DealsPage() {
   const { state, dispatch } = useCRM();
@@ -23,6 +23,7 @@ export default function DealsPage() {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [formSubmitting, setFormSubmitting] = useState(false);
   const [revertConfirm, setRevertConfirm] = useState(false);
   const [revertStage, setRevertStage] = useState('Prospecting');
   const [search, setSearch] = useState('');
@@ -133,7 +134,17 @@ export default function DealsPage() {
   };
 
   const handleChange = (field, val) => {
-    setFormData(p => ({ ...p, [field]: val }));
+    setFormData(p => {
+      const updated = { ...p, [field]: val };
+      if (field === 'stage') {
+        if (val === 'Won') {
+          updated.probability = 100;
+        } else if (val === 'Lost') {
+          updated.probability = 0;
+        }
+      }
+      return updated;
+    });
     if (errors[field]) {
       setErrors(p => ({ ...p, [field]: null }));
     }
@@ -153,6 +164,7 @@ export default function DealsPage() {
       return;
     }
 
+    setFormSubmitting(true);
     try {
       let finalData = { ...formData };
       if (selectedDeal) {
@@ -167,6 +179,8 @@ export default function DealsPage() {
       setModalOpen(false);
     } catch (err) {
       addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error saving deal' });
+    } finally {
+      setFormSubmitting(false);
     }
   };
 
@@ -245,7 +259,13 @@ export default function DealsPage() {
 
   const handleStageUpdate = async (deal, newStage) => {
     try {
-      const res = await updateDeal(deal._id, { ...deal, stage: newStage });
+      const updatePayload = { ...deal, stage: newStage };
+      if (newStage === 'Won') {
+        updatePayload.probability = 100;
+      } else if (newStage === 'Lost') {
+        updatePayload.probability = 0;
+      }
+      const res = await updateDeal(deal._id, updatePayload);
       dispatch({ type: 'UPDATE_DEAL', payload: res.data });
       addToast({ type: 'success', message: `Moved to ${newStage}` });
     } catch (err) {
@@ -460,7 +480,7 @@ export default function DealsPage() {
             <Field label="Probability %" type="number" value={formData.probability} onChange={e => handleChange('probability', e.target.value)} />
             <Field label="Stage" type="select" options={DEAL_STAGES} value={formData.stage} onChange={e => handleChange('stage', e.target.value)} />
             <Field label="Close Date" type="date" value={formData.close_date ? new Date(formData.close_date).toISOString().split('T')[0] : ''} onChange={e => handleChange('close_date', e.target.value)} />
-            <Field label="Owner" type="select" options={OWNERS} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
+            <Field label="Owner" type="select" options={(state.owners || []).map(o => o.name)} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
             <div className="flex flex-col gap-2">
               <Field label="Deal Source" type="select" options={SOURCES} value={FLAT_SOURCES.includes(formData.source) || !formData.source ? formData.source : 'Others'} onChange={e => handleChange('source', e.target.value)} />
               {(formData.source === 'Others' || (formData.source && !FLAT_SOURCES.includes(formData.source))) && (
@@ -498,7 +518,13 @@ export default function DealsPage() {
 
           <div className="flex justify-end gap-3 mt-6">
             <button type="button" onClick={() => setModalOpen(false)} className="bg-brand-surfaceAlt border border-brand-border text-brand-silver text-sm rounded-xl px-4 py-2">Cancel</button>
-            <button type="submit" className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors">Save Deal</button>
+            <button 
+              type="submit" 
+              disabled={formSubmitting} 
+              className="bg-brand-red text-white font-bold text-sm rounded-xl px-5 py-2 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+            >
+              {formSubmitting ? 'Saving...' : 'Save Deal'}
+            </button>
           </div>
         </form>
 

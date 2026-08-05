@@ -14,7 +14,6 @@ export const SOURCES = [
   }
 ];
 export const FLAT_SOURCES = ['Inbound', 'LinkedIn', 'Referral', 'Website', 'Cold Email', 'Events', 'Others'];
-export const OWNERS = ['Sivaram B', 'Sureka Suresh', 'Rajib Saikia', 'Sanjay Pathak'];
 export const SECTORS = ['Mining', 'Highway & Railways', 'Urban Development', 'Energy & Utilities', 'Water Resources', 'Emergency Services', 'Others'];
 export const BUSINESS_MODELS = ['Joint ownership', 'Drone Sales', 'Service project'];
 export const DOC_TYPES = ['Quotation', 'Agreement', 'Purchase Order', 'Contract', 'Others'];

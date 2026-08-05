@@ -3,7 +3,8 @@ import {
   logout, 
   getMe, 
   syncUser,
-  verifyInvite
+  verifyInvite,
+  getOwners
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -13,5 +14,6 @@ router.post('/logout', logout);
 router.get('/me', protect, getMe);
 router.post('/sync-user', syncUser);
 router.get('/verify-invite', verifyInvite);
+router.get('/owners', protect, getOwners);
 
 export default router;

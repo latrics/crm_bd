@@ -87,3 +87,12 @@ export const register = async (userData) => {
     throw err.response?.data || err;
   }
 };
+
+export const getOwners = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/owners`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};

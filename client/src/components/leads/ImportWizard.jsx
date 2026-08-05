@@ -4,7 +4,7 @@ import Modal from '../common/Modal.jsx';
 import useCRM from '../../hooks/useCRM.js';
 import useToast from '../../hooks/useToast.js';
 import { importLeads, updateLead } from '../../api/leadsApi.js';
-import { LEAD_STAGES, SOURCES, OWNERS, SECTORS } from '../../constants/index.js';
+import { LEAD_STAGES, SOURCES, SECTORS } from '../../constants/index.js';
 
 const CRM_FIELDS = [
   { key: 'decisionMaker', label: 'Decision Maker', aliases: ['decision maker', 'name', 'contact person'] },
