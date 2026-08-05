@@ -271,7 +271,7 @@ export default function DashboardPage() {
         <TargetAchievement 
           actuals={{ 
             partners: leads.filter(l => l && l.status === 'Closure').length + wonDeals.length, 
-            droneSales: wonDeals.length 
+            droneSales: deals.filter(d => d && d.businessModel === 'Drone Sales').length 
           }} 
         />
 
