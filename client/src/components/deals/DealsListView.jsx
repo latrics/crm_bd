@@ -38,18 +38,15 @@ export default function DealsListView({
   }
 
   // Sorting
-  if (sortOrder) {
-    filteredDeals.sort((a, b) => {
-      const valA = a?.value || 0;
-      const valB = b?.value || 0;
-      if (sortOrder === 'desc') return valB - valA;
-      return valA - valB;
-    });
+  if (sortOrder === 'highest_value') {
+    filteredDeals.sort((a, b) => (b?.value || 0) - (a?.value || 0));
+  } else if (sortOrder === 'lowest_value') {
+    filteredDeals.sort((a, b) => (a?.value || 0) - (b?.value || 0));
+  } else if (sortOrder === 'oldest') {
+    filteredDeals.sort((a, b) => new Date(a?.createdAt || 0) - new Date(b?.createdAt || 0));
   } else {
-    // Default fallback to keep latest deals first
-    filteredDeals.sort((a, b) => {
-      return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
-    });
+    // Default: 'latest'
+    filteredDeals.sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));
   }
 
   const formatDate = (dateString) => {

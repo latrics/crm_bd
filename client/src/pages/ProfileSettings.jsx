@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { updatePassword } from '../api/authApi.js';
 import { getUsers } from '../api/adminApi.js';
@@ -6,6 +7,8 @@ import { Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function ProfileSettings() {
   const { user, updateProfile } = useAuth();
+  const { pathname } = useLocation();
+  const isSecurity = pathname === '/security';
 
   // Personal Information State
   const [fullName, setFullName] = useState(user?.name || '');
@@ -104,6 +107,110 @@ export default function ProfileSettings() {
     }
   };
 
+  if (isSecurity) {
+    return (
+      <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+        
+        {/* Alert Messages */}
+        {passwordMessage && (
+          <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-2xl text-xs font-bold text-emerald-700 flex items-center gap-2 shadow-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{passwordMessage}</span>
+          </div>
+        )}
+        {error && (
+          <div className="p-3.5 bg-rose-50 border border-rose-200/80 rounded-2xl text-xs font-bold text-rose-700 flex items-center gap-2 shadow-xs">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Card 2: Change Password */}
+        <div className="bg-white border border-brand-border/60 rounded-3xl p-6 shadow-xs flex flex-col gap-5">
+          <h2 className="text-xs font-bold text-brand-text uppercase tracking-widest">Change Password</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            
+            {/* Current Password */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 whitespace-nowrap">Current Password</label>
+              <div className="relative">
+                <input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 focus:border-brand-red focus:ring-2 focus:ring-brand-red/10 rounded-xl text-sm font-medium text-slate-800 transition-all pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 whitespace-nowrap">New Password</label>
+              <div className="relative">
+                <input
+                  type={showNew ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 focus:border-brand-red focus:ring-2 focus:ring-brand-red/10 rounded-xl text-sm font-medium text-slate-800 transition-all pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew(!showNew)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 whitespace-nowrap">Confirm New Password</label>
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 focus:border-brand-red focus:ring-2 focus:ring-brand-red/10 rounded-xl text-sm font-medium text-slate-800 transition-all pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleUpdatePassword}
+              disabled={loading}
+              className="bg-transparent border border-brand-red/20 hover:bg-brand-redLight/20 active:bg-brand-redLight/40 text-brand-red font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            >
+              {loading ? 'Updating Password...' : 'Update Password'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">
       
@@ -112,12 +219,6 @@ export default function ProfileSettings() {
         <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-2xl text-xs font-bold text-emerald-700 flex items-center gap-2 shadow-xs">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{infoMessage}</span>
-        </div>
-      )}
-      {passwordMessage && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-2xl text-xs font-bold text-emerald-700 flex items-center gap-2 shadow-xs">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{passwordMessage}</span>
         </div>
       )}
       {error && (
@@ -232,89 +333,6 @@ export default function ProfileSettings() {
               />
             </div>
 
-          </div>
-        </div>
-
-        {/* Card 2: Change Password */}
-        <div className="bg-white border border-brand-border/60 rounded-3xl p-6 shadow-xs flex flex-col gap-5">
-          <h2 className="text-xs font-bold text-brand-text uppercase tracking-widest">Change Password</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            
-            {/* Current Password */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 whitespace-nowrap">Current Password</label>
-              <div className="relative">
-                <input
-                  type={showCurrent ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 focus:border-brand-red focus:ring-2 focus:ring-brand-red/10 rounded-xl text-sm font-medium text-slate-800 transition-all pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
-                >
-                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* New Password */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 whitespace-nowrap">New Password</label>
-              <div className="relative">
-                <input
-                  type={showNew ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 focus:border-brand-red focus:ring-2 focus:ring-brand-red/10 rounded-xl text-sm font-medium text-slate-800 transition-all pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNew(!showNew)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
-                >
-                  {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Confirm New Password */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 whitespace-nowrap">Confirm New Password</label>
-              <div className="relative">
-                <input
-                  type={showConfirm ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 focus:border-brand-red focus:ring-2 focus:ring-brand-red/10 rounded-xl text-sm font-medium text-slate-800 transition-all pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
-                >
-                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleUpdatePassword}
-              disabled={loading}
-              className="bg-transparent border border-brand-red/20 hover:bg-brand-redLight/20 active:bg-brand-redLight/40 text-brand-red font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
-            >
-              {loading ? 'Updating Password...' : 'Update Password'}
-            </button>
           </div>
         </div>
 

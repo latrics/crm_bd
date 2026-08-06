@@ -8,66 +8,92 @@ import {
   Trash2, 
   MoreVertical, 
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  Target,
+  Briefcase,
+  Bell
 } from 'lucide-react';
 
 import { useLocation } from 'react-router-dom';
+import {
+  getNotifications,
+  markNotificationAsRead,
+  markNotificationAsUnread,
+  markAllNotificationsAsRead,
+  deleteNotificationApi
+} from '../api/notificationsApi.js';
 
-// Pre-seeded fallback notification items to match the user's screenshot exactly
-const initialNotifications = [
-  {
-    id: 'notif-1',
-    title: 'Your deletion request for LTR-TND-000003 was Rejected',
-    message: 'Your deletion request for Tender LTR-TND-000003, originally submitted by end-user Aditya Paul (Tender Executive), has been reviewed and rejected by head-user Snigdha Kundu (Administrator) due to missing supporting logs.',
-    category: 'System',
-    time: '5d ago',
-    read: false,
-    iconType: 'warning'
-  },
-  {
-    id: 'notif-2',
-    title: 'Lead updated: SECON Pvt. Ltd.',
-    message: 'The lead info for SECON Pvt. Ltd., owned by end-user Aditya Paul (Sales Representative), has been updated with the latest activity details and reviewed by head-user Snigdha Kundu (Sales Head).',
-    category: 'Leads',
-    time: '6d ago',
-    read: false,
-    iconType: 'user'
-  },
-  {
-    id: 'notif-3',
-    title: 'Lead updated: Mythri Infrastructure and Mining India Private Limited',
-    message: 'The lead profile for Mythri Infrastructure and Mining India Private Limited, managed by end-user Aditya Paul (Lead Owner), was updated with status change logs by head-user Snigdha Kundu (Sales Manager).',
-    category: 'Leads',
-    time: '6d ago',
-    read: false,
-    iconType: 'user'
-  },
-  {
-    id: 'notif-4',
-    title: 'Lead updated: Binani Industries Ltd. (Braj Binani Group)',
-    message: 'The lead details for Binani Industries Ltd. (Braj Binani Group), assigned to end-user Aditya Paul (Account Manager), were successfully modified and verified by head-user Snigdha Kundu (Sales Admin).',
-    category: 'Deals',
-    time: '6d ago',
-    read: false,
-    iconType: 'user'
-  },
-  {
-    id: 'notif-5',
-    title: 'Tender LTR-TND-000015 status changed to "Submitted"',
-    message: 'The bidding status of Tender LTR-TND-000015, prepared by end-user Snigdha Kundu (Bid Planner), has been changed to "Submitted" and finalized by head-user Aditya Paul (Operations Director).',
-    category: 'Tenders',
-    time: '1w ago',
-    read: true,
-    iconType: 'tender'
+const formatNotificationTime = (date) => {
+  if (!date) return '';
+  const now = new Date();
+  const diffMs = now - new Date(date);
+  if (diffMs < 0) {
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
-];
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function NotificationsPage() {
   const { user } = useAuth();
   const location = useLocation();
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [expandedNotifId, setExpandedNotifId] = useState(null);
+
+  const fetchPageNotifs = async () => {
+    try {
+      if (!user) return;
+      const res = await getNotifications(user.role, user.name);
+      if (res.success) {
+        const mapped = res.data.map(n => {
+          let category = n.category || 'System';
+          let iconType = 'warning';
+          if (category === 'Leads') iconType = 'user';
+          else if (category === 'Tenders') iconType = 'tender';
+          else if (category === 'Deals') iconType = 'user';
+
+          return {
+            id: n._id,
+            title: n.message.split('.')[0] || n.message,
+            message: n.message,
+            category: category,
+            time: formatNotificationTime(n.createdAt),
+            read: (n.readBy && user.name) ? n.readBy.includes(user.name) : n.isRead,
+            iconType: iconType
+          };
+        });
+        setNotifications(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPageNotifs();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (user) {
+        fetchPageNotifs();
+      }
+    };
+    window.addEventListener('refresh-notifications', handleRefresh);
+    return () => window.removeEventListener('refresh-notifications', handleRefresh);
+  }, [user]);
 
   // Sync activeTab from location state (for navigation from sidebar)
   useEffect(() => {
@@ -92,22 +118,43 @@ export default function NotificationsPage() {
   }, []);
 
   // Mark all as read
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      if (user) {
+        await markAllNotificationsAsRead(user.role, user.name);
+        window.dispatchEvent(new CustomEvent('refresh-notifications'));
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Toggle single read status
-  const handleToggleRead = (id) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: !n.read } : n
-    ));
-    setActiveMenuId(null);
+  const handleToggleRead = async (id, currentRead) => {
+    try {
+      if (user) {
+        if (currentRead) {
+          await markNotificationAsUnread(id, user.name);
+        } else {
+          await markNotificationAsRead(id, user.name);
+        }
+        window.dispatchEvent(new CustomEvent('refresh-notifications'));
+        setActiveMenuId(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Delete notification
-  const handleDelete = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    setActiveMenuId(null);
+  const handleDelete = async (id) => {
+    try {
+      await deleteNotificationApi(id);
+      window.dispatchEvent(new CustomEvent('refresh-notifications'));
+      setActiveMenuId(null);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Filters notifications based on active tab
@@ -180,17 +227,27 @@ export default function NotificationsPage() {
 
       {/* Notifications List Container */}
       <div className="bg-white border border-brand-border/60 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-xs" ref={menuRef}>
-        {paginatedNotifications.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center p-6">
+            <span className="text-xs font-bold text-brand-silver">Loading notifications...</span>
+          </div>
+        ) : paginatedNotifications.length > 0 ? (
           paginatedNotifications.map((n) => {
-            // Icon assignment based on category / type
-            let Icon = User;
-            let iconClass = 'bg-blue-50 border-blue-100 text-blue-500';
-            if (n.iconType === 'warning') {
-              Icon = AlertTriangle;
-              iconClass = 'bg-rose-50 border-rose-100 text-rose-500';
-            } else if (n.iconType === 'tender') {
+            // Icon assignment based on category
+            let Icon = Bell;
+            let iconClass = 'bg-slate-50 border-slate-100 text-slate-500';
+            if (n.category === 'Leads') {
+              Icon = Target;
+              iconClass = 'bg-blue-50 border-blue-100 text-blue-500';
+            } else if (n.category === 'Deals') {
+              Icon = Briefcase;
+              iconClass = 'bg-purple-50 border-purple-100 text-purple-500';
+            } else if (n.category === 'Tenders') {
               Icon = Folder;
               iconClass = 'bg-emerald-50 border-emerald-100 text-emerald-500';
+            } else if (n.category === 'System') {
+              Icon = AlertTriangle;
+              iconClass = 'bg-rose-50 border-rose-100 text-rose-500';
             }
 
             const isExpanded = expandedNotifId === n.id;
@@ -200,12 +257,15 @@ export default function NotificationsPage() {
               <div 
                 key={n.id} 
                 className="p-3.5 flex flex-col gap-2 transition-all duration-150 hover:bg-slate-50/50 relative cursor-pointer"
-                onClick={() => {
+                onClick={async () => {
                   setExpandedNotifId(isExpanded ? null : n.id);
                   if (!n.read) {
-                    setNotifications(prev => prev.map(item => 
-                      item.id === n.id ? { ...item, read: true } : item
-                    ));
+                    try {
+                      await markNotificationAsRead(n.id, user?.name);
+                      window.dispatchEvent(new CustomEvent('refresh-notifications'));
+                    } catch (err) {
+                      console.error(err);
+                    }
                   }
                 }}
                 onMouseLeave={() => setExpandedNotifId(null)}
@@ -244,7 +304,7 @@ export default function NotificationsPage() {
                       {isMenuOpen && (
                         <div className="absolute right-0 top-6 w-44 bg-white border border-brand-border rounded-xl shadow-lg z-30 p-1">
                           <button
-                            onClick={() => handleToggleRead(n.id)}
+                            onClick={() => handleToggleRead(n.id, n.read)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer text-left"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-slate-400" />

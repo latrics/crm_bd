@@ -34,7 +34,8 @@ export default function TenderView({
   activeStatusFilter = 'all',
   selectedTenders = [],
   onToggleSelect,
-  onToggleSelectAll
+  onToggleSelectAll,
+  sortOrder
 }) {
   const { state } = useCRM();
   const [pageSize, setPageSize] = useState(10);
@@ -83,6 +84,28 @@ export default function TenderView({
         )
       );
     }
+  }
+
+  // Sorting
+  if (sortOrder === 'highest_value') {
+    filteredTenders.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+  } else if (sortOrder === 'lowest_value') {
+    filteredTenders.sort((a, b) => (a.amount || 0) - (b.amount || 0));
+  } else if (sortOrder === 'oldest') {
+    filteredTenders.sort((a, b) => {
+      const numA = parseInt((a.latrics_tender_id || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b.latrics_tender_id || '').replace(/\D/g, ''), 10) || 0;
+      if (numA !== numB) return numA - numB;
+      return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+    });
+  } else {
+    // Default: 'latest' (latest first)
+    filteredTenders.sort((a, b) => {
+      const numA = parseInt((a.latrics_tender_id || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b.latrics_tender_id || '').replace(/\D/g, ''), 10) || 0;
+      if (numA !== numB) return numB - numA;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
   }
 
   const totalTenders = filteredTenders.length;

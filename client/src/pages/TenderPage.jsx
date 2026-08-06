@@ -26,6 +26,7 @@ export default function TenderPage() {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState('latest');
 
   // Bulk Operations State
   const [selectedTenders, setSelectedTenders] = useState([]);
@@ -331,6 +332,21 @@ export default function TenderPage() {
                 </optgroup>
               )}
             </select>
+            
+            {/* Sorting Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-brand-silver uppercase tracking-wider hidden md:inline">Sort:</span>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="bg-brand-surfaceAlt/50 border border-brand-border rounded-xl px-4 py-2.5 text-sm text-brand-text outline-none focus:bg-white focus:border-brand-red/50 shadow-sm font-bold cursor-pointer"
+              >
+                <option value="latest">Latest Added</option>
+                <option value="oldest">Older Added</option>
+                <option value="highest_value">Highest Revenue</option>
+                <option value="lowest_value">Lowest Revenue</option>
+              </select>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -415,6 +431,7 @@ export default function TenderPage() {
         selectedTenders={selectedTenders}
         onToggleSelect={handleToggleSelect}
         onToggleSelectAll={handleToggleSelectAll}
+        sortOrder={sortOrder}
       />
 
       {/* Tender Edit/Add Modal */}

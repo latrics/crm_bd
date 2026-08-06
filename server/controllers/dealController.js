@@ -62,8 +62,9 @@ export const createDeal = asyncHandler(async (req, res) => {
 
   if (deal.addedBy) {
     await createNotification({
-      message: `Deal successfully created: ${deal.title}`,
+      message: `Deal successfully created: ${deal.title} (ID: ${deal.dealId || deal._id}) by ${deal.addedBy || 'System'}`,
       type: 'success',
+      category: 'Deals',
       recipientUser: deal.addedBy,
       relatedId: deal._id
     });
@@ -71,8 +72,9 @@ export const createDeal = asyncHandler(async (req, res) => {
 
   if (deal.owner) {
     await createNotification({
-      message: `New deal assigned to you: ${deal.title}`,
+      message: `New deal assigned to you: ${deal.title} (ID: ${deal.dealId || deal._id}) by ${deal.addedBy || 'System'}`,
       type: 'assignment',
+      category: 'Deals',
       recipientUser: deal.owner,
       relatedId: deal._id
     });
@@ -118,19 +120,22 @@ export const updateDeal = asyncHandler(async (req, res) => {
     }
   }
   
+  const updaterName = req.user ? (req.user.name || req.user.email) : 'System';
   if (ownerChanged) {
     if (existingDeal.owner) {
       await createNotification({
-        message: `Deal ${deal.title} reassigned to ${deal.owner || 'Unassigned'}`,
+        message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) reassigned to ${deal.owner || 'Unassigned'} by ${updaterName}`,
         type: 'info',
+        category: 'Deals',
         recipientUser: existingDeal.owner,
         relatedId: deal._id
       });
     }
     if (deal.owner) {
       await createNotification({
-        message: `Deal ${deal.title} assigned to you (previously owned by ${existingDeal.owner || 'Unassigned'})`,
+        message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) assigned to you by ${updaterName} (previously owned by ${existingDeal.owner || 'Unassigned'})`,
         type: 'assignment',
+        category: 'Deals',
         recipientUser: deal.owner,
         relatedId: deal._id
       });
@@ -139,22 +144,25 @@ export const updateDeal = asyncHandler(async (req, res) => {
     if (deal.stage === 'Won') {
       if (deal.owner) {
         await createNotification({
-          message: `Congrats! Deal ${deal.title} was WON! Value: $${deal.value || 0}`,
+          message: `Congrats! Deal ${deal.title} (ID: ${deal.dealId || deal._id}) was WON by you! Value: ₹${deal.value || 0}. Marked by ${updaterName}.`,
           type: 'success',
+          category: 'Deals',
           recipientUser: deal.owner,
           relatedId: deal._id
         });
       }
       await createNotification({
-        message: `Victory! Deal ${deal.title} was WON by ${deal.owner || 'Unassigned'}! Value: $${deal.value || 0}`,
+        message: `Victory! Deal ${deal.title} (ID: ${deal.dealId || deal._id}) was WON by ${deal.owner || 'Unassigned'}! Value: ₹${deal.value || 0}. Marked by ${updaterName}.`,
         type: 'success',
+        category: 'Deals',
         recipientRoles: ['Super Admin', 'Admin']
       });
     } else if (deal.stage === 'Lost') {
       if (deal.owner) {
         await createNotification({
-          message: `Deal ${deal.title} marked as Lost.`,
+          message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) marked as Lost by ${updaterName}.`,
           type: 'warning',
+          category: 'Deals',
           recipientUser: deal.owner,
           relatedId: deal._id
         });
@@ -162,8 +170,9 @@ export const updateDeal = asyncHandler(async (req, res) => {
     } else {
       if (deal.owner) {
         await createNotification({
-          message: `Deal ${deal.title} updated to stage ${deal.stage}`,
+          message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) updated to stage ${deal.stage} by ${updaterName}`,
           type: 'info',
+          category: 'Deals',
           recipientUser: deal.owner,
           relatedId: deal._id
         });
@@ -172,8 +181,9 @@ export const updateDeal = asyncHandler(async (req, res) => {
   } else {
     if (deal.owner) {
       await createNotification({
-        message: `Deal updated: ${deal.title}`,
+        message: `Deal updated: ${deal.title} (ID: ${deal.dealId || deal._id}) by ${updaterName}`,
         type: 'info',
+        category: 'Deals',
         recipientUser: deal.owner,
         relatedId: deal._id
       });
@@ -195,8 +205,9 @@ export const deleteDeal = asyncHandler(async (req, res) => {
 
   if (deal.owner) {
     await createNotification({
-      message: `Deal deleted: ${deal.title}`,
+      message: `Deal deleted: ${deal.title} (ID: ${deal.dealId || deal._id}) by ${req.user ? (req.user.name || req.user.email) : 'System'}`,
       type: 'warning',
+      category: 'Deals',
       recipientUser: deal.owner
     });
   }
@@ -228,8 +239,9 @@ export const revertDeal = asyncHandler(async (req, res) => {
 
     if (deal.owner) {
       await createNotification({
-        message: `Deal ${deal.title} has been reverted back to a Lead in stage ${targetStage}.`,
+        message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) has been reverted back to a Lead in stage ${targetStage} by ${req.user ? (req.user.name || req.user.email) : 'System'}.`,
         type: 'info',
+        category: 'Leads',
         recipientUser: deal.owner
       });
     }

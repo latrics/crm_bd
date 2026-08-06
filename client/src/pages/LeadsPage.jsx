@@ -34,7 +34,7 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState(null); // 'asc' | 'desc' | null
+  const [sortOrder, setSortOrder] = useState('latest');
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
   const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -493,13 +493,19 @@ export default function LeadsPage() {
               )}
             </div>
             
-            <button 
-              onClick={() => setSortOrder(prev => prev === null ? 'desc' : prev === 'desc' ? 'asc' : null)}
-              className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-bold transition-all shadow-sm ${sortOrder ? 'bg-brand-redLight text-brand-red border-brand-red/20' : 'bg-white text-brand-text border-brand-border hover:bg-gray-50'}`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
-              <span className="hidden sm:inline">Sort {sortOrder === 'desc' ? '(High to Low)' : sortOrder === 'asc' ? '(Low to High)' : ''}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-brand-silver uppercase tracking-wider hidden md:inline">Sort:</span>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="bg-brand-surfaceAlt/50 border border-brand-border rounded-xl px-4 py-2.5 text-sm text-brand-text outline-none focus:bg-white focus:border-brand-red/50 shadow-sm font-bold cursor-pointer"
+              >
+                <option value="latest">Latest Added</option>
+                <option value="oldest">Older Added</option>
+                <option value="highest_value">Highest Revenue</option>
+                <option value="lowest_value">Lowest Revenue</option>
+              </select>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -634,10 +640,8 @@ export default function LeadsPage() {
               {(formData.outbound === 'Others' || (formData.outbound && !FLAT_SOURCES.includes(formData.outbound))) && (
                 <Field label="Custom Source" value={formData.outbound === 'Others' ? '' : formData.outbound} onChange={e => handleChange('outbound', e.target.value)} placeholder="Type custom source..." />
               )}
-              {formData.outbound && (
-                <Field label="Brought By" value={formData.broughtBy || ''} onChange={e => handleChange('broughtBy', e.target.value)} placeholder="Who brought the lead..." />
-              )}
             </div>
+            <Field label="Brought By" value={formData.broughtBy || ''} onChange={e => handleChange('broughtBy', e.target.value)} placeholder="Who brought the lead..." />
             <Field label="Owner" type="select" options={(state.owners || []).map(o => o.name)} value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
             <div className="flex flex-col gap-2">
               <Field label="Industry" type="select" options={SECTORS} value={SECTORS.includes(formData.industry) || !formData.industry ? formData.industry : 'Others'} onChange={e => handleChange('industry', e.target.value)} />

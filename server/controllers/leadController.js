@@ -39,8 +39,9 @@ export const createLead = asyncHandler(async (req, res) => {
   
   if (lead.addedBy) {
     await createNotification({
-      message: `Lead successfully created: ${lead.company}`,
+      message: `Lead successfully created: ${lead.company} (ID: ${lead.leadId || lead._id}) by ${lead.addedBy || 'System'}`,
       type: 'success',
+      category: 'Leads',
       recipientUser: lead.addedBy,
       relatedId: lead._id
     });
@@ -48,8 +49,9 @@ export const createLead = asyncHandler(async (req, res) => {
 
   if (lead.owner) {
     await createNotification({
-      message: `New lead assigned to you: ${lead.company}`,
+      message: `New lead assigned to you: ${lead.company} (ID: ${lead.leadId || lead._id}) by ${lead.addedBy || 'System'}`,
       type: 'assignment',
+      category: 'Leads',
       recipientUser: lead.owner,
       relatedId: lead._id
     });
@@ -123,7 +125,7 @@ export const updateLead = asyncHandler(async (req, res) => {
         { entity_type: 'deal' }
       );
       
-      await createNotification({ message: `Congrats! Lead ${lead.company} converted to Deal.`, type: 'success', recipientUser: lead.owner, relatedId: lead._id });
+      await createNotification({ message: `Congrats! Lead ${lead.company} (ID: ${lead.leadId || lead._id}) converted to Deal (ID: ${deal.dealId}) by ${req.user ? (req.user.name || req.user.email) : 'System'}.`, type: 'success', category: 'Deals', recipientUser: lead.owner, relatedId: lead._id });
       return res.json({ success: true, data: lead, deal });
     } catch (error) {
       return res.status(400).json({ success: false, message: 'Failed to convert to Deal: ' + error.message });
@@ -140,40 +142,45 @@ export const updateLead = asyncHandler(async (req, res) => {
     req.body.status !== existingLead.status && 
     ['Communicated', 'Discussion', 'Pricing / Quote', 'Demo', 'Closure', 'Converted'].includes(req.body.status);
 
+  const updaterName = req.user ? (req.user.name || req.user.email) : 'System';
   if (statusChangedToCommunicatedOrLater) {
-    msg = `Congrats! Task completed successfully within the deadline for lead ${lead.company}.`;
+    msg = `Congrats! Task completed successfully within the deadline for lead ${lead.company} (ID: ${lead.leadId || lead._id}) by ${updaterName}.`;
     type = 'success';
     if (lead.owner) {
-      await createNotification({ message: msg, type: type, recipientUser: lead.owner, relatedId: lead._id });
+      await createNotification({ message: msg, type: type, category: 'Leads', recipientUser: lead.owner, relatedId: lead._id });
     }
   } else if (ownerChanged) {
     if (existingLead.owner) {
       await createNotification({
-        message: `Lead ${lead.company} reassigned to ${lead.owner || 'Unassigned'}`,
+        message: `Lead ${lead.company} (ID: ${lead.leadId || lead._id}) reassigned to ${lead.owner || 'Unassigned'} by ${updaterName}`,
         type: 'info',
+        category: 'Leads',
         recipientUser: existingLead.owner,
         relatedId: lead._id
       });
     }
     if (lead.owner) {
       await createNotification({
-        message: `Lead ${lead.company} assigned to you (previously owned by ${existingLead.owner || 'Unassigned'})`,
+        message: `Lead ${lead.company} (ID: ${lead.leadId || lead._id}) assigned to you by ${updaterName} (previously owned by ${existingLead.owner || 'Unassigned'})`,
         type: 'assignment',
+        category: 'Leads',
         recipientUser: lead.owner,
         relatedId: lead._id
       });
     }
   } else {
+    msg = `Lead updated: ${lead.company} (ID: ${lead.leadId || lead._id}) by ${updaterName}`;
     if (lead.owner) {
-      await createNotification({ message: msg, type: type, recipientUser: lead.owner, relatedId: lead._id });
+      await createNotification({ message: msg, type: type, category: 'Leads', recipientUser: lead.owner, relatedId: lead._id });
     }
   }
 
   // Notify creator if status updated to Communicated or later
   if (statusChangedToCommunicatedOrLater && lead.addedBy && lead.addedBy !== lead.owner) {
     await createNotification({
-      message: `Progress Update: Lead ${lead.company} is now ${lead.status} (added by you)`,
+      message: `Progress Update: Lead ${lead.company} (ID: ${lead.leadId || lead._id}) is now ${lead.status} (added by you, updated by ${updaterName})`,
       type: 'info',
+      category: 'Leads',
       recipientUser: lead.addedBy,
       relatedId: lead._id
     });
@@ -195,13 +202,13 @@ export const deleteLead = asyncHandler(async (req, res) => {
       recordName: lead.company || lead.leadId,
       description: `Requested deletion of lead ${lead.company}`
     });
-    await createNotification({ message: `Deletion request by ${req.user.name || req.user.email} for lead: ${lead.company}`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
+    await createNotification({ message: `Deletion request raised by ${req.user.name || req.user.email} for lead: ${lead.company} (ID: ${lead.leadId || lead._id})`, type: 'warning', category: 'Leads', recipientRoles: ['Super Admin', 'Admin'] });
     return res.json({ success: true, message: 'Deletion request submitted for Admin approval', isPending: true });
   }
 
   await Lead.findByIdAndDelete(req.params.id);
   await Deal.deleteOne({ from_lead_id: req.params.id });
-  await createNotification({ message: `Lead deleted: ${lead.company}`, type: 'warning', recipientUser: lead.owner, relatedId: lead._id });
+  await createNotification({ message: `Lead deleted: ${lead.company} (ID: ${lead.leadId || lead._id}) by ${req.user.name || req.user.email || 'System'}`, type: 'warning', category: 'Leads', recipientUser: lead.owner, relatedId: lead._id });
   
   res.json({ success: true, data: {} });
 });
@@ -225,14 +232,14 @@ export const deleteMultipleLeads = asyncHandler(async (req, res) => {
       description: `Bulk deletion request for lead ${lead.company}`
     }));
     await ApprovalRequest.insertMany(requests);
-    await createNotification({ message: `Bulk deletion request by ${req.user.name || req.user.email} for ${leads.length} leads`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
+    await createNotification({ message: `Bulk deletion request raised by ${req.user.name || req.user.email} for ${leads.length} leads (IDs: ${leads.map(l => l.leadId || l._id).join(', ')})`, type: 'warning', category: 'Leads', recipientRoles: ['Super Admin', 'Admin'] });
     return res.json({ success: true, message: 'Bulk deletion request submitted for Admin approval', isPending: true });
   }
 
   const result = await Lead.deleteMany({ _id: { $in: ids } });
   await Deal.deleteMany({ from_lead_id: { $in: ids } });
   
-  await createNotification({ message: `${ids.length} leads deleted`, type: 'warning', recipientRoles: ['Super Admin', 'Admin'] });
+  await createNotification({ message: `${ids.length} leads deleted by ${req.user.name || req.user.email || 'System'}`, type: 'warning', category: 'Leads', recipientRoles: ['Super Admin', 'Admin'] });
   
   res.json({ success: true, message: 'Leads deleted successfully' });
 });
@@ -434,8 +441,9 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
       for (const deal of dealsToCreate) {
         if (deal.owner) {
           await createNotification({ 
-            message: `Congrats! Lead ${deal.company} converted to Deal.`, 
+            message: `Congrats! Lead ${deal.company} (ID: ${deal.leadId || deal.from_lead_id}) converted to Deal (ID: ${deal.dealId || deal._id}) by ${req.user ? (req.user.name || req.user.email) : 'System'}.`, 
             type: 'success', 
+            category: 'Deals',
             recipientUser: deal.owner, 
             relatedId: deal.from_lead_id 
           });
@@ -444,6 +452,7 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
     }
   }
   
+  const updaterName = req.user ? (req.user.name || req.user.email) : 'System';
   let msg = `${leads.length} leads bulk updated`;
   let type = 'info';
   
@@ -461,8 +470,9 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
 
     for (const [owner, count] of Object.entries(leadsByOwner)) {
       await createNotification({
-        message: `Congrats! Tasks completed successfully within the deadline for ${count} of your leads.`,
+        message: `Congrats! Tasks completed successfully within the deadline for ${count} of your leads by ${updaterName}.`,
         type: 'success',
+        category: 'Leads',
         recipientUser: owner
       });
     }
@@ -470,24 +480,27 @@ export const updateMultipleLeads = asyncHandler(async (req, res) => {
     for (const lead of leads) {
       if (lead.owner && lead.owner !== updateData.owner) {
         await createNotification({
-          message: `Lead ${lead.company} reassigned to ${updateData.owner}`,
+          message: `Lead ${lead.company} (ID: ${lead.leadId || lead._id}) reassigned to ${updateData.owner} by ${updaterName}`,
           type: 'info',
+          category: 'Leads',
           recipientUser: lead.owner,
           relatedId: lead._id
         });
       }
     }
     await createNotification({
-      message: `${leads.length} leads assigned to you by ${req.user ? (req.user.name || req.user.email) : 'System'}`,
+      message: `${leads.length} leads assigned to you by ${updaterName}`,
       type: 'assignment',
+      category: 'Leads',
       recipientUser: updateData.owner
     });
   } else {
     if (req.user) {
       await createNotification({
-        message: `${leads.length} leads successfully bulk updated.`,
+        message: `${leads.length} leads successfully bulk updated by ${updaterName}. (IDs: ${leads.map(l => l.leadId || l._id).join(', ')})`,
         type: 'info',
-        recipientUser: req.user.name || req.user.email
+        category: 'Leads',
+        recipientUser: updaterName
       });
     }
   }

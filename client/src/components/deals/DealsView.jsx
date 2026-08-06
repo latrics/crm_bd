@@ -30,18 +30,15 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
   }
 
   // Sorting
-  if (sortOrder) {
-    filteredDeals.sort((a, b) => {
-      const valA = a?.value || 0;
-      const valB = b?.value || 0;
-      if (sortOrder === 'desc') return valB - valA;
-      return valA - valB;
-    });
+  if (sortOrder === 'highest_value') {
+    filteredDeals.sort((a, b) => (b?.value || 0) - (a?.value || 0));
+  } else if (sortOrder === 'lowest_value') {
+    filteredDeals.sort((a, b) => (a?.value || 0) - (b?.value || 0));
+  } else if (sortOrder === 'oldest') {
+    filteredDeals.sort((a, b) => new Date(a?.createdAt || 0) - new Date(b?.createdAt || 0));
   } else {
-    // Default fallback to keep latest deals first
-    filteredDeals.sort((a, b) => {
-      return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
-    });
+    // Default: 'latest'
+    filteredDeals.sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));
   }
 
   const toggleDocs = (id) => {
@@ -213,12 +210,24 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
                           title={`Move to ${stage}`}
                           style={{
                             flex: 1,
-                            backgroundColor: idx <= currentStageIdx ? '#8A8D8F' : '#f3f4f6', 
+                            backgroundColor: idx === currentStageIdx ? '#8A8D8F' : '#f3f4f6', 
                           }}
                         />
                       ))}
                     </div>
-                    <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase flex items-center justify-between w-full">
+                    <div className="flex w-full mt-1.5 text-[8px] font-black text-brand-silver select-none">
+                      {DEAL_STAGES.map((stage, idx) => (
+                        <span 
+                          key={stage} 
+                          onClick={(e) => { e.stopPropagation(); if (onStageUpdate) onStageUpdate(deal, stage); }}
+                          className={`cursor-pointer hover:text-brand-red transition-colors flex-1 text-center truncate px-0.5 uppercase tracking-wider ${idx === currentStageIdx ? 'text-brand-red font-black' : ''}`}
+                          title={`Move to ${stage}`}
+                        >
+                          {stage}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-[9px] font-black text-brand-silver mt-2.5 tracking-widest uppercase flex items-center justify-between w-full">
                        <span>Stage: <span className="text-brand-red font-black">{deal.stage}</span></span>
                        <span>Probability: <span className="text-brand-text font-black">{deal.probability || 0}%</span></span>
                     </div>

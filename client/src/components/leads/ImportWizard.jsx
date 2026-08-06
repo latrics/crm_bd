@@ -18,6 +18,7 @@ const CRM_FIELDS = [
   { key: 'state', label: 'State', aliases: ['state', 'region'] },
   { key: 'designation', label: 'Title / Designation', aliases: ['title', 'designation', 'job title'] },
   { key: 'outbound', label: 'Lead Source', aliases: ['lead source', 'source', 'outbound'] },
+  { key: 'broughtBy', label: 'Brought By', aliases: ['brought by', 'brought_by', 'referred by', 'broughtby'] },
   { key: 'businessModel', label: 'Business Model', aliases: ['business model', 'model', 'business_model'] },
   { key: 'businessModelDetail', label: 'Business Model Detail', aliases: ['business model detail', 'model detail', 'business_model_detail'] },
 ];

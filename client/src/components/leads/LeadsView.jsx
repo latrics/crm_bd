@@ -60,19 +60,24 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
   }
 
   // Sorting
-  if (sortOrder) {
-    filteredLeads.sort((a, b) => {
-      const valA = a?.value || 0;
-      const valB = b?.value || 0;
-      if (sortOrder === 'desc') return valB - valA;
-      return valA - valB;
-    });
-  } else {
-    // Always sort by leadId descending so latest lead ID (e.g. LED-000068) is at the top
+  if (sortOrder === 'highest_value') {
+    filteredLeads.sort((a, b) => (b?.value || 0) - (a?.value || 0));
+  } else if (sortOrder === 'lowest_value') {
+    filteredLeads.sort((a, b) => (a?.value || 0) - (b?.value || 0));
+  } else if (sortOrder === 'oldest') {
     filteredLeads.sort((a, b) => {
       const numA = parseInt((a?.leadId || '').replace(/\D/g, ''), 10) || 0;
       const numB = parseInt((b?.leadId || '').replace(/\D/g, ''), 10) || 0;
-      return numB - numA;
+      if (numA !== numB) return numA - numB;
+      return new Date(a?.createdAt || 0) - new Date(b?.createdAt || 0);
+    });
+  } else {
+    // Default: 'latest'
+    filteredLeads.sort((a, b) => {
+      const numA = parseInt((a?.leadId || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b?.leadId || '').replace(/\D/g, ''), 10) || 0;
+      if (numA !== numB) return numB - numA;
+      return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
     });
   }
 
@@ -257,7 +262,19 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
                         />
                       ))}
                     </div>
-                    <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase">
+                    <div className="flex w-full mt-1.5 text-[8px] font-black text-brand-silver select-none">
+                      {LEAD_STAGES.map((stage, idx) => (
+                        <span 
+                          key={stage} 
+                          onClick={(e) => { e.stopPropagation(); if (onStageUpdate) onStageUpdate(lead, stage); }}
+                          className={`cursor-pointer hover:text-brand-red transition-colors flex-1 text-center truncate px-0.5 uppercase tracking-wider ${idx === currentStageIdx ? 'text-brand-red font-black' : ''}`}
+                          title={`Move to ${stage}`}
+                        >
+                          {stage}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-[9px] font-black text-brand-silver mt-2.5 tracking-widest uppercase">
                        Stage: <span className="text-brand-red font-black">{lead.status}</span>
                     </div>
                  </div>

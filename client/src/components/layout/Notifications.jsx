@@ -12,7 +12,7 @@ import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODEL
 import { updateLead, deleteLead } from '../../api/leadsApi.js';
 import { getNotifications, markNotificationAsRead } from '../../api/notificationsApi.js';
 import useToast from '../../hooks/useToast.js';
-import { AlertTriangle, Hourglass, User, CheckCircle2, Bell, BarChart2, Clock, Sparkles } from 'lucide-react';
+import { AlertTriangle, Hourglass, User, CheckCircle2, Bell, BarChart2, Clock, Sparkles, Target, Briefcase, Folder } from 'lucide-react';
 
 
 
@@ -82,36 +82,42 @@ export default function Notifications() {
     }
   }, [user, state.owners]);
 
+  const fetchNotifs = async () => {
+    try {
+      if (!user) return;
+      const res = await getNotifications(user.role, user.name);
+      if (res.success) {
+        setApiNotifications(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifs();
+  }, [user, isOpen, state.leads]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchNotifs();
+    };
+    window.addEventListener('refresh-notifications', handleRefresh);
+    return () => {
+      window.removeEventListener('refresh-notifications', handleRefresh);
+    };
+  }, [user]);
+
   const markAsRead = async (id) => {
     try {
       if (user?.name) {
         await markNotificationAsRead(id, user.name);
-        setApiNotifications(prev => prev.map(n => 
-          n._id === id 
-            ? { ...n, readBy: [...(n.readBy || []), user.name] } 
-            : n
-        ));
+        window.dispatchEvent(new CustomEvent('refresh-notifications'));
       }
     } catch(e) {
       console.error(e);
     }
   };
-
-  useEffect(() => {
-    const fetchNotifs = async () => {
-      try {
-        const res = await getNotifications(user?.role, user?.name);
-        if (res.success) {
-          setApiNotifications(res.data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch notifications', err);
-      }
-    };
-    if (user) {
-      fetchNotifs();
-    }
-  }, [user, isOpen, state.leads]);
 
   // Case-insensitive name comparison helper to match different formats (e.g. snigdha.kundu vs Snigdha Kundu)
   const isMatch = (owner, userName) => {
@@ -222,10 +228,20 @@ export default function Notifications() {
   // Map DB notifications to UI format
   const allNotifications = apiNotifications.map(n => {
     let icon = <Bell className="w-4.5 h-4.5" />;
-    let color = 'text-blue-500 bg-blue-50';
-    if (n.type === 'urgent' || n.type === 'warning') { icon = <AlertTriangle className="w-4.5 h-4.5" />; color = 'text-red-500 bg-red-50 border-l-4 border-red-500'; }
-    else if (n.type === 'info' || n.type === 'assignment') { icon = <User className="w-4.5 h-4.5" />; color = 'text-blue-500 bg-blue-50'; }
-    else if (n.type === 'success') { icon = <CheckCircle2 className="w-4.5 h-4.5" />; color = 'text-green-500 bg-green-50'; }
+    let color = 'text-slate-500 bg-slate-50';
+    if (n.category === 'Leads') {
+      icon = <Target className="w-4.5 h-4.5" />;
+      color = 'text-blue-500 bg-blue-50';
+    } else if (n.category === 'Deals') {
+      icon = <Briefcase className="w-4.5 h-4.5" />;
+      color = 'text-purple-500 bg-purple-50';
+    } else if (n.category === 'Tenders') {
+      icon = <Folder className="w-4.5 h-4.5" />;
+      color = 'text-green-500 bg-green-50';
+    } else if (n.category === 'System' || n.type === 'urgent' || n.type === 'warning') {
+      icon = <AlertTriangle className="w-4.5 h-4.5" />;
+      color = 'text-red-500 bg-red-50 border-l-4 border-red-500';
+    }
 
     return {
       id: n._id,
@@ -596,7 +612,19 @@ export default function Notifications() {
                      />
                    ))}
                  </div>
-                <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase">
+                  <div className="flex w-full mt-1.5 text-[8px] font-black text-brand-silver select-none">
+                    {LEAD_STAGES.map((stage, idx) => (
+                      <span 
+                        key={stage} 
+                        onClick={(e) => { e.stopPropagation(); handleStageUpdate(lead, stage); }}
+                        className={`cursor-pointer hover:text-brand-red transition-colors flex-1 text-center truncate px-0.5 uppercase tracking-wider ${idx === currentStageIdx ? 'text-brand-red font-black' : ''}`}
+                        title={`Move to ${stage}`}
+                      >
+                        {stage}
+                      </span>
+                    ))}
+                  </div>
+                 <div className="text-[9px] font-black text-brand-silver mt-2.5 tracking-widest uppercase">
                    Stage: <span className="text-brand-red font-black">{lead.status}</span>
                 </div>
              </div>

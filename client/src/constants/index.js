@@ -1,5 +1,5 @@
 export const LEAD_STAGES = ['Leads', 'Communicated', 'Discussion', 'Pricing / Quote', 'Demo', 'Closure'];
-export const DEAL_STAGES = ['Negotiation', 'Won', 'Lost'];
+export const DEAL_STAGES = ['Lost', 'Negotiation', 'Won'];
 export const SOURCES = [
   { value: 'Inbound', label: 'Inbound' },
   {
