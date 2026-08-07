@@ -48,10 +48,7 @@ export default function BugCenterPage() {
 
   return (
     <div className="w-full pb-12">
-      <PageHeader 
-        title="Bug Report Center" 
-        subtitle="Help us improve Latrics CRM by reporting any issues or unexpected behaviors."
-      />
+
 
       <div className="bg-white p-6 sm:p-8 rounded-crm border border-brand-border shadow-sm mt-8">
         <h2 className="text-lg font-serif font-black text-brand-text mb-6 pb-2 border-b border-brand-border">

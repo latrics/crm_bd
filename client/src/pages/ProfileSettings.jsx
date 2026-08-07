@@ -4,11 +4,13 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { updatePassword } from '../api/authApi.js';
 import { getUsers } from '../api/adminApi.js';
 import { Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useUser as useClerkUser } from '@clerk/react';
 
 export default function ProfileSettings() {
   const { user, updateProfile } = useAuth();
   const { pathname } = useLocation();
   const isSecurity = pathname === '/security';
+  const { user: clerkUser } = useClerkUser();
 
   // Personal Information State
   const [fullName, setFullName] = useState(user?.name || '');
@@ -94,14 +96,19 @@ export default function ProfileSettings() {
 
     try {
       setLoading(true);
-      await updatePassword({ currentPassword, newPassword });
+      if (clerkUser) {
+        await clerkUser.updatePassword({ currentPassword, newPassword });
+      } else {
+        throw new Error('User not loaded via Clerk.');
+      }
       setPasswordMessage('Password updated successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setPasswordMessage(''), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to update password.');
+      console.error(err);
+      setError(err.errors?.[0]?.longMessage || err.message || 'Failed to update password.');
     } finally {
       setLoading(false);
     }

@@ -85,7 +85,7 @@ export default function SettingsLayout({ children }) {
             <div>
               <h4 className="text-[11px] font-bold text-brand-text">Need Help?</h4>
               <span 
-                onClick={() => navigate('/notifications')}
+                onClick={() => navigate('/help-center')}
                 className="text-[9px] font-bold text-brand-silver hover:text-brand-red cursor-pointer flex items-center gap-1 mt-0.5"
               >
                 Visit Help Center <span className="text-[10px]">&rarr;</span>

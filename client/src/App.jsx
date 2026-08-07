@@ -22,6 +22,7 @@ import NotificationsPage from './pages/NotificationsPage.jsx';
 import SettingsLayout from './components/layout/SettingsLayout.jsx';
 import AccountPage from './pages/AccountPage.jsx';
 import AppearanceSettings from './pages/AppearanceSettings.jsx';
+import HelpCenterPage from './pages/HelpCenterPage.jsx';
 
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -166,6 +167,7 @@ export default function App() {
                   <Route path="/appearance" element={<SettingsLayout><AppearanceSettings /></SettingsLayout>} />
                   <Route path="/security" element={<SettingsLayout><ProfileSettings /></SettingsLayout>} />
                   <Route path="/bug-center" element={<SettingsLayout><BugCenterPage /></SettingsLayout>} />
+                  <Route path="/help-center" element={<SettingsLayout><HelpCenterPage /></SettingsLayout>} />
 
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Route>
