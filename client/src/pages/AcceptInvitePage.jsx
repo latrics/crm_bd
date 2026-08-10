@@ -115,19 +115,19 @@ export default function AcceptInvitePage() {
         </div>
 
         {/* Call to action messaging */}
-        <div className="max-w-xl mt-2 mb-auto">
-          <h1 className="text-3xl xl:text-[28px] font-semibold leading-[1.25] text-slate-800 tracking-tight mb-3 max-w-[800px] font-sans">
-            The smarter way to organize work and drive results -
+        <div className="max-w-2xl mt-2 mb-auto">
+          <h1 className="text-3xl xl:text-[32px] font-semibold leading-[1.25] text-slate-800 tracking-light-100 mb-3 max-w-[800px] font-sans [word-spacing:6px]">
+            The smarter way to organize work and drive results
           </h1>
-          <div className="h-[52px] overflow-hidden mt-6 mb-6">
+          <div className="h-[52px] overflow-hidden mt-4 mb-4">
             <div 
               className="transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateY(-${wordIndex * 52}px)` }}
+              style={{ transform: `translateY(-${wordIndex * 54}px)` }}
             >
-              {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
+              {['Grow.', 'Manage.', 'Succeed.'].map((word, idx) => (
                 <h2 
                   key={idx} 
-                  className="text-4xl xl:text-[42px] font-black text-brand-red tracking-tight font-sans h-[52px] flex items-center leading-none"
+                  className="text-4xl xl:text-[48px] font-black text-brand-red tracking-tight font-sans h-[52px] flex items-center leading-none"
                 >
                   {word}
                 </h2>
