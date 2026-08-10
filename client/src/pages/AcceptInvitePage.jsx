@@ -93,104 +93,102 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-100/60 p-4 md:p-8 font-sans relative">
-      {/* Outer Card container */}
-      <div className="bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-200/80 flex flex-col lg:flex-row w-full max-w-4xl overflow-hidden p-3 md:p-4 min-h-[580px] relative z-10">
-        
-        {/* Left side: Artwork/Branding Panel */}
-        <div className="hidden lg:flex lg:w-1/2 relative rounded-[18px] border border-slate-200/50 overflow-hidden select-none flex-col justify-between p-8 text-[#54585A]">
-          {/* Background Image */}
-          <div 
-            className="absolute inset-0 z-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105" 
-            style={{ backgroundImage: `url(${loginBg})` }}
-          />
-          {/* Gradient mask to fade into the white background */}
-          <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/40 to-white" />
-          <div className="absolute inset-0 z-0 bg-white/10 backdrop-blur-[0.5px]" />
-          
-          {/* Top Logo */}
-          <div className="z-10 flex items-center">
-            <img src={latricsLogo} alt="Latrics Logo" className="h-10 object-contain" />
-          </div>
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-grid-pattern font-sans relative overflow-hidden">
+      
+      {/* Absolute Background Image for Left Side */}
+      <div className="hidden lg:block absolute top-0 left-0 w-1/2 h-full z-0 select-none">
+        <div 
+          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105" 
+          style={{ backgroundImage: `url(${loginBg})` }}
+        />
+        {/* Gradient mask to fade into the grid background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#fdfdfd]/40 to-[#fdfdfd]" />
+        <div className="absolute inset-0 bg-white/20 backdrop-blur-[0.5px]" />
+      </div>
 
-          {/* Call to action messaging */}
-          <div className="z-10 max-w-xs mt-auto mb-8">
-            <h3 className="text-lg font-extrabold leading-snug mb-2 text-slate-800 font-sans">
-              The smarter way to organize work and drive results -
-            </h3>
-            <div className="h-[44px] overflow-hidden mb-3">
-              <div 
-                className="transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateY(-${wordIndex * 44}px)` }}
-              >
-                {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
-                  <h2 
-                    key={idx} 
-                    className="text-4xl font-black text-brand-red tracking-tight font-sans h-[44px] flex items-center leading-none"
-                  >
-                    {word}
-                  </h2>
-                ))}
-              </div>
+      {/* Left Content */}
+      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between px-12 xl:px-20 py-10 xl:py-14 text-[#54585A] min-h-screen">
+        {/* Top Logo */}
+        <div className="flex items-center">
+          <img src={latricsLogo} alt="Latrics Logo" className="h-11 object-contain" />
+        </div>
+
+        {/* Call to action messaging */}
+        <div className="max-w-md mt-12 mb-auto">
+          <h1 className="text-3xl xl:text-[34px] font-extrabold leading-[1.25] text-slate-800 tracking-tight mb-3 max-w-[380px] font-sans">
+            The smarter way to organize work and drive results -
+          </h1>
+          <div className="h-[52px] overflow-hidden mb-4">
+            <div 
+              className="transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateY(-${wordIndex * 52}px)` }}
+            >
+              {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
+                <h2 
+                  key={idx} 
+                  className="text-4xl xl:text-[46px] font-black text-brand-red tracking-tight font-sans h-[52px] flex items-center leading-none"
+                >
+                  {word}
+                </h2>
+              ))}
             </div>
-            <p className="text-xs font-semibold text-slate-600 leading-relaxed font-sans">
-              A simple and powerful CRM built for teams that want to achieve more.
+          </div>
+          <p className="text-sm xl:text-base font-normal text-slate-500 leading-relaxed font-sans max-w-[360px]">
+            A simple and powerful CRM built for teams that want to achieve more.
+          </p>
+        </div>
+
+        {/* Bottom corporate trademark */}
+        <div className="text-[11px] font-medium text-slate-400 tracking-wider">
+          ©2026 Latrics CRM. All Rights Reserved.
+        </div>
+      </div>
+
+      {/* Right side: Modern Clerk SignUp Component container */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 lg:p-12 relative z-10 min-h-screen">
+        {userId && isAuthenticated ? (
+          <div className="max-w-md w-full bg-blue-50 border border-blue-200 text-blue-800 p-8 rounded-2xl text-center shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
+            <h2 className="text-2xl font-bold mb-4">You are already logged in!</h2>
+            <p className="text-sm mb-6">
+              You are currently logged in as an active user (likely the Superadmin). 
+              Clerk prevents logged-in users from seeing the Sign Up page.
             </p>
+            <p className="text-sm font-medium mb-6">
+              To test this invitation link as the invited user, please copy the URL and open it in an <strong>Incognito/Private Window</strong>.
+            </p>
+            <button 
+              onClick={() => signOut()}
+              className="w-full bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+            >
+              Log me out to accept invite
+            </button>
+            <a href="/dashboard" className="mt-4 block text-brand-red hover:text-red-700 font-bold text-sm transition-colors">
+              Return to Dashboard
+            </a>
           </div>
-
-          {/* Bottom corporate trademark */}
-          <div className="z-10 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-            ©2026 Latrics CRM. All Rights Reserved.
+        ) : (
+          <div className="w-full flex justify-center">
+            <SignUp 
+              routing="virtual"
+              initialValues={{ emailAddress: inviteEmail }}
+              forceRedirectUrl="/sync-auth"
+              appearance={{
+                variables: {
+                  colorPrimary: '#2c303b', 
+                  colorText: '#2D3139',
+                  colorTextSecondary: '#54585A',
+                  borderRadius: '12px',
+                  fontFamily: '"Montserrat", sans-serif',
+                },
+                elements: {
+                  card: 'border border-slate-200/80 shadow-[0_10px_40px_rgba(0,0,0,0.04)] rounded-2xl bg-white p-6 md:p-8',
+                  formButtonPrimary: 'bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg w-full transition-colors',
+                  footerActionLink: 'text-brand-red hover:text-red-700 font-bold transition-colors ml-1',
+                }
+              }}
+            />
           </div>
-        </div>
-
-        {/* Right side: Grid pattern container holding Clerk SignUp Component */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 md:p-6 relative bg-grid-pattern rounded-[18px] lg:ml-2 border border-slate-100">
-          {userId && isAuthenticated ? (
-            <div className="max-w-md w-full bg-blue-50 border border-blue-200 text-blue-800 p-8 rounded-2xl text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <h2 className="text-2xl font-bold mb-4">You are already logged in!</h2>
-              <p className="text-sm mb-6">
-                You are currently logged in as an active user (likely the Superadmin). 
-                Clerk prevents logged-in users from seeing the Sign Up page.
-              </p>
-              <p className="text-sm font-medium mb-6">
-                To test this invitation link as the invited user, please copy the URL and open it in an <strong>Incognito/Private Window</strong>.
-              </p>
-              <button 
-                onClick={() => signOut()}
-                className="w-full bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
-              >
-                Log me out to accept invite
-              </button>
-              <a href="/dashboard" className="mt-4 block text-brand-red hover:text-red-700 font-bold text-sm transition-colors">
-                Return to Dashboard
-              </a>
-            </div>
-          ) : (
-            <div className="w-full flex justify-center">
-              <SignUp 
-                routing="virtual"
-                initialValues={{ emailAddress: inviteEmail }}
-                forceRedirectUrl="/sync-auth"
-                appearance={{
-                  variables: {
-                    colorPrimary: '#2c303b', 
-                    colorText: '#2D3139',
-                    colorTextSecondary: '#54585A',
-                    borderRadius: '12px',
-                    fontFamily: '"Montserrat", sans-serif',
-                  },
-                  elements: {
-                    card: 'border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl bg-white p-6 md:p-8',
-                    formButtonPrimary: 'bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg w-full transition-colors',
-                    footerActionLink: 'text-brand-red hover:text-red-700 font-bold transition-colors ml-1',
-                  }
-                }}
-              />
-            </div>
-          )}
-        </div>
-
+        )}
       </div>
     </div>
   );
