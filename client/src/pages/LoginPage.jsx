@@ -35,11 +35,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-grid-pattern font-sans relative overflow-hidden">
-      
+
       {/* Absolute Background Image for Left Side */}
       <div className="hidden lg:block absolute top-0 left-0 w-1/2 h-full z-0 select-none">
-        <div 
-          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105" 
+        <div
+          //className="absolute inset-0 bg-container bg-[left_-380px] transition-transform duration-10000 hover:scale-105"
+          className="absolute inset-0 bg-cover bg-[center_85%] transition-transform duration-10000"
           style={{ backgroundImage: `url(${loginBg})` }}
         />
         {/* Gradient mask to fade into the grid background */}
@@ -48,39 +49,39 @@ export default function LoginPage() {
       </div>
 
       {/* Left Content */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between px-12 xl:px-20 py-10 xl:py-14 text-[#54585A] min-h-screen">
+      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between px-12 xl:px-20 py-8 xl:py-2 text-[#54585A] min-h-screen">
         {/* Top Logo */}
-        <div className="flex items-center">
-          <img src={latricsLogo} alt="Latrics Logo" className="h-11 object-contain" />
+        <div className="flex items-center -ml-6">
+          <img src={latricsLogo} alt="Latrics Logo" className="h-[140px] object-contain" />
         </div>
 
         {/* Call to action messaging */}
-        <div className="max-w-md mt-12 mb-auto">
-          <h1 className="text-3xl xl:text-[34px] font-extrabold leading-[1.25] text-slate-800 tracking-tight mb-3 max-w-[380px] font-sans">
+        <div className="max-w-xl mt-2 mb-auto">
+          <h1 className="text-3xl xl:text-[28px] font-semibold leading-[1.25] text-slate-800 tracking-tight mb-3 max-w-[800px] font-sans">
             The smarter way to organize work and drive results -
           </h1>
-          <div className="h-[52px] overflow-hidden mb-4">
-            <div 
+          <div className="h-[52px] overflow-hidden mt-6 mb-6">
+            <div
               className="transition-transform duration-500 ease-in-out"
               style={{ transform: `translateY(-${wordIndex * 52}px)` }}
             >
               {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
-                <h2 
-                  key={idx} 
-                  className="text-4xl xl:text-[46px] font-black text-brand-red tracking-tight font-sans h-[52px] flex items-center leading-none"
+                <h2
+                  key={idx}
+                  className="text-4xl xl:text-[42px] font-black text-brand-red tracking-tight font-sans h-[52px] flex items-center leading-none"
                 >
                   {word}
                 </h2>
               ))}
             </div>
           </div>
-          <p className="text-sm xl:text-base font-normal text-slate-500 leading-relaxed font-sans max-w-[360px]">
+          <p className="text-xl xl:text-base font-medium text-slate-500 leading-relaxed font-sans max-w-[460px]">
             A simple and powerful CRM built for teams that want to achieve more.
           </p>
         </div>
 
         {/* Bottom corporate trademark */}
-        <div className="text-[11px] font-medium text-slate-400 tracking-wider">
+        <div className="text-[11px] font-medium text-slate-800 tracking-wider">
           ©2026 Latrics CRM. All Rights Reserved.
         </div>
       </div>
@@ -97,16 +98,16 @@ export default function LoginPage() {
             <AlertTriangle className="w-5 h-5 shrink-0" /> {error}
           </div>
         )}
-        
+
         <div className="w-full flex justify-center">
-          <SignIn 
-            routing="path" 
-            path="/login" 
-            fallbackRedirectUrl="/dashboard" 
+          <SignIn
+            routing="path"
+            path="/login"
+            fallbackRedirectUrl="/dashboard"
             signUpUrl="/accept-invite"
             appearance={{
               variables: {
-                colorPrimary: '#2c303b', 
+                colorPrimary: '#2c303b',
                 colorText: '#2D3139',
                 colorTextSecondary: '#54585A',
                 borderRadius: '12px',
