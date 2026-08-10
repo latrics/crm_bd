@@ -1,4 +1,4 @@
-import { Users, Target, Folder, Shield, UserCircle, Settings, HelpCircle, Monitor } from 'lucide-react';
+import { Users, Target, Folder, Shield, UserCircle, Settings, HelpCircle, Monitor, AlertTriangle } from 'lucide-react';
 
 export const helpCenterCategories = [
   { id: 'getting-started', label: 'Getting Started', icon: Monitor },
@@ -7,7 +7,8 @@ export const helpCenterCategories = [
   { id: 'tenders', label: 'Tenders & Proposals', icon: Folder },
   { id: 'account-profile', label: 'Account & Profile', icon: UserCircle },
   { id: 'security', label: 'Security & Access', icon: Shield },
-  { id: 'admin', label: 'Admin & Settings', icon: Settings }
+  { id: 'admin', label: 'Admin & Settings', icon: Settings },
+  { id: 'cautionary-actions', label: 'Cautionary Actions & Serious Attention', icon: AlertTriangle }
 ];
 
 export const helpCenterArticles = [
@@ -147,6 +148,56 @@ If you have Administrator privileges:
 3. **Invite Users:** Send invitations to new employees to join the CRM.
 4. **Roles & Permissions:** Assign appropriate roles (e.g., Sales Executive, Manager) to control what data users can view and edit.
 5. **Deactivate:** You can suspend or deactivate users who no longer need access.
+    `
+  },
+
+  // Cautionary Actions & Serious Attention
+  {
+    id: 'hard-reset-safety',
+    category: 'cautionary-actions',
+    title: 'Super Admin Hard Reset & Data Revocation Safety',
+    tags: ['caution', 'hard reset', 'super admin', 'audit log', 'data safety'],
+    content: `
+**CRITICAL SECURITY & DATA SAFETY NOTICE:**
+
+Super Admins possess high-privilege **Hard Reset** tools for **Audit Logs** and the **Approval Center**.
+
+**1. Data Safety & Automatic Deletion Revocation:**
+
+- When a Manager requests a Lead or Deal deletion, the record is **NOT deleted** upfront—it is queued as a *Pending Approval*.
+
+- Performing a **Hard Reset** on the Approval Center **clears the pending approval tickets and revokes the deletion request by default**.
+
+- **Result:** No underlying Lead, Deal, or Tender records are destroyed during a reset. All business data remains 100% safe and intact.
+
+**2. Permanent Audit Trail Preservation:**
+
+- A Hard Reset can **NEVER** be performed anonymously.
+
+- Whenever a Super Admin triggers a reset, the system automatically writes an **immutable log entry** into the database recording:
+  - **Actor:** Name, Email, and Role of the Super Admin.
+  - **Action:** HARD_RESET.
+  - **Timestamp & IP Address:** Exact time and origin of execution.
+
+- This entry remains permanently in the system audit trail even after historical logs are cleared.
+    `
+  },
+
+  {
+    id: 'approval-workflows-caution',
+    category: 'cautionary-actions',
+    title: 'Handling Record Deletions & Approval Escalations',
+    tags: ['caution', 'approvals', 'deletion', 'revocation', 'permissions'],
+    content: `
+**OPERATIONAL CAUTION FOR ADMINS & MANAGERS:**
+
+- **Manager Deletion Requests:** Managers cannot permanently delete records directly. Deletion requests require explicit Super Admin / Admin authorization in the Approval Center.
+
+- **Record Destruction Warning:** Once a deletion request is explicitly **Approved**, the record (and associated pipeline metrics) is permanently deleted from MongoDB.
+
+- **Bulk Action Review:** Always review bulk approval selections carefully before clicking *Approve All*. If in doubt, reject or request clarification from the team member who raised the ticket.
+
+- **Revocation:** If an approval ticket is rejected or hard reset, the record remains active in the CRM pipeline without data loss.
     `
   }
 ];

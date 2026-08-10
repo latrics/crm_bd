@@ -13,7 +13,8 @@ export default function AuditLogs() {
   const { user } = useAuth();
   const { addToast } = useToast();
 
-  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+  const userRole = user?.role ? user.role.replace(/[\s_]/g, '').toLowerCase() : '';
+  const isSuperAdmin = userRole === 'superadmin';
 
   const fetchLogs = async () => {
     try {
@@ -34,13 +35,17 @@ export default function AuditLogs() {
     setResetting(true);
     try {
       const res = await api.post('/admin/audit-logs/reset');
-      if (res.data?.success) {
+      const resData = res.data || res;
+      if (resData?.success) {
         addToast({ 
           type: 'success', 
-          message: res.data.message || 'Audit logs reset successfully. The reset action has been logged.' 
+          message: resData.message || 'Audit logs reset successfully. The reset action has been logged.' 
         });
         setShowConfirmReset(false);
-        fetchLogs();
+        if (resData.data) {
+          setLogs(resData.data);
+        }
+        await fetchLogs();
       }
     } catch (err) {
       console.error('Failed to reset audit logs', err);

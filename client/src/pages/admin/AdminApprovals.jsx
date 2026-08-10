@@ -17,7 +17,8 @@ export default function AdminApprovals() {
   const { user } = useAuth();
   const { addToast } = useToast();
 
-  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+  const userRole = user?.role ? user.role.replace(/[\s_]/g, '').toLowerCase() : '';
+  const isSuperAdmin = userRole === 'superadmin';
 
   const fetchApprovals = async () => {
     try {
@@ -69,14 +70,16 @@ export default function AdminApprovals() {
     setResetting(true);
     try {
       const res = await resetApprovals();
-      if (res.data?.success) {
+      const resData = res.data || res;
+      if (resData?.success) {
         addToast({ 
           type: 'success', 
-          message: res.data.message || 'Approval Center reset successfully. This reset event has been recorded in Audit Logs.' 
+          message: resData.message || 'Approval Center reset successfully. This reset event has been recorded in Audit Logs.' 
         });
         setShowConfirmReset(false);
         setSelectedIds([]);
-        fetchApprovals();
+        setRequests([]);
+        await fetchApprovals();
       }
     } catch (err) {
       console.error('Failed to reset approvals', err);
@@ -115,6 +118,11 @@ export default function AdminApprovals() {
     "This screen displays delete operations and discount limits waiting for Super Admin approval.",
     "Review raised tickets and choose to either Approve or Reject.",
     "Once approved, records are permanently deleted or updated in the main database."
+  ];
+
+  const guideCautions = [
+    "Approving a deletion ticket permanently removes the target record from the database.",
+    "Hard Resetting the Approval Center automatically revokes all pending deletion requests—your Lead, Deal, and Tender data is never lost during a reset."
   ];
 
   return (
@@ -174,7 +182,7 @@ export default function AdminApprovals() {
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
               This action will clear all pending and resolved approval requests from the system. 
               <strong className="text-slate-800 font-bold block mt-2">
-                Note: A permanent entry recording WHO performed this hard reset will automatically be logged in the Audit Logs trail.
+                Note: All pending deletion requests will be revoked by default so lead/deal data remains safe, and a permanent audit entry will be logged.
               </strong>
             </p>
 
@@ -202,6 +210,7 @@ export default function AdminApprovals() {
         title="Approval Process Guide"
         description="Verify database updates requested by CRM executives. System changes will remain in a pending state until authorized by a Super Admin."
         steps={guideSteps}
+        cautions={guideCautions}
       />
 
       <div className="flex gap-2 mb-6">

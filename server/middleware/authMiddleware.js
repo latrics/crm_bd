@@ -45,9 +45,9 @@ export const protect = asyncHandler(async (req, res, next) => {
 
 // Grant access to specific roles middleware
 export const authorize = (...roles) => {
-  const normalizedRoles = roles.map(r => r.replace('_', '').toLowerCase());
+  const normalizedRoles = roles.map(r => r.replace(/[\s_]/g, '').toLowerCase());
   return (req, res, next) => {
-    const userRole = req.user && req.user.role ? req.user.role.replace('_', '').toLowerCase() : 'guest';
+    const userRole = req.user && req.user.role ? req.user.role.replace(/[\s_]/g, '').toLowerCase() : 'guest';
     if (!req.user || !normalizedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,

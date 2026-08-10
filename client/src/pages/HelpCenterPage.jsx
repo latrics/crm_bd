@@ -8,16 +8,54 @@ export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('getting-started');
 
-  // Helper to format basic markdown to HTML safely
+  // Helper to format basic markdown to HTML safely with high readability and proper spacing
   const formatContent = (text) => {
-    let html = text
-      .trim()
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n\n/g, '</p><p className="mt-4">')
-      .replace(/\n- (.*)/g, '<br/><span className="mr-2">&bull;</span>$1')
-      .replace(/\n\d+\. (.*)/g, '<br/><span className="mr-2 opacity-50">&bull;</span>$1');
-    return `<p className="leading-relaxed text-sm">${html}</p>`;
+    if (!text) return '';
+
+    const formatLine = (str) => {
+      return str
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em class="italic text-slate-800">$1</em>');
+    };
+
+    const paragraphs = text.trim().split(/\n\n+/);
+
+    return paragraphs.map(p => {
+      const lines = p.split('\n').filter(l => l.trim() !== '');
+
+      const isBulletList = lines.every(l => /^\s*[-*]\s+/.test(l));
+      if (isBulletList) {
+        const items = lines.map(l => {
+          const indent = l.search(/\S/);
+          const cleanText = formatLine(l.replace(/^\s*[-*]\s+/, ''));
+          const indentClass = indent > 2 ? 'ml-6 text-xs opacity-90' : 'ml-2 text-sm';
+          return `<li class="${indentClass} leading-relaxed text-slate-700 font-normal my-1">${cleanText}</li>`;
+        }).join('');
+        return `<ul class="my-3 space-y-1.5 list-disc list-inside bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">${items}</ul>`;
+      }
+
+      const isNumberedList = lines.every(l => /^\s*\d+\.\s+/.test(l));
+      if (isNumberedList) {
+        const items = lines.map(l => {
+          const cleanText = formatLine(l.replace(/^\s*\d+\.\s+/, ''));
+          return `<li class="ml-2 text-sm leading-relaxed text-slate-700 font-normal my-1">${cleanText}</li>`;
+        }).join('');
+        return `<ol class="my-3 space-y-1.5 list-decimal list-inside bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">${items}</ol>`;
+      }
+
+      // Mixed paragraph line processing
+      const formattedLines = lines.map(l => {
+        if (/^\s*[-*]\s+/.test(l)) {
+          const indent = l.search(/\S/);
+          const cleanText = formatLine(l.replace(/^\s*[-*]\s+/, ''));
+          const pl = indent > 2 ? 'pl-6 text-xs' : 'pl-3 text-sm';
+          return `<div class="flex items-start gap-2.5 my-2 ${pl}"><span class="text-brand-red font-bold text-base leading-none mt-0.5">•</span><span class="text-slate-700 leading-relaxed flex-1">${cleanText}</span></div>`;
+        }
+        return `<div class="my-1.5 leading-relaxed text-sm text-slate-700 font-normal">${formatLine(l)}</div>`;
+      }).join('');
+
+      return `<div class="my-3.5">${formattedLines}</div>`;
+    }).join('');
   };
 
   const filteredArticles = useMemo(() => {

@@ -76,6 +76,11 @@ export default function AdminRoles() {
     "System security tokens refresh immediately upon updating any role template."
   ];
 
+  const roleCautions = [
+    "Hard Reset operations for Audit Logs & Approval Center are reserved strictly for Super Admin.",
+    "Manager deletion requests require Admin/Super Admin approval before permanent removal."
+  ];
+
   return (
     <div className="w-full space-y-6">
       <div className="mb-4">
@@ -87,6 +92,7 @@ export default function AdminRoles() {
         title="Role Access Guide"
         description="Verify system access levels, check RBAC inheritance, and configure functional permissions for different roles."
         steps={guideSteps}
+        cautions={roleCautions}
       />
 
       <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">

@@ -74,9 +74,13 @@ router.route('/approvals')
 
 // Hard Reset Approvals - SUPER ADMIN ONLY
 router.post('/approvals/reset', authorize('superadmin'), asyncHandler(async (req, res) => {
+  // Count pending deletion requests before resetting
+  const pendingDeletionsCount = await ApprovalRequest.countDocuments({ status: 'Pending', type: 'Delete' });
+
+  // Delete all approval requests (revoking any pending delete requests by default so lead/deal data is preserved)
   await ApprovalRequest.deleteMany({});
 
-  // Record the hard reset action in Audit Logs permanently
+  // Record the hard reset action in Audit Logs permanently with explicit revocation detail
   await AuditLog.create({
     user_id: req.user._id,
     user_name: req.user.name || req.user.email,
@@ -85,13 +89,13 @@ router.post('/approvals/reset', authorize('superadmin'), asyncHandler(async (req
     entity: 'ApprovalCenter',
     severity: 'critical',
     meta: {
-      description: `Approval Center hard reset performed by Super Admin ${req.user.name || req.user.email}`
+      description: `Approval Center hard reset performed by Super Admin ${req.user.name || req.user.email}. ${pendingDeletionsCount} pending deletion request(s) were revoked, ensuring no lead or deal data was removed.`
     }
   });
 
   res.status(200).json({
     success: true,
-    message: 'Approval Center requests reset successfully. This action has been recorded in the audit trail.'
+    message: `Approval Center reset successfully. ${pendingDeletionsCount > 0 ? `${pendingDeletionsCount} pending deletion request(s) were automatically revoked. ` : ''}All lead and deal data remains fully intact.`
   });
 }));
 

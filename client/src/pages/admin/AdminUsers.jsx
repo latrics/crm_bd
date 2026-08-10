@@ -203,9 +203,14 @@ export default function AdminUsers() {
   });
 
   const guideSteps = [
-    "This list displays all registered system users and their active credentials.",
-    "Click suspend or deactivate to temporarily freeze access for any specific user.",
-    "Use the Add User button in the header to register new team members manually."
+    "Verify user reporting structures and permissions.",
+    "Click '+ Add User' to register team members directly or issue temporary credentials.",
+    "Use action menu to Edit details, Reset Passwords, or Deactivate accounts."
+  ];
+
+  const userCautions = [
+    "Deactivating a user immediately blocks authentication attempts and revokes active API tokens.",
+    "Role changes take effect on the user's next authenticated request."
   ];
 
   return (
@@ -213,15 +218,15 @@ export default function AdminUsers() {
       <div className="flex justify-between items-end mb-4 gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">User Management</h1>
-          <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Manage accounts • roles • reporting structures</p>
+          <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Control access • assign roles • manager hierarchies</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
           <input 
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search users..." 
-            className="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] min-w-[250px] transition-all bg-white text-brand-charcoal font-medium placeholder:text-brand-silver/60"
+            placeholder="Search by name, email, or role..." 
+            className="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/[0.08] min-w-[240px] transition-all bg-white text-brand-charcoal font-medium placeholder:text-brand-silver/60"
           />
           <button 
             onClick={() => {
@@ -239,6 +244,7 @@ export default function AdminUsers() {
         title="User Accounts Guide"
         description="Verify system access privileges, check reporting relationships, and perform user account lifecycle actions."
         steps={guideSteps}
+        cautions={userCautions}
       />
 
       <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">

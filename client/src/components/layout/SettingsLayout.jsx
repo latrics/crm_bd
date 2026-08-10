@@ -76,23 +76,22 @@ export default function SettingsLayout({ children }) {
           })}
         </nav>
 
-        {/* Support Help Card - Positioned cleanly at the bottom with padding */}
-        <div className="hidden lg:block bg-brand-surfaceAlt/60 border border-brand-border/60 rounded-xl p-3 mt-6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] mx-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-brand-redLight text-brand-red flex items-center justify-center shrink-0 border border-brand-red/20">
-              <HelpCircle className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold text-brand-text">Need Help?</h4>
-              <span 
-                onClick={() => navigate('/help-center')}
-                className="text-[9px] font-bold text-brand-silver hover:text-brand-red cursor-pointer flex items-center gap-1 mt-0.5"
-              >
-                Visit Help Center <span className="text-[10px]">&rarr;</span>
-              </span>
-            </div>
+        {/* Support Help Card - Entire Card is Clickable & Interactive */}
+        <button 
+          type="button"
+          onClick={() => navigate('/help-center')}
+          className="hidden lg:flex w-full text-left items-center gap-2.5 bg-brand-surfaceAlt/60 hover:bg-white border border-brand-border/60 hover:border-brand-red/30 rounded-xl p-3 mt-6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-md transition-all duration-200 cursor-pointer group border-none active:scale-[0.98]"
+        >
+          <div className="w-8 h-8 rounded-full bg-brand-redLight group-hover:bg-brand-red group-hover:text-white text-brand-red flex items-center justify-center shrink-0 border border-brand-red/20 transition-colors">
+            <HelpCircle className="w-4 h-4" />
           </div>
-        </div>
+          <div className="flex-1">
+            <h4 className="text-[11px] font-bold text-brand-text group-hover:text-brand-red transition-colors">Need Help?</h4>
+            <span className="text-[9px] font-bold text-brand-silver group-hover:text-brand-red flex items-center gap-1 mt-0.5 transition-colors">
+              Visit Help Center <span className="text-[10px] transition-transform group-hover:translate-x-1">&rarr;</span>
+            </span>
+          </div>
+        </button>
       </aside>
 
       <main className="w-full flex flex-col justify-start lg:pl-[280px]">

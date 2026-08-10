@@ -16,7 +16,8 @@ export default function AdminAuditLogs() {
   const { user } = useAuth();
   const { addToast } = useToast();
 
-  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+  const userRole = user?.role ? user.role.replace(/[\s_]/g, '').toLowerCase() : '';
+  const isSuperAdmin = userRole === 'superadmin';
   
   const [expandedRows, setExpandedRows] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,7 +56,10 @@ export default function AdminAuditLogs() {
           message: res.message || 'Audit logs reset successfully. The reset action has been logged.' 
         });
         setShowConfirmReset(false);
-        fetchLogs();
+        if (res.data) {
+          setLogs(res.data);
+        }
+        await fetchLogs();
       }
     } catch (err) {
       console.error('Failed to reset audit logs', err);
@@ -172,6 +176,11 @@ export default function AdminAuditLogs() {
     "Use the export CSV option to download logs for external security reports."
   ];
 
+  const guideCautions = [
+    "Hard Reset is strictly restricted to Super Admins and clears historical audit logs from the database.",
+    "The identity of the Super Admin and timestamp performing a Hard Reset are permanently recorded and preserved in the audit trail."
+  ];
+
   return (
     <div className="w-full space-y-6">
       <div className="flex justify-between items-end mb-4 gap-4 flex-wrap">
@@ -249,6 +258,7 @@ export default function AdminAuditLogs() {
         title="Security Audit Guide"
         description="Verify system compliance, database queries, and administrative commands. Audit logs record absolute snapshots of data changes."
         steps={guideSteps}
+        cautions={guideCautions}
       />
 
       {/* Filters bar */}

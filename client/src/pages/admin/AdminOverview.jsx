@@ -337,6 +337,11 @@ Building Better Tomorrow
     "Remove inactive or departing users securely using the actions panel."
   ];
 
+  const guideCautions = [
+    "Revoking or deleting a member revokes their session immediately across all devices.",
+    "Super Admin Hard Resets in Audit Logs & Approval Center preserve permanent actor audit logs to guarantee compliance."
+  ];
+
   return (
     <div className="w-full space-y-6">
       {/* Top Header Section */}
@@ -359,6 +364,7 @@ Building Better Tomorrow
         title="Admin Console Overview" 
         description="This console provides a central interface for managing CRM systems, user roles, security audits, and records. Send user invitations or remove active members directly from this panel."
         steps={guideSteps}
+        cautions={guideCautions}
       />
 
       {/* Stats Cards Section */}
