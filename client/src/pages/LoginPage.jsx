@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { SignIn } from '@clerk/react';
 import loginBg from '../assets/images/signup_login_img.jpeg';
-import latricsLogo from '../assets/images/latrics_grey_red_logo.svg';
+import latricsLogo from '../assets/images/logo 1.svg';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -50,8 +50,8 @@ export default function LoginPage() {
       {/* Left Content */}
       <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-12 xl:p-20 text-[#54585A]">
         {/* Top Logo */}
-        <div className="flex items-center">
-          <img src={latricsLogo} alt="Latrics Logo" className="h-10 object-contain" />
+        <div className="flex items-center -ml-2">
+          <img src={latricsLogo} alt="Latrics Logo" className="h-14 object-contain" />
         </div>
 
         {/* Call to action messaging */}
