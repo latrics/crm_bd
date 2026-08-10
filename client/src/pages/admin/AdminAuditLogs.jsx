@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
-import { getAuditLogs } from '../../api/adminApi.js';
+import { getAuditLogs, resetAuditLogs } from '../../api/adminApi.js';
 import { format, isToday, isYesterday, subDays } from 'date-fns';
+import { useAuth } from '../../context/AuthContext.jsx';
+import useToast from '../../hooks/useToast.js';
+import { RotateCcw, AlertTriangle } from 'lucide-react';
 
 export default function AdminAuditLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
+  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
   
   const [expandedRows, setExpandedRows] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +42,29 @@ export default function AdminAuditLogs() {
       setError(err.message || 'Error loading audit logs.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetLogs = async () => {
+    setResetting(true);
+    try {
+      const res = await resetAuditLogs();
+      if (res.success) {
+        addToast({ 
+          type: 'success', 
+          message: res.message || 'Audit logs reset successfully. The reset action has been logged.' 
+        });
+        setShowConfirmReset(false);
+        fetchLogs();
+      }
+    } catch (err) {
+      console.error('Failed to reset audit logs', err);
+      addToast({ 
+        type: 'error', 
+        message: err.message || err.response?.data?.message || 'Failed to reset audit logs. Super Admin authorization required.' 
+      });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -146,7 +179,7 @@ export default function AdminAuditLogs() {
           <h1 className="font-serif text-3xl font-bold text-brand-charcoal mb-2">Audit Logs</h1>
           <p className="text-xs font-semibold text-brand-silver uppercase tracking-wider">Track user activity • data modifications • logins</p>
         </div>
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
           <input 
             type="text" 
             value={searchQuery}
@@ -161,8 +194,56 @@ export default function AdminAuditLogs() {
           >
             EXPORT CSV
           </button>
+
+          {isSuperAdmin && (
+            <button
+              onClick={() => setShowConfirmReset(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100/80 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
+            >
+              <RotateCcw className="w-4 h-4 text-red-600" />
+              RESET AUDIT LOGS
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmReset && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-gray-100 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="p-2.5 bg-red-100/80 rounded-xl">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Hard Reset Audit Logs?</h3>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              This action will clear all existing activity records from the database. 
+              <strong className="text-slate-800 font-bold block mt-2">
+                Note: A permanent entry recording WHO performed this hard reset will automatically be created and preserved in the audit trail.
+              </strong>
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowConfirmReset(false)}
+                disabled={resetting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetLogs}
+                disabled={resetting}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {resetting ? 'Resetting...' : 'Yes, Reset Logs'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <DeveloperGuide 
         title="Security Audit Guide"

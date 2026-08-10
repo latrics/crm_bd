@@ -45,6 +45,15 @@ export const getAuditLogs = async () => {
   }
 };
 
+export const resetAuditLogs = async () => {
+  try {
+    const res = await axios.post(`${API_URL}/audit-logs/reset`, {}, getHeaders());
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
 export const createUser = async (userData) => {
   try {
     const res = await axios.post(`${API_URL}/users`, userData, getHeaders());

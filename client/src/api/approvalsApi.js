@@ -7,3 +7,7 @@ export const getApprovals = async () => {
 export const updateApproval = async (id, status) => {
   return await api.put(`/admin/approvals/${id}`, { status });
 };
+
+export const resetApprovals = async () => {
+  return await api.post('/admin/approvals/reset');
+};

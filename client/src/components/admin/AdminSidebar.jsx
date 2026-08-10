@@ -6,8 +6,8 @@ const navItems = [
   { id: 'users', label: 'User Management', path: '/admin/users', icon: Users },
   { id: 'approvals', label: 'Approval Center', path: '/admin/approvals', icon: CheckSquare },
   { id: 'audit', label: 'Audit Logs', path: '/admin/audit-logs', icon: FileText },
-  { id: 'master', label: 'Master Data Config', path: '/admin/master-data', icon: Settings },
-  { id: 'ownership', label: 'Ownership & Reassign', path: '/admin/ownership', icon: RefreshCw },
+  // { id: 'master', label: 'Master Data Config', path: '/admin/master-data', icon: Settings },
+  // { id: 'ownership', label: 'Ownership & Reassign', path: '/admin/ownership', icon: RefreshCw },
   { id: 'roles', label: 'Roles & Permissions', path: '/admin/roles', icon: Shield },
 ];
 

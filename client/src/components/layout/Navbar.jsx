@@ -87,17 +87,16 @@ export default function Navbar() {
 
         {/* User Menu & Profile Dropdown */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => updateSetting('mode', settings.mode === 'dark' ? 'light' : 'dark')}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm cursor-pointer text-brand-silver bg-transparent"
-            title={settings.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border shadow-sm cursor-default text-brand-silver bg-transparent select-none opacity-60"
+            title="Theme Settings"
           >
             {settings.mode === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-500 shrink-0" />
             ) : (
               <Moon className="w-4 h-4 text-slate-700 shrink-0" />
             )}
-          </button>
+          </div>
 
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-notifications'))}
