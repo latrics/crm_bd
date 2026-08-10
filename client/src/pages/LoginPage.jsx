@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { SignIn } from '@clerk/react';
@@ -24,82 +24,102 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % 3);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-grid-pattern p-4 md:p-8 font-sans relative">
-      {/* Outer Card container */}
-      <div className="bg-[#F8F9FA] rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-slate-200/80 flex flex-col lg:flex-row w-full max-w-4xl overflow-hidden p-4 min-h-[580px] relative z-10">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-grid-pattern font-sans relative overflow-hidden">
+      
+      {/* Absolute Background Image for Left Side */}
+      <div className="hidden lg:block absolute top-0 left-0 w-1/2 h-full z-0 select-none">
+        <div 
+          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105" 
+          style={{ backgroundImage: `url(${loginBg})` }}
+        />
+        {/* Gradient mask to fade into the grid background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#fdfdfd]/40 to-[#fdfdfd]" />
+        <div className="absolute inset-0 bg-white/20 backdrop-blur-[0.5px]" />
+      </div>
+
+      {/* Left Content */}
+      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-12 xl:p-20 text-[#54585A]">
+        {/* Top Logo */}
+        <div className="flex items-center">
+          <img src={latricsLogo} alt="Latrics Logo" className="h-10 object-contain" />
+        </div>
+
+        {/* Call to action messaging */}
+        <div className="max-w-md mt-16 mb-auto">
+          <h3 className="text-2xl font-extrabold leading-snug mb-4 text-slate-800 font-sans">
+            The smarter way to organize work and drive results -
+          </h3>
+          <div className="h-[56px] overflow-hidden mb-6">
+            <div 
+              className="transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateY(-${wordIndex * 56}px)` }}
+            >
+              {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
+                <h2 
+                  key={idx} 
+                  className="text-5xl font-black text-brand-red tracking-tight font-sans h-[56px] flex items-center leading-none"
+                >
+                  {word}
+                </h2>
+              ))}
+            </div>
+          </div>
+          <p className="text-base font-medium text-slate-600 leading-relaxed font-sans">
+            A simple and powerful CRM built for teams that want to achieve more.
+          </p>
+        </div>
+
+        {/* Bottom corporate trademark */}
+        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+          ©2026 Latrics CRM. All Rights Reserved.
+        </div>
+      </div>
+
+      {/* Right side: Modern Clerk Login Component container */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 lg:p-12 relative z-10">
+        {location.state?.message && (
+          <div className="max-w-md w-full mb-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
+            <CheckCircle2 className="w-5 h-5 shrink-0" /> {location.state.message}
+          </div>
+        )}
+        {error && (
+          <div className="max-w-md w-full mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
+            <AlertTriangle className="w-5 h-5 shrink-0" /> {error}
+          </div>
+        )}
         
-        {/* Left side: Artwork/Branding Panel (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-1/2 relative rounded-[18px] border border-slate-200/50 overflow-hidden select-none flex-col justify-between p-8 text-[#54585A]">
-          {/* Background Image */}
-          <div 
-            className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-10000 hover:scale-105" 
-            style={{ backgroundImage: `url(${loginBg})` }}
+        <div className="w-full flex justify-center">
+          <SignIn 
+            routing="path" 
+            path="/login" 
+            fallbackRedirectUrl="/dashboard" 
+            signUpUrl="/accept-invite"
+            appearance={{
+              variables: {
+                colorPrimary: '#2c303b', 
+                colorText: '#2D3139',
+                colorTextSecondary: '#54585A',
+                borderRadius: '12px',
+                fontFamily: '"Montserrat", sans-serif',
+              },
+              elements: {
+                card: 'border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl bg-white p-6 md:p-8',
+                formButtonPrimary: 'bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg w-full transition-colors',
+                footerActionLink: 'text-brand-red hover:text-red-700 font-bold transition-colors ml-1',
+              }
+            }}
           />
-          {/* Subtle overlay for warmth and text safety */}
-          <div className="absolute inset-0 z-0 bg-white/20 backdrop-blur-[0.5px]" />
-          
-          {/* Top Logo */}
-          <div className="z-10 flex items-center">
-            <img src={latricsLogo} alt="Latrics Logo" className="h-9 object-contain" />
-          </div>
-
-          {/* Call to action messaging */}
-          <div className="z-10 max-w-xs mt-auto mb-10">
-            <h3 className="text-lg font-extrabold leading-snug mb-2 text-slate-800 font-sans">
-              The smarter way to organize work and drive results -
-            </h3>
-            <h2 className="text-4xl font-black mb-3 text-brand-red tracking-tight font-sans">
-              Manage.
-            </h2>
-            <p className="text-xs font-semibold text-slate-600 leading-relaxed font-sans">
-              A simple and powerful CRM built for teams that want to achieve more.
-            </p>
-          </div>
-
-          {/* Bottom corporate trademark */}
-          <div className="z-10 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-            ©2026 Latrics CRM. All Rights Reserved.
-          </div>
         </div>
-
-        {/* Right side: Modern Clerk Login Component container */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 md:p-6 relative">
-          {location.state?.message && (
-            <div className="max-w-md w-full mb-4 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" /> {location.state.message}
-            </div>
-          )}
-          {error && (
-            <div className="max-w-md w-full mb-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
-            </div>
-          )}
-          
-          <div className="w-full flex justify-center">
-            <SignIn 
-              routing="path" 
-              path="/login" 
-              fallbackRedirectUrl="/dashboard" 
-              signUpUrl="/accept-invite"
-              appearance={{
-                variables: {
-                  colorPrimary: '#2c303b', // Muted/charcoal button
-                  colorText: '#2D3139',
-                  colorTextSecondary: '#54585A',
-                  borderRadius: '12px',
-                  fontFamily: '"Montserrat", sans-serif',
-                },
-                elements: {
-                  card: 'border border-slate-200/80 shadow-md rounded-xl bg-white p-6 md:p-8',
-                  formButtonPrimary: 'bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg w-full transition-colors',
-                  footerActionLink: 'text-brand-red hover:text-red-700 font-bold transition-colors ml-1',
-                }
-              }}
-            />
-          </div>
-        </div>
-
       </div>
     </div>
   );

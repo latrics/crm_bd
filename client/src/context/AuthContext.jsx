@@ -113,7 +113,7 @@ export function AuthProvider({ children }) {
           
           // Determine if it's a network, proxy, or gateway connection error
           const isNetworkError = 
-            !err.response || 
+            (!err.response && err.isAxiosError) || 
             (err.response?.status >= 500 && err.response?.status <= 599) ||
             err.message === 'Network Error' || 
             err.code === 'ERR_NETWORK' ||
