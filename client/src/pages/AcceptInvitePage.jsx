@@ -13,7 +13,7 @@ export default function AcceptInvitePage() {
   const { signOut } = useClerk();
   const { isAuthenticated } = useAppAuth();
   const navigate = useNavigate();
-  
+
   // Clerk changes the URL during signup (e.g., /accept-invite/verify). 
   // This drops query params. We must persist the token so the page doesn't crash.
   const [token, setToken] = useState(urlToken || sessionStorage.getItem('inviteToken'));
@@ -94,11 +94,11 @@ export default function AcceptInvitePage() {
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-grid-pattern font-sans relative overflow-hidden">
-      
+
       {/* Absolute Background Image for Left Side */}
       <div className="hidden lg:block absolute top-0 left-0 w-1/2 h-full z-0 select-none">
-        <div 
-          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105" 
+        <div
+          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105"
           style={{ backgroundImage: `url(${loginBg})` }}
         />
         {/* Gradient mask to fade into the grid background */}
@@ -110,22 +110,22 @@ export default function AcceptInvitePage() {
       <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-12 xl:p-20 text-[#54585A]">
         {/* Top Logo */}
         <div className="flex items-center -ml-2">
-          <img src={latricsLogo} alt="Latrics Logo" className="h-14 object-contain" />
+          <img src={latricsLogo} alt="Latrics Logo" className="h-28 object-contain" />
         </div>
 
         {/* Call to action messaging */}
-        <div className="max-w-md mt-16 mb-auto">
+        <div className="max-w-md mt-8 mb-auto">
           <h3 className="text-2xl font-extrabold leading-snug mb-4 text-slate-800 font-sans">
             The smarter way to organize work and drive results -
           </h3>
           <div className="h-[56px] overflow-hidden mb-6">
-            <div 
+            <div
               className="transition-transform duration-500 ease-in-out"
               style={{ transform: `translateY(-${wordIndex * 56}px)` }}
             >
               {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
-                <h2 
-                  key={idx} 
+                <h2
+                  key={idx}
                   className="text-5xl font-black text-brand-red tracking-tight font-sans h-[56px] flex items-center leading-none"
                 >
                   {word}
@@ -150,13 +150,13 @@ export default function AcceptInvitePage() {
           <div className="max-w-md w-full bg-blue-50 border border-blue-200 text-blue-800 p-8 rounded-2xl text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
             <h2 className="text-2xl font-bold mb-4">You are already logged in!</h2>
             <p className="text-sm mb-6">
-              You are currently logged in as an active user (likely the Superadmin). 
+              You are currently logged in as an active user (likely the Superadmin).
               Clerk prevents logged-in users from seeing the Sign Up page.
             </p>
             <p className="text-sm font-medium mb-6">
               To test this invitation link as the invited user, please copy the URL and open it in an <strong>Incognito/Private Window</strong>.
             </p>
-            <button 
+            <button
               onClick={() => signOut()}
               className="w-full bg-[#2c303b] hover:bg-[#1f222a] text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
             >
@@ -168,13 +168,13 @@ export default function AcceptInvitePage() {
           </div>
         ) : (
           <div className="w-full flex justify-center">
-            <SignUp 
+            <SignUp
               routing="virtual"
               initialValues={{ emailAddress: inviteEmail }}
               forceRedirectUrl="/sync-auth"
               appearance={{
                 variables: {
-                  colorPrimary: '#2c303b', 
+                  colorPrimary: '#2c303b',
                   colorText: '#2D3139',
                   colorTextSecondary: '#54585A',
                   borderRadius: '12px',

@@ -35,11 +35,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-grid-pattern font-sans relative overflow-hidden">
-      
+
       {/* Absolute Background Image for Left Side */}
       <div className="hidden lg:block absolute top-0 left-0 w-1/2 h-full z-0 select-none">
-        <div 
-          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105" 
+        <div
+          className="absolute inset-0 bg-cover bg-left transition-transform duration-10000 hover:scale-105"
           style={{ backgroundImage: `url(${loginBg})` }}
         />
         {/* Gradient mask to fade into the grid background */}
@@ -51,22 +51,22 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-12 xl:p-20 text-[#54585A]">
         {/* Top Logo */}
         <div className="flex items-center -ml-2">
-          <img src={latricsLogo} alt="Latrics Logo" className="h-14 object-contain" />
+          <img src={latricsLogo} alt="Latrics Logo" className="h-28 object-contain" />
         </div>
 
         {/* Call to action messaging */}
-        <div className="max-w-md mt-16 mb-auto">
+        <div className="max-w-md mt-8 mb-auto">
           <h3 className="text-2xl font-extrabold leading-snug mb-4 text-slate-800 font-sans">
             The smarter way to organize work and drive results -
           </h3>
           <div className="h-[56px] overflow-hidden mb-6">
-            <div 
+            <div
               className="transition-transform duration-500 ease-in-out"
               style={{ transform: `translateY(-${wordIndex * 56}px)` }}
             >
               {['Manage.', 'Track.', 'Grow.'].map((word, idx) => (
-                <h2 
-                  key={idx} 
+                <h2
+                  key={idx}
                   className="text-5xl font-black text-brand-red tracking-tight font-sans h-[56px] flex items-center leading-none"
                 >
                   {word}
@@ -97,16 +97,16 @@ export default function LoginPage() {
             <AlertTriangle className="w-5 h-5 shrink-0" /> {error}
           </div>
         )}
-        
+
         <div className="w-full flex justify-center">
-          <SignIn 
-            routing="path" 
-            path="/login" 
-            fallbackRedirectUrl="/dashboard" 
+          <SignIn
+            routing="path"
+            path="/login"
+            fallbackRedirectUrl="/dashboard"
             signUpUrl="/accept-invite"
             appearance={{
               variables: {
-                colorPrimary: '#2c303b', 
+                colorPrimary: '#2c303b',
                 colorText: '#2D3139',
                 colorTextSecondary: '#54585A',
                 borderRadius: '12px',
