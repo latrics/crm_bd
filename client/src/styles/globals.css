@@ -106,3 +106,12 @@ body {
   -ms-overflow-style: none !important;  /* IE/Edge */
   scrollbar-width: none !important;  /* Firefox */
 }
+
+/* Grid background pattern for login page */
+.bg-grid-pattern {
+  background-color: #fdfdfd;
+  background-image: 
+    linear-gradient(to right, #eef0f2 1px, transparent 1px),
+    linear-gradient(to bottom, #eef0f2 1px, transparent 1px);
+  background-size: 40px 40px;
+}
