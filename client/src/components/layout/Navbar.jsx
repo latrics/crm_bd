@@ -5,6 +5,7 @@ import UserMenu from './UserMenu.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { Sun, Moon } from 'lucide-react';
+import latricsLogo from '../../assets/images/logo 1.svg';
 
 export default function Navbar() {
   const { state } = useCRM();
@@ -29,17 +30,17 @@ export default function Navbar() {
   };
 
   // Enforcing standard 64px (px-6 sm:px-12 lg:px-16) side padding globally
-  const paddingClass = settings.paddingX === '32px' 
-    ? 'px-4 sm:px-8' 
-    : settings.paddingX === '48px' 
-    ? 'px-6 sm:px-12' 
-    : settings.paddingX === '80px' 
-    ? 'px-8 sm:px-20' 
-    : 'px-6 sm:px-12 lg:px-16'; // Standard 64px (px-16) default
+  const paddingClass = settings.paddingX === '32px'
+    ? 'px-4 sm:px-8'
+    : settings.paddingX === '48px'
+      ? 'px-6 sm:px-12'
+      : settings.paddingX === '80px'
+        ? 'px-8 sm:px-20'
+        : 'px-6 sm:px-12 lg:px-16'; // Standard 64px (px-16) default
 
   const navClass = ({ isActive }) =>
     `flex items-center gap-2 px-1 pb-4 pt-5 font-bold text-xs uppercase tracking-widest ${isActive ? 'text-brand-red border-b-2 border-brand-red' : 'text-brand-silver hover:text-brand-text'} transition-all`;
-  
+
   const badgeClass = (isActive) =>
     `px-2 py-0.5 rounded-full text-[10px] ml-1 ${isActive ? 'bg-brand-red text-white' : 'bg-brand-surfaceAlt text-brand-silver'}`;
 
@@ -47,11 +48,11 @@ export default function Navbar() {
     <nav className="border-b border-brand-border bg-white fixed top-0 left-0 w-full z-50 shadow-sm transition-all duration-150">
       <div className={`w-full ${paddingClass} flex justify-between items-center h-16`}>
         <div className="flex items-center gap-8 md:gap-12 h-full">
-          <div 
+          <div
             onClick={() => window.location.reload()}
-            className="font-serif text-xl font-black text-brand-red tracking-wide flex items-center border-r-2 border-brand-red pr-6 h-8 cursor-pointer select-none"
+            className="flex items-center cursor-pointer select-none shrink-0"
           >
-            LATRICS
+            <img src={latricsLogo} alt="Latrics Logo" className="h-24 w-56 object-contain" />
           </div>
           <div className="flex items-center gap-6 h-full overflow-x-auto scrollbar-none">
             <NavLink to="/dashboard" className={navClass}>
@@ -86,7 +87,7 @@ export default function Navbar() {
 
         {/* User Menu & Profile Dropdown */}
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => updateSetting('mode', settings.mode === 'dark' ? 'light' : 'dark')}
             className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm cursor-pointer text-brand-silver bg-transparent"
             title={settings.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -98,7 +99,7 @@ export default function Navbar() {
             )}
           </button>
 
-          <button 
+          <button
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-notifications'))}
             className="flex items-center justify-center w-8 h-8 rounded-full border border-brand-border hover:bg-brand-surfaceAlt transition-colors shadow-sm relative cursor-pointer"
             title="Notifications"

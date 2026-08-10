@@ -8,7 +8,8 @@ import {
   Check, X, Monitor, Smartphone, Users, Target, 
   Percent, Trophy, Folder, TrendingUp, HelpCircle, LogOut, 
   MoreVertical, User, UserCircle, Palette, Shield, Bug, Trash2, Bell,
-  Mail, Phone, Camera, Image as ImageIcon, ChevronDown, ChevronUp, AlertCircle
+  Mail, Phone, Camera, Image as ImageIcon, ChevronDown, ChevronUp, AlertCircle,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import latricsWhiteLogo from '../assets/images/Latrics_white_logo_full.svg';
 
@@ -81,6 +82,40 @@ export default function AccountPage() {
   const [deviceInfo, setDeviceInfo] = useState({ name: 'Chrome on Windows', isMobile: false });
   const [activeMenuSessionId, setActiveMenuSessionId] = useState(null);
   const [loginHistory, setLoginHistory] = useState([]);
+
+  const [isLeadsExpanded, setIsLeadsExpanded] = useState(false);
+  const [activeLeadStatIndex, setActiveLeadStatIndex] = useState(0);
+  const [dragDistance, setDragDistance] = useState(0);
+
+  const carouselRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return; // Only drag with left click
+    setIsDragging(true);
+    setStartX(e.pageX - carouselRef.current.offsetLeft);
+    setScrollLeft(carouselRef.current.scrollLeft);
+    setDragDistance(0);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    carouselRef.current.scrollLeft = scrollLeft - walk;
+    setDragDistance(Math.abs(x - startX));
+  };
 
   const menuRef = useRef(null);
 
@@ -308,6 +343,53 @@ export default function AccountPage() {
   const activityScore = totalDealsForScore > 0
     ? Math.round((dealsWon / Math.max(1, totalDealsForScore)) * 100)
     : 50;
+
+  // Group leads by broughtBy field
+  const activeLeadsList = isAdminOrSuper ? (state.leads || []) : myLeads;
+  
+  const capitalizeName = (str) => {
+    if (!str) return 'Unassigned';
+    return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+  };
+
+  const leadsGroupedByBroughtBy = activeLeadsList.reduce((acc, lead) => {
+    const name = lead.broughtBy?.trim() ? capitalizeName(lead.broughtBy.trim()) : 'Unassigned';
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {});
+
+  const broughtByList = Object.entries(leadsGroupedByBroughtBy)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const autoSwitchSlides = [
+    {
+      title: 'Leads',
+      value: leadsCreated,
+      subtitle: 'Total Leads',
+      icon: Users,
+      colorClass: 'text-brand-red bg-brand-redLight/60 border-brand-red/10'
+    },
+    ...broughtByList.slice(0, 5).map((item) => ({
+      title: item.name,
+      value: item.count,
+      subtitle: 'Brought By',
+      icon: User,
+      colorClass: 'text-indigo-600 bg-indigo-50 border-indigo-100'
+    }))
+  ];
+
+  useEffect(() => {
+    if (isLeadsExpanded) return;
+    const totalSlides = autoSwitchSlides.length;
+    if (totalSlides <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveLeadStatIndex((prev) => (prev + 1) % totalSlides);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isLeadsExpanded, autoSwitchSlides.length]);
 
   // Active Sessions list
   const [sessions, setSessions] = useState([
@@ -542,24 +624,138 @@ export default function AccountPage() {
 
               {/* Statistics Section (Hides Notifications and conditionally filters Activity Score) */}
               <div className="flex flex-col gap-2">
-                <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest">
-                  {isAdminOrSuper ? "System Statistics (Admin View)" : "My Personal Performance"}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest">
+                    {isAdminOrSuper ? "System Statistics (Admin View)" : "My Personal Performance"}
+                  </h3>
+                  {/* Carousel Navigation Buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button 
+                      onClick={() => {
+                        if (carouselRef.current) {
+                          carouselRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+                        }
+                      }}
+                      className="p-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer transition-colors shadow-2xs"
+                      title="Scroll Left"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (carouselRef.current) {
+                          carouselRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+                        }
+                      }}
+                      className="p-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer transition-colors shadow-2xs"
+                      title="Scroll Right"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
                 
-                <div className={`grid gap-3 ${isAdminOrSuper ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6'}`}>
-                  {/* Stat 1: Leads Created */}
-                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-brand-redLight/60 border border-brand-red/10 flex items-center justify-center text-brand-red shrink-0">
-                      <Users className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Leads</span>
-                      <span className="text-base font-serif font-black text-brand-text">{leadsCreated}</span>
-                    </div>
+                <div 
+                  ref={carouselRef}
+                  onMouseDown={handleMouseDown}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseUp={handleMouseUp}
+                  onMouseMove={handleMouseMove}
+                  className="flex flex-row gap-3 overflow-x-auto scrollbar-none py-1.5 pb-2.5 items-stretch w-full cursor-grab active:cursor-grabbing select-none snap-x scroll-smooth"
+                >
+                  {/* Stat 1: Leads Created (Expandable & Auto-switching Carousel) */}
+                  <div 
+                    onClick={(e) => {
+                      if (dragDistance > 5) {
+                        e.preventDefault();
+                        return;
+                      }
+                      setIsLeadsExpanded(!isLeadsExpanded);
+                    }}
+                    className={`bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 cursor-pointer transition-all duration-300 shrink-0 hover:border-brand-red/30 select-none snap-start ${
+                      isLeadsExpanded ? 'ring-1 ring-brand-red/10' : 'w-44'
+                    }`}
+                  >
+                    {isLeadsExpanded ? (
+                      // Expanded View: Left part is Total Leads, Right part is list of Brought By
+                      <div className="flex items-center gap-3 w-full" onClick={(e) => e.stopPropagation()}>
+                        <div 
+                          className="flex items-center gap-2 cursor-pointer shrink-0 hover:opacity-80 transition-opacity" 
+                          onClick={() => setIsLeadsExpanded(false)}
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-brand-redLight/60 border border-brand-red/10 flex items-center justify-center text-brand-red shrink-0">
+                            <Users className="w-3.5 h-3.5" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Leads</span>
+                            <span className="text-base font-serif font-black text-brand-text">{leadsCreated}</span>
+                          </div>
+                          <ChevronLeft className="w-4 h-4 text-slate-400 ml-1 shrink-0" />
+                        </div>
+                        
+                        {/* Vertical Divider */}
+                        <div className="h-8 w-px bg-slate-200 shrink-0" />
+                        
+                        {/* Brought By list */}
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-[10px] font-bold text-brand-silver uppercase tracking-wider block mb-0.5">Brought By</span>
+                          <div className="flex items-center gap-2 overflow-x-auto max-w-[280px] sm:max-w-[380px] md:max-w-[480px] lg:max-w-[600px] scrollbar-none py-0.5">
+                            {broughtByList.map((item, idx) => (
+                              <div 
+                                key={idx} 
+                                className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/50 rounded-lg px-2 py-1 shrink-0"
+                              >
+                                <div className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
+                                  <User className="w-2.5 h-2.5" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-[10px] font-bold text-slate-700 truncate max-w-[70px]" title={item.name}>
+                                    {item.name}
+                                  </span>
+                                  <span className="text-[9px] font-serif font-black text-slate-500 leading-none">
+                                    {item.count}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                            {broughtByList.length === 0 && (
+                              <span className="text-[10px] text-brand-silver font-semibold">No data</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      // Shrunk View: Slideshow automatic carousel
+                      <div className="flex items-center justify-between w-full">
+                        {autoSwitchSlides.length > 0 && (() => {
+                          const currentSlide = autoSwitchSlides[activeLeadStatIndex % autoSwitchSlides.length] || autoSwitchSlides[0];
+                          const SlideIcon = currentSlide.icon;
+                          return (
+                            <div key={activeLeadStatIndex} className="animate-in fade-in slide-in-from-bottom-1 duration-300 flex items-center gap-2 min-w-0 flex-1">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-300 ${currentSlide.colorClass}`}>
+                                <SlideIcon className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-[9px] font-bold text-brand-silver uppercase tracking-wider block leading-none">
+                                  {currentSlide.subtitle}
+                                </span>
+                                <span className="text-[11px] font-bold text-slate-700 block truncate max-w-[75px] leading-tight mt-0.5" title={currentSlide.title}>
+                                  {currentSlide.title}
+                                </span>
+                                <span className="text-sm font-serif font-black text-brand-text leading-none mt-0.5 block">
+                                  {currentSlide.value}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Stat 2: Deals Won */}
-                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 shrink-0 w-44 snap-start">
                     <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
                       <Target className="w-3.5 h-3.5" />
                     </div>
@@ -570,7 +766,7 @@ export default function AccountPage() {
                   </div>
 
                   {/* Stat 3: Open Leads */}
-                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 shrink-0 w-44 snap-start">
                     <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
                       <Percent className="w-3.5 h-3.5" />
                     </div>
@@ -581,7 +777,7 @@ export default function AccountPage() {
                   </div>
 
                   {/* Stat 4: Pending Leads */}
-                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 shrink-0 w-44 snap-start">
                     <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
                       <Folder className="w-3.5 h-3.5" />
                     </div>
@@ -592,7 +788,7 @@ export default function AccountPage() {
                   </div>
 
                   {/* Stat 5: Urgent Leads */}
-                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                  <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 shrink-0 w-44 snap-start">
                     <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
                       <AlertCircle className="w-3.5 h-3.5" />
                     </div>
@@ -604,7 +800,7 @@ export default function AccountPage() {
 
                   {/* Stat 6: Activity Score - Conditionally shown */}
                   {!isAdminOrSuper && (
-                    <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2">
+                    <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 shrink-0 w-44 snap-start">
                       <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                         <TrendingUp className="w-3.5 h-3.5" />
                       </div>
