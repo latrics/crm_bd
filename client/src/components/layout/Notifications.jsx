@@ -246,6 +246,7 @@ export default function Notifications() {
     return {
       id: n._id,
       leadDbId: n.relatedId,
+      category: n.category,
       type: n.type,
       message: n.message,
       time: formatNotificationTime(n.createdAt),
@@ -407,6 +408,10 @@ export default function Notifications() {
   const handleNotificationClick = (n) => {
     markAsRead(n.id);
     setIsOpen(false);
+    if (n.category === 'Leads' && n.leadDbId) {
+      navigate('/leads', { state: { highlightLeadId: n.leadDbId } });
+      return;
+    }
     let targetTab = 'All';
     if (n.type === 'urgent' || n.type === 'warning') {
       targetTab = 'System';

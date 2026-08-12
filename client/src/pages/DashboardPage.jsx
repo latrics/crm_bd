@@ -270,7 +270,7 @@ export default function DashboardPage() {
       <div className="mb-8">
         <TargetAchievement 
           actuals={{ 
-            partners: leads.filter(l => l && l.status === 'Closure').length + wonDeals.length, 
+            partners: wonDeals.filter(d => d && d.businessModel === 'Joint ownership').length, 
             droneSales: deals.filter(d => d && d.businessModel === 'Drone Sales').length 
           }} 
         />

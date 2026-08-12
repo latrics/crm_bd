@@ -104,20 +104,15 @@ export default function LeadsPage() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  const [highlightLeadId, setHighlightLeadId] = useState(null);
+
   useEffect(() => {
     if (location.state?.highlightLeadId) {
-      const leadIdToEdit = location.state.highlightLeadId;
-      const lead = state.leads?.find(l => l._id === leadIdToEdit || l.leadId === leadIdToEdit);
-      if (lead) {
-        setSelectedLead(lead);
-        setFormData({ ...lead });
-        setErrors({});
-        setModalOpen(true);
-        // Clear location state to prevent repeating on refresh
-        window.history.replaceState({}, document.title);
-      }
+      setHighlightLeadId(location.state.highlightLeadId);
+      // Clear location state to prevent repeating on refresh
+      window.history.replaceState({}, document.title);
     }
-  }, [location, state.leads]);
+  }, [location]);
 
 
   const statusStats = LEAD_STAGES.map(stage => ({
@@ -358,11 +353,11 @@ export default function LeadsPage() {
     }
   };
 
-  const toggleSelectAll = (filteredLeadsIds) => {
-    if (selectedLeads.length === filteredLeadsIds.length && filteredLeadsIds.length > 0) {
-      setSelectedLeads([]);
+  const toggleSelectAll = (ids) => {
+    if (ids.every(id => selectedLeads.includes(id))) {
+      setSelectedLeads(prev => prev.filter(x => !ids.includes(x)));
     } else {
-      setSelectedLeads(filteredLeadsIds);
+      setSelectedLeads(prev => [...new Set([...prev, ...ids])]);
     }
   };
 
@@ -611,6 +606,8 @@ export default function LeadsPage() {
         selectedLeads={selectedLeads}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
+        highlightLeadId={highlightLeadId}
+        onClearHighlight={() => setHighlightLeadId(null)}
       />
 
       {state.leads.filter(l => l.status !== 'Converted').length === 0 && (

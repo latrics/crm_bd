@@ -26,3 +26,6 @@ logs/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Docs (generated handover/report files, not tracked in git)
+docs/

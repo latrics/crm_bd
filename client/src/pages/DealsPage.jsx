@@ -243,11 +243,11 @@ export default function DealsPage() {
     }
   };
 
-  const toggleSelectAll = (filteredDealsIds) => {
-    if (selectedDeals.length === filteredDealsIds.length && filteredDealsIds.length > 0) {
-      setSelectedDeals([]);
+  const toggleSelectAll = (ids) => {
+    if (ids.every(id => selectedDeals.includes(id))) {
+      setSelectedDeals(prev => prev.filter(x => !ids.includes(x)));
     } else {
-      setSelectedDeals(filteredDealsIds);
+      setSelectedDeals(prev => [...new Set([...prev, ...ids])]);
     }
   };
 

@@ -56,10 +56,10 @@ export default function DealsView({ onDealClick, onDeleteClick, onRevertClick, o
           <input 
             type="checkbox" 
             className="w-4 h-4 cursor-pointer accent-brand-red"
-            checked={selectedDeals.length > 0 && selectedDeals.length === totalDeals}
-            onChange={() => onToggleSelectAll(filteredDeals.map(d => d._id))}
+            checked={paginatedDeals.length > 0 && paginatedDeals.every(d => selectedDeals.includes(d._id))}
+            onChange={() => onToggleSelectAll(paginatedDeals.map(d => d._id))}
           />
-          <span className="text-sm font-bold text-brand-text">Select All ({totalDeals})</span>
+          <span className="text-sm font-bold text-brand-text">Select All ({paginatedDeals.length})</span>
         </div>
       )}
       {paginatedDeals.map(deal => {

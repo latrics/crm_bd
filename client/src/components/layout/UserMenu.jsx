@@ -154,7 +154,7 @@ export default function UserMenu({ unreadCount: propUnreadCount }) {
             <button
               onClick={() => {
                 setIsOpen(false);
-                window.dispatchEvent(new CustomEvent('open-bug-report-modal'));
+                navigate('/bug-center');
               }}
               className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-surfaceAlt/80 rounded-xl transition-colors border-none bg-transparent cursor-pointer text-left w-full"
             >

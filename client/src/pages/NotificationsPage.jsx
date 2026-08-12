@@ -14,7 +14,7 @@ import {
   Bell
 } from 'lucide-react';
 
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   getNotifications,
   markNotificationAsRead,
@@ -43,6 +43,7 @@ const formatNotificationTime = (date) => {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
@@ -67,10 +68,13 @@ export default function NotificationsPage() {
             category: category,
             time: formatNotificationTime(n.createdAt),
             read: (n.readBy && user.name) ? n.readBy.includes(user.name) : n.isRead,
-            iconType: iconType
+            iconType: iconType,
+            relatedId: n.relatedId,
+            type: n.type
           };
         });
         setNotifications(mapped);
+        setSelectedNotifications([]);
       }
     } catch (err) {
       console.error('Failed to fetch notifications', err);
@@ -104,7 +108,13 @@ export default function NotificationsPage() {
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedNotifications, setSelectedNotifications] = useState([]);
   const menuRef = useRef(null);
+
+  // Clear selection on tab change
+  useEffect(() => {
+    setSelectedNotifications([]);
+  }, [activeTab]);
 
   // Close menus on click outside
   useEffect(() => {
@@ -116,6 +126,65 @@ export default function NotificationsPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Bulk mark as read
+  const handleBulkMarkRead = async () => {
+    try {
+      if (user && selectedNotifications.length > 0) {
+        await Promise.all(
+          selectedNotifications.map(id => markNotificationAsRead(id, user.name))
+        );
+        setSelectedNotifications([]);
+        window.dispatchEvent(new CustomEvent('refresh-notifications'));
+      }
+    } catch (err) {
+      console.error('Failed to bulk mark as read', err);
+    }
+  };
+
+  // Bulk mark as unread
+  const handleBulkMarkUnread = async () => {
+    try {
+      if (user && selectedNotifications.length > 0) {
+        await Promise.all(
+          selectedNotifications.map(id => markNotificationAsUnread(id, user.name))
+        );
+        setSelectedNotifications([]);
+        window.dispatchEvent(new CustomEvent('refresh-notifications'));
+      }
+    } catch (err) {
+      console.error('Failed to bulk mark as unread', err);
+    }
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    try {
+      if (selectedNotifications.length > 0) {
+        await Promise.all(
+          selectedNotifications.map(id => deleteNotificationApi(id))
+        );
+        setSelectedNotifications([]);
+        window.dispatchEvent(new CustomEvent('refresh-notifications'));
+      }
+    } catch (err) {
+      console.error('Failed to bulk delete', err);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedNotifications(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = (ids) => {
+    if (ids.every(id => selectedNotifications.includes(id))) {
+      setSelectedNotifications(prev => prev.filter(x => !ids.includes(x)));
+    } else {
+      setSelectedNotifications(prev => [...new Set([...prev, ...ids])]);
+    }
+  };
 
   // Mark all as read
   const handleMarkAllRead = async () => {
@@ -225,8 +294,53 @@ export default function NotificationsPage() {
         </button>
       </div>
 
+      {/* Bulk Contextual Action Bar */}
+      {selectedNotifications.length > 0 && (
+        <div className="flex items-center gap-3 bg-brand-surfaceAlt px-4 py-2 rounded-xl border border-brand-border/60 shadow-xs animate-in fade-in slide-in-from-top-1 duration-150">
+          <span className="text-xs font-bold text-brand-text flex items-center gap-2 mr-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-[10px] font-black">{selectedNotifications.length}</span>
+            Selected
+          </span>
+          
+          <button 
+            onClick={handleBulkMarkRead} 
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+            <span>Mark as Read</span>
+          </button>
+
+          <button 
+            onClick={handleBulkMarkUnread} 
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            <Bell className="w-3.5 h-3.5 text-slate-500" />
+            <span>Mark as Unread</span>
+          </button>
+          
+          <button 
+            onClick={handleBulkDelete} 
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-redLight border border-brand-red/20 hover:bg-red-100 text-brand-red font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete</span>
+          </button>
+        </div>
+      )}
+
       {/* Notifications List Container */}
       <div className="bg-white border border-brand-border/60 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-xs" ref={menuRef}>
+        {!loading && paginatedNotifications.length > 0 && (
+          <div className="flex items-center gap-3 px-6 py-2.5 bg-slate-50/50 border-b border-slate-100 select-none">
+            <input 
+              type="checkbox" 
+              className="w-4 h-4 cursor-pointer accent-brand-red rounded focus:ring-brand-red align-middle"
+              checked={paginatedNotifications.length > 0 && paginatedNotifications.every(n => selectedNotifications.includes(n.id))}
+              onChange={() => toggleSelectAll(paginatedNotifications.map(n => n.id))}
+            />
+            <span className="text-xs font-bold text-slate-700">Select All ({paginatedNotifications.length})</span>
+          </div>
+        )}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-center p-6">
             <span className="text-xs font-bold text-brand-silver">Loading notifications...</span>
@@ -258,7 +372,6 @@ export default function NotificationsPage() {
                 key={n.id} 
                 className="p-3.5 flex flex-col gap-2 transition-all duration-150 hover:bg-slate-50/50 relative cursor-pointer"
                 onClick={async () => {
-                  setExpandedNotifId(isExpanded ? null : n.id);
                   if (!n.read) {
                     try {
                       await markNotificationAsRead(n.id, user?.name);
@@ -267,12 +380,26 @@ export default function NotificationsPage() {
                       console.error(err);
                     }
                   }
+
+                  if (n.category === 'Leads' && n.relatedId) {
+                    navigate('/leads', { state: { highlightLeadId: n.relatedId } });
+                  } else {
+                    setExpandedNotifId(isExpanded ? null : n.id);
+                  }
                 }}
                 onMouseLeave={() => setExpandedNotifId(null)}
               >
                 <div className="flex items-center justify-between gap-4 w-full">
-                  {/* Left Side: Icon & Details */}
+                  {/* Left Side: Checkbox, Icon & Details */}
                   <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="flex items-center justify-center py-1 px-1" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 cursor-pointer accent-brand-red rounded focus:ring-brand-red"
+                        checked={selectedNotifications.includes(n.id)}
+                        onChange={() => toggleSelect(n.id)}
+                      />
+                    </div>
                     <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconClass}`}>
                       <Icon className="w-4.5 h-4.5" />
                     </div>

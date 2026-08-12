@@ -496,36 +496,35 @@ export default function AccountPage() {
           })}
         </nav>
 
-        {/* Support Help Card - Positioned cleanly at the bottom with padding */}
-        <div className="hidden lg:block bg-brand-surfaceAlt/60 border border-brand-border/60 rounded-xl p-3 mt-6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] mx-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-brand-redLight text-brand-red flex items-center justify-center shrink-0 border border-brand-red/20">
-              <HelpCircle className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold text-brand-text">Need Help?</h4>
-              <span 
-                onClick={() => navigate('/help-center')}
-                className="text-[9px] font-bold text-brand-silver hover:text-brand-red cursor-pointer flex items-center gap-1 mt-0.5"
-              >
-                Visit Help Center <span className="text-[10px]">&rarr;</span>
-              </span>
-            </div>
+        {/* Support Help Card - Entire Card is Clickable & Interactive */}
+        <button 
+          type="button"
+          onClick={() => navigate('/help-center')}
+          className="hidden lg:flex text-left items-center gap-2.5 bg-brand-surfaceAlt/60 hover:bg-white border border-brand-border/60 hover:border-brand-red/30 rounded-xl p-3 mt-6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-md transition-all duration-200 cursor-pointer group border-none active:scale-[0.98] mx-1 w-[calc(100%-8px)]"
+        >
+          <div className="w-8 h-8 rounded-full bg-brand-redLight group-hover:bg-brand-red group-hover:text-white text-brand-red flex items-center justify-center shrink-0 border border-brand-red/20 transition-colors">
+            <HelpCircle className="w-4 h-4" />
           </div>
-        </div>
+          <div className="flex-1">
+            <h4 className="text-[11px] font-bold text-brand-text group-hover:text-brand-red transition-colors">Need Help?</h4>
+            <span className="text-[9px] font-bold text-brand-silver group-hover:text-brand-red flex items-center gap-1 mt-0.5 transition-colors">
+              Visit Help Center <span className="text-[10px] transition-transform group-hover:translate-x-1">&rarr;</span>
+            </span>
+          </div>
+        </button>
       </aside>
 
       {/* Right Main Account Content Area (100% fits screen, non-scrollable) */}
-      <main className="w-full flex flex-col gap-4 overflow-hidden h-full lg:pl-[280px]">
+      <main className="w-full flex flex-col gap-3 overflow-hidden h-full lg:pl-[280px]">
         
         {/* Content Wrapper (Hidden Scrollbar) */}
-        <div className="flex-1 overflow-hidden pr-1 flex flex-col gap-4 scrollbar-none pb-8">
+        <div className="flex-1 overflow-hidden pr-1 flex flex-col gap-3 scrollbar-none pb-2">
           
           {/* Top Row Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-10 gap-4 flex-1">
+          <div className="grid grid-cols-1 xl:grid-cols-10 gap-3 flex-1">
             
             {/* Left Column (Banner & Stats) - takes 7/10 width on desktop */}
-            <div className="xl:col-span-7 flex flex-col gap-4 h-full">
+            <div className="xl:col-span-7 flex flex-col gap-3 h-full">
               
               {/* User Details Banner Card */}
               <div className="bg-white border border-brand-border/60 rounded-3xl overflow-hidden shadow-xs flex flex-col relative shrink-0">
@@ -798,29 +797,17 @@ export default function AccountPage() {
                     </div>
                   </div>
 
-                  {/* Stat 6: Activity Score - Conditionally shown */}
-                  {!isAdminOrSuper && (
-                    <div className="bg-white border border-brand-border/60 rounded-xl p-2.5 shadow-xs flex items-center gap-2 shrink-0 w-44 snap-start">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-brand-silver uppercase tracking-wider block">Score</span>
-                        <span className="text-base font-serif font-black text-brand-text">{activityScore}%</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* Role & Permission Summary */}
-              <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs flex-1 flex flex-col">
+              <div className="bg-white border border-brand-border/60 rounded-2xl p-3.5 shadow-xs flex-1 flex flex-col">
                 <div>
                   <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest mb-0.5">Role & Permission Summary</h3>
-                  <p className="text-xs text-brand-silver font-medium mb-3">Your role defines what actions you can perform in the CRM.</p>
+                  <p className="text-xs text-brand-silver font-medium mb-2">Your role defines what actions you can perform in the CRM.</p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 w-full">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 w-full">
                   {permissions.map((p, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       {p.allowed ? (
@@ -841,12 +828,12 @@ export default function AccountPage() {
             </div>
 
             {/* Right Column (Sessions & Logs) - takes 3/10 width on desktop */}
-            <div className="xl:col-span-3 flex flex-col gap-4 h-full" ref={menuRef}>
+            <div className="xl:col-span-3 flex flex-col gap-3 h-full" ref={menuRef}>
               
               {/* Active Sessions Card */}
-              <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs relative flex-1 flex flex-col">
+              <div className="bg-white border border-brand-border/60 rounded-2xl p-3.5 shadow-xs relative flex-1 flex flex-col">
                 <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest mb-0.5">Active Sessions</h3>
-                <p className="text-xs text-brand-silver font-medium mb-3">Your currently active device sessions.</p>
+                <p className="text-xs text-brand-silver font-medium mb-2">Your currently active device sessions.</p>
 
                 <div className="flex flex-col gap-2">
                   {sessions.map(s => {
@@ -907,9 +894,9 @@ export default function AccountPage() {
               </div>
 
               {/* Login History Card */}
-              <div className="bg-white border border-brand-border/60 rounded-2xl p-4 shadow-xs flex-1 flex flex-col">
+              <div className="bg-white border border-brand-border/60 rounded-2xl p-3.5 shadow-xs flex-1 flex flex-col">
                 <h3 className="text-xs font-bold text-brand-text uppercase tracking-widest mb-0.5">Login History</h3>
-                <p className="text-xs text-brand-silver font-medium mb-3">Recent account access history.</p>
+                <p className="text-xs text-brand-silver font-medium mb-2">Recent account access history.</p>
 
                 <div className="flex flex-col gap-2.5 max-h-[220px] overflow-y-auto pr-1 scrollbar-none">
                   {loginHistory.map((item) => (

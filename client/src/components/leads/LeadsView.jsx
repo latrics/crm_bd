@@ -7,7 +7,20 @@ import DocsPanel from '../docs/DocsPanel.jsx';
 import { Clock } from 'lucide-react';
 import { fmt } from '../../utils/formatters.js';
 
-export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, activeTab, search, activeStatusFilter, sortOrder, selectedLeads = [], onToggleSelect, onToggleSelectAll }) {
+export default function LeadsView({ 
+  onLeadClick, 
+  onDeleteClick, 
+  onStageUpdate, 
+  activeTab, 
+  search, 
+  activeStatusFilter, 
+  sortOrder, 
+  selectedLeads = [], 
+  onToggleSelect, 
+  onToggleSelectAll,
+  highlightLeadId,
+  onClearHighlight
+}) {
   const { state } = useCRM();
   const [expandedDocs, setExpandedDocs] = useState({});
   const [pageSize, setPageSize] = useState(10);
@@ -81,6 +94,37 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
     });
   }
 
+  const [activeHighlightId, setActiveHighlightId] = useState(null);
+
+  useEffect(() => {
+    if (highlightLeadId && filteredLeads.length > 0) {
+      const index = filteredLeads.findIndex(l => l && (l._id === highlightLeadId || l.leadId === highlightLeadId));
+      if (index !== -1) {
+        const page = Math.floor(index / pageSize) + 1;
+        setCurrentPage(page);
+        setActiveHighlightId(highlightLeadId);
+
+        // Scroll to the card after a short timeout to let the page update first
+        setTimeout(() => {
+          const element = document.getElementById(`lead-card-${highlightLeadId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+
+        // Clear highlight class after 3 seconds and notify parent
+        const timer = setTimeout(() => {
+          setActiveHighlightId(null);
+          if (onClearHighlight) {
+            onClearHighlight();
+          }
+        }, 3000);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [highlightLeadId, filteredLeads, pageSize, onClearHighlight]);
+
   const toggleDocs = (id) => {
     setExpandedDocs(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -96,10 +140,10 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
           <input 
             type="checkbox" 
             className="w-4 h-4 cursor-pointer accent-brand-red"
-            checked={selectedLeads.length > 0 && selectedLeads.length === totalLeads}
-            onChange={() => onToggleSelectAll(filteredLeads.map(l => l._id))}
+            checked={paginatedLeads.length > 0 && paginatedLeads.every(l => selectedLeads.includes(l._id))}
+            onChange={() => onToggleSelectAll(paginatedLeads.map(l => l._id))}
           />
-          <span className="text-sm font-bold text-brand-text">Select All ({totalLeads})</span>
+          <span className="text-sm font-bold text-brand-text">Select All ({paginatedLeads.length})</span>
         </div>
       )}
       {paginatedLeads.map(lead => {
@@ -140,10 +184,17 @@ export default function LeadsView({ onLeadClick, onDeleteClick, onStageUpdate, a
           return `${diffDays} days left`;
         };
         
+        const isHighlighted = activeHighlightId === lead._id || activeHighlightId === lead.leadId;
+
         return (
           <div 
             key={lead._id} 
-            className="bg-white border border-brand-border rounded-crm shadow-sm transition-all relative overflow-hidden"
+            id={`lead-card-${lead._id}`}
+            className={`bg-white border rounded-crm shadow-sm transition-all duration-300 relative overflow-hidden ${
+              isHighlighted
+                ? 'border-brand-red ring-2 ring-brand-red/30 bg-brand-red/[0.02] shadow-md'
+                : 'border-brand-border'
+            }`}
           >
             {lead.status === 'Closure' && (
               <div className="absolute top-0 left-0 w-full h-1 bg-brand-redLight border-b border-brand-red/20" />
