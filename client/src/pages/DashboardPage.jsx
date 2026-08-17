@@ -52,12 +52,30 @@ export default function DashboardPage() {
     { label: 'Tenders Won', value: (state.tenders || []).filter(t => t && t.status === 'Won').length, icon: Trophy, color: 'bg-brand-surfaceAlt text-brand-silver' },
   ];
 
+  const leadDocsCount = (state.docs || []).filter(d => 
+    d.entity_type === 'lead' && 
+    (state.leads || []).some(l => l._id === d.entity_id)
+  ).length;
+
+  const dealDocsCount = (state.docs || []).filter(d => {
+    if (d.entity_type !== 'deal') return false;
+    const deal = (state.deals || []).find(del => del._id === d.entity_id);
+    return deal && deal.stage !== 'Lost';
+  }).length;
+
   const bottomKpis = [
     { label: 'Active Leads', value: activeLeads, sub: 'not yet converted', icon: 'bg-brand-silver' },
     { label: 'Pipeline Value', value: fmt(pipelineValue), sub: 'unwon potential', icon: 'bg-brand-silver' },
     { label: 'Won Revenue', value: fmt(wonValue), sub: `${wonDeals.length} deals won`, icon: 'bg-brand-red', highlight: true },
     { label: 'Lost Revenue', value: fmt(lostValue), sub: `${lostDeals.length} deals lost`, icon: 'bg-brand-silver' },
-    { label: 'Total Documents', value: (state.docs || []).filter(d => d.entity_type === 'deal').length, sub: 'all time', icon: 'bg-brand-silver' },
+    {
+      label: 'Total Documents',
+      isDocuments: true,
+      leadDocsCount,
+      dealDocsCount,
+      sub: 'all time',
+      icon: 'bg-brand-silver'
+    },
   ];
 
   const dealPipeline = [
@@ -537,11 +555,38 @@ export default function DashboardPage() {
           {bottomKpis.map((kpi, i) => (
             <div key={i} className={`bg-white border rounded-crm p-5 shadow-sm flex flex-col justify-center min-h-[110px] ${kpi.highlight ? 'border-brand-red/20' : 'border-brand-border'}`}>
               <div>
-                <div className={`font-serif text-xl font-black mb-1 ${kpi.highlight ? 'text-brand-red' : 'text-brand-text'}`}>
-                  {kpi.value || '0'}
-                </div>
-                <div className="text-[10px] font-bold text-brand-text uppercase tracking-wider">{kpi.label}</div>
-                <div className="text-[9px] text-brand-silver mt-0.5">{kpi.sub}</div>
+                {kpi.isDocuments ? (
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="font-serif text-xl font-black text-brand-charcoal">
+                        {kpi.leadDocsCount}
+                      </span>
+                      <span className="font-serif text-xl font-black text-brand-blue">
+                        {kpi.dealDocsCount}
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-bold text-brand-text uppercase tracking-wider">{kpi.label}</div>
+                    <div className="flex items-center gap-2 text-[9px] font-bold text-brand-silver uppercase tracking-wider mt-0.5">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-brand-charcoal rounded-sm"></div>
+                        Leads
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-brand-blue rounded-sm"></div>
+                        Deals
+                      </div>
+                      <span className="text-[8px] font-normal lowercase tracking-normal">all time</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className={`font-serif text-xl font-black mb-1 ${kpi.highlight ? 'text-brand-red' : 'text-brand-text'}`}>
+                      {kpi.value || '0'}
+                    </div>
+                    <div className="text-[10px] font-bold text-brand-text uppercase tracking-wider">{kpi.label}</div>
+                    <div className="text-[9px] text-brand-silver mt-0.5">{kpi.sub}</div>
+                  </>
+                )}
               </div>
             </div>
           ))}

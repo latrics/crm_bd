@@ -26,11 +26,26 @@ export default function DealsListView({
   let filteredDeals = state.deals || [];
 
   if (search) {
-    filteredDeals = filteredDeals.filter(d => 
-      d && ((d.title || '').toLowerCase().includes(search.toLowerCase()) || 
-      (d.company || '').toLowerCase().includes(search.toLowerCase()) ||
-      (d.contact || '').toLowerCase().includes(search.toLowerCase()))
-    );
+    const match = search.match(/^(state|city|company|industry|sector):\s*(.*)$/i);
+    if (match) {
+      let field = match[1].toLowerCase();
+      const value = match[2].toLowerCase();
+      if (field === 'industry') field = 'sector';
+      filteredDeals = filteredDeals.filter(d => 
+        d && (d[field] || '').toLowerCase() === value
+      );
+    } else {
+      filteredDeals = filteredDeals.filter(d => 
+        d && (
+          (d.title || '').toLowerCase().includes(search.toLowerCase()) || 
+          (d.company || '').toLowerCase().includes(search.toLowerCase()) ||
+          (d.contact || '').toLowerCase().includes(search.toLowerCase()) ||
+          (d.state || '').toLowerCase().includes(search.toLowerCase()) ||
+          (d.city || '').toLowerCase().includes(search.toLowerCase()) ||
+          (d.sector || '').toLowerCase().includes(search.toLowerCase())
+        )
+      );
+    }
   }
   
   if (activeStageFilter && activeStageFilter !== 'all') {

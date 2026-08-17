@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -33,6 +33,73 @@ export default function DealsPage() {
   const [activeStageFilter, setActiveStageFilter] = useState('all');
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState('latest');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+
+  const dropdownRef = useRef(null);
+
+  // Parse and calculate suggestions on search change
+  useEffect(() => {
+    if (!search || !state.deals) {
+      setSuggestions([]);
+      return;
+    }
+    // Don't show suggestions if already searching by a parameter tag
+    if (/^(state|city|company|industry|sector):/i.test(search)) {
+      setSuggestions([]);
+      return;
+    }
+
+    const query = search.trim().toLowerCase();
+    if (query.length < 1) {
+      setSuggestions([]);
+      return;
+    }
+
+    const uniqueStates = [...new Set((state.deals || []).map(d => d?.state).filter(Boolean))];
+    const uniqueCities = [...new Set((state.deals || []).map(d => d?.city).filter(Boolean))];
+    const uniqueCompanies = [...new Set((state.deals || []).map(d => d?.company).filter(Boolean))];
+    const uniqueSectors = [...new Set((state.deals || []).map(d => d?.sector).filter(Boolean))];
+
+    const matched = [];
+
+    uniqueStates.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'state', value: val });
+      }
+    });
+
+    uniqueCities.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'city', value: val });
+      }
+    });
+
+    uniqueCompanies.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'company', value: val });
+      }
+    });
+
+    uniqueSectors.forEach(val => {
+      if (val.toLowerCase().includes(query)) {
+        matched.push({ field: 'industry', value: val });
+      }
+    });
+
+    setSuggestions(matched.slice(0, 10)); // limit to 10 suggestions
+  }, [search, state.deals]);
+
+  // Click-away listener for suggestions dropdown
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     if (location.state?.highlightDealId) {
@@ -186,9 +253,13 @@ export default function DealsPage() {
 
   const handleDelete = async () => {
     try {
-      await deleteDeal(selectedDeal._id);
-      dispatch({ type: 'DELETE_DEAL', payload: selectedDeal._id });
-      addToast({ type: 'success', message: 'Deal deleted' });
+      const res = await deleteDeal(selectedDeal._id);
+      if (res?.isPending) {
+        addToast({ type: 'warning', message: res.message });
+      } else {
+        dispatch({ type: 'DELETE_DEAL', payload: selectedDeal._id });
+        addToast({ type: 'success', message: 'Deal deleted' });
+      }
       setModalOpen(false);
     } catch (err) {
       addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error deleting deal' });
@@ -231,11 +302,23 @@ export default function DealsPage() {
 
   const handleBulkDelete = async () => {
     try {
+      let pendingCount = 0;
+      let deletedCount = 0;
       for (const id of selectedDeals) {
-        await deleteDeal(id);
-        dispatch({ type: 'DELETE_DEAL', payload: id });
+        const res = await deleteDeal(id);
+        if (res?.isPending) {
+          pendingCount++;
+        } else {
+          dispatch({ type: 'DELETE_DEAL', payload: id });
+          deletedCount++;
+        }
       }
-      addToast({ type: 'success', message: `${selectedDeals.length} deals deleted` });
+      if (pendingCount > 0) {
+        addToast({ type: 'warning', message: `${pendingCount} deletion requests submitted for Admin approval` });
+      }
+      if (deletedCount > 0) {
+        addToast({ type: 'success', message: `${deletedCount} deals deleted` });
+      }
       setSelectedDeals([]);
       setBulkDeleteConfirm(false);
     } catch (err) {
@@ -345,17 +428,53 @@ export default function DealsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           {/* Search and Filters */}
           <div className="flex flex-1 w-full md:w-auto items-center gap-3">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 max-w-md" ref={dropdownRef}>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-brand-silver/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               </div>
               <input 
                 type="text" 
-                placeholder="Search deals..." 
+                placeholder="Search by state, city, company, industry..." 
                 value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all"
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-10 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all font-medium"
               />
+              {search && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setShowSuggestions(false);
+                  }}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-silver hover:text-brand-red transition-colors"
+                  title="Clear search"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              )}
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-2 bg-white border border-brand-border rounded-xl shadow-lg z-30 max-h-60 overflow-y-auto py-1.5 animate-in fade-in slide-in-from-top-1 duration-100">
+                  {suggestions.map((s, idx) => (
+                    <button
+                      key={`${s.field}-${s.value}-${idx}`}
+                      onClick={() => {
+                        setSearch(`${s.field}: ${s.value}`);
+                        setShowSuggestions(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-brand-redLight/10 flex items-center justify-between text-xs transition-colors group cursor-pointer"
+                    >
+                      <span className="font-bold text-brand-text group-hover:text-brand-red">{s.value}</span>
+                      <span className="text-[9px] uppercase font-bold text-brand-silver bg-brand-surfaceAlt px-2 py-0.5 rounded border border-brand-border group-hover:bg-brand-redLight/20 group-hover:text-brand-red group-hover:border-brand-red/20 transition-all">
+                        {s.field}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -543,15 +662,19 @@ export default function DealsPage() {
         isOpen={deleteConfirm} 
         onClose={() => setDeleteConfirm(false)} 
         onConfirm={handleDelete}
-        title="Delete Deal" 
-        message="Are you sure you want to delete this deal? This action cannot be undone." 
+        title={user?.role === 'manager' ? "Request Deletion" : "Delete Deal"} 
+        message={user?.role === 'manager' 
+          ? "Are you sure you want to request deletion of this deal? These deletion requests will be viewed by admin and will be in action based on admin or super admin's judgement." 
+          : "Are you sure you want to delete this deal? This action cannot be undone."} 
       />
       <Confirm 
         isOpen={bulkDeleteConfirm} 
         onClose={() => setBulkDeleteConfirm(false)} 
         onConfirm={handleBulkDelete}
-        title={`Delete ${selectedDeals.length} Deals`} 
-        message={`Are you sure you want to delete ${selectedDeals.length} selected deals? This action cannot be undone.`} 
+        title={user?.role === 'manager' ? `Request Deletion for ${selectedDeals.length} Deals` : `Delete ${selectedDeals.length} Deals`} 
+        message={user?.role === 'manager'
+          ? `Are you sure you want to request deletion for ${selectedDeals.length} selected deals? These deletion requests will be viewed by admin and will be in action based on admin or super admin's judgement.`
+          : `Are you sure you want to delete ${selectedDeals.length} selected deals? This action cannot be undone.`} 
       />
 
       <Modal isOpen={revertConfirm} onClose={() => setRevertConfirm(false)}>

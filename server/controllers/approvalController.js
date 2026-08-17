@@ -1,6 +1,7 @@
 import ApprovalRequest from '../models/ApprovalRequest.js';
 import Lead from '../models/Lead.js';
 import Tender from '../models/Tender.js';
+import Deal from '../models/Deal.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { createNotification } from './notificationController.js';
 
@@ -24,6 +25,20 @@ export const updateApproval = asyncHandler(async (req, res) => {
           message: `Tender deleted by admin approval: ${tender.tender_no || tender.latrics_tender_id}`,
           type: 'warning',
           recipientRoles: ['Super Admin', 'Admin']
+        });
+      }
+    } else if (request.recordModel === 'Deal') {
+      const deal = await Deal.findById(request.recordId);
+      if (deal) {
+        await Deal.findByIdAndDelete(request.recordId);
+        if (deal.from_lead_id) {
+          await Lead.findByIdAndDelete(deal.from_lead_id);
+        }
+        await createNotification({
+          message: `Deal deleted by admin approval: ${deal.title}`,
+          type: 'warning',
+          recipientUser: deal.owner,
+          relatedId: deal._id
         });
       }
     } else {

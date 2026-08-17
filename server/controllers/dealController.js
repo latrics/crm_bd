@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import Doc from '../models/Doc.js';
 import Counter from '../models/Counter.js';
 import { createNotification } from './notificationController.js';
+import ApprovalRequest from '../models/ApprovalRequest.js';
 
 export const getDeals = asyncHandler(async (req, res) => {
   const deals = await Deal.find().sort({ createdAt: -1 });
@@ -196,6 +197,19 @@ export const updateDeal = asyncHandler(async (req, res) => {
 export const deleteDeal = asyncHandler(async (req, res) => {
   const deal = await Deal.findById(req.params.id);
   if (!deal) return res.status(404).json({ success: false, message: 'Deal not found' });
+
+  if (req.user.role === 'manager') {
+    await ApprovalRequest.create({
+      type: 'Delete',
+      raisedBy: req.user.name || req.user.email,
+      recordModel: 'Deal',
+      recordId: deal._id,
+      recordName: deal.title || deal.dealId,
+      description: `Requested deletion of deal ${deal.title}`
+    });
+    await createNotification({ message: `Deletion request raised by ${req.user.name || req.user.email} for deal: ${deal.title} (ID: ${deal.dealId || deal._id})`, type: 'warning', category: 'Deals', recipientRoles: ['Super Admin', 'Admin'] });
+    return res.json({ success: true, message: 'Deletion request submitted for Admin approval', isPending: true });
+  }
 
   await Deal.findByIdAndDelete(req.params.id);
 

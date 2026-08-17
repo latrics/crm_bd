@@ -66,79 +66,95 @@ export async function sendInviteEmail(email, role, inviteUrl) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>You're Invited to Latrics CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-    .wrapper { width: 100%; table-layout: fixed; background-color: #f4f7f6; padding: 40px 0; }
-    .main-table { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    .top-bar { height: 8px; background: linear-gradient(90deg, #DA291C 0%, #b81c11 100%); width: 100%; }
-    .header { padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid #f0f0f0; }
-    .logo { max-width: 180px; height: auto; }
-    .tagline { margin-top: 12px; color: #6b7280; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 40px; }
-    .title { color: #111827; font-size: 26px; font-weight: 800; text-align: center; margin: 0 0 30px 0; letter-spacing: -0.5px; line-height: 1.3; }
-    .greeting { color: #374151; font-size: 18px; font-weight: 600; margin: 0 0 20px 0; }
-    .message { color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0; }
-    .highlight { color: #DA291C; font-weight: 700; }
-    .btn-container { text-align: center; margin: 40px 0; }
-    .btn { background-color: #DA291C; color: #ffffff !important; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(218,41,28,0.25); transition: background-color 0.3s ease; }
-    .btn:hover { background-color: #b81c11; }
-    .security-box { background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #DA291C; padding: 16px 20px; border-radius: 6px; margin: 0 0 35px 0; }
-    .security-text { margin: 0; color: #991b1b; font-size: 14px; font-weight: 500; display: flex; align-items: center; }
-    .fallback { background-color: #f9fafb; padding: 20px; border-radius: 8px; text-align: left; }
-    .fallback-title { color: #4b5563; font-size: 14px; font-weight: 600; margin: 0 0 10px 0; }
-    .fallback-link { color: #2563eb; font-size: 13px; word-break: break-all; line-height: 1.5; text-decoration: underline; }
-    .footer { background-color: #1f2937; padding: 30px 40px; text-align: center; border-radius: 0 0 12px 12px; }
-    .footer-text { margin: 0 0 8px 0; color: #f9fafb; font-size: 15px; font-weight: 600; }
-    .footer-sub { margin: 0; color: #9ca3af; font-size: 13px; }
+    body {
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
   </style>
 </head>
-<body>
-  <div class="wrapper">
-    <table class="main-table" cellspacing="0" cellpadding="0" border="0" align="center">
+<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
+  <div style="width: 100%; background-color: #ffffff; padding: 40px 0; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table style="width: 100%; max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #eaeaea; border-radius: 8px; border-collapse: collapse;" cellpadding="0" cellspacing="0" border="0" align="center">
       <tr>
-        <td>
-          <div class="top-bar"></div>
-          
-          <div class="header">
-            <img src="cid:latrics_logo" alt="Latrics Logo" class="logo" />
-            <div class="tagline">Building Better Tomorrow</div>
-          </div>
-          
-          <div class="content">
-            <h1 class="title">You're Invited to Latrics CRM</h1>
-            
-            <p class="greeting">Hello ${username},</p>
-            
-            <p class="message">
-              You have been exclusively invited to join the <strong>Latrics CRM Platform</strong>. Your account has been provisioned with <span class="highlight">${displayRole}</span> access.
-            </p>
-            
-            <p class="message">
-              To complete your registration, please activate your profile and set up your secure credentials by clicking the button below.
-            </p>
-            
-            <div class="btn-container">
-              <a href="${inviteUrl}" class="btn">Activate Account</a>
-            </div>
-            
-            <div class="security-box">
-              <p class="security-text">
-                <span style="font-size: 16px; margin-right: 8px;">⏱️</span>
-                For your security, this personalized activation link will expire in exactly 24 hours.
-              </p>
-            </div>
-            
-            <div class="fallback">
-              <p class="fallback-title">Button not working?</p>
-              <p style="margin: 0; color: #6b7280; font-size: 13px; margin-bottom: 8px;">Copy and paste this URL into your browser:</p>
-              <a href="${inviteUrl}" class="fallback-link">${inviteUrl}</a>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p class="footer-text">Latrics System Operations Team</p>
-            <p class="footer-sub">&copy; ${new Date().getFullYear()} Latrics. All rights reserved.</p>
-          </div>
+        <td style="padding: 40px;">
+          <!-- Logo -->
+          <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="left">
+                <img src="cid:latrics_logo" alt="Latrics Logo" style="max-width: 140px; height: auto; border: none; display: block;" />
+              </td>
+            </tr>
+          </table>
+
+          <!-- Title -->
+          <h1 style="color: #111827; font-size: 24px; font-weight: 600; line-height: 1.3; margin-top: 32px; margin-bottom: 24px; text-align: left;">
+            You've been invited to Latrics CRM
+          </h1>
+
+          <!-- Greeting -->
+          <p style="color: #111827; font-size: 14px; font-weight: 600; margin: 0 0 16px 0; text-align: left;">
+            Hello <strong>${username}</strong>,
+          </p>
+
+          <!-- Body Message -->
+          <p style="color: #54585A; font-size: 14px; line-height: 24px; margin: 0 0 20px 0; text-align: left;">
+            You have been exclusively invited to join the <strong>Latrics CRM Platform</strong>. Your account has been provisioned with <strong style="color: #DA291C;">${displayRole}</strong> access.
+          </p>
+
+          <!-- Recipient Highlight Box -->
+          <table style="width: 100%; border-collapse: collapse; margin: 24px 0;" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color: #F5F5F5; border: 1px solid #C7C9C7; border-radius: 5px; padding: 14px; text-align: center; font-family: monospace; font-size: 14px; color: #54585A;">
+                ${email}
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA Button -->
+          <table style="width: 100%; border-collapse: collapse; margin: 24px 0;" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="left">
+                <table border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+                  <tr>
+                    <td align="center" bgcolor="#DA291C" style="border-radius: 5px; padding: 12px 24px; background-color: #DA291C;">
+                      <a href="${inviteUrl}" target="_blank" style="font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #ffffff; text-decoration: none; display: block; font-weight: 500; line-height: 100%;">
+                        <span style="color: #ffffff; text-decoration: none;">Activate Account</span>
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Fallback Link -->
+          <p style="color: #8A8D8F; font-size: 14px; margin-top: 24px; margin-bottom: 8px; text-align: left;">
+            Or copy and paste this URL into your browser:
+          </p>
+          <p style="margin: 0; text-align: left;">
+            <a href="${inviteUrl}" style="color: #2563EB; font-size: 14px; word-break: break-all; text-decoration: none;">
+              ${inviteUrl}
+            </a>
+          </p>
+
+          <!-- Security Disclaimer -->
+          <p style="color: #8A8D8F; font-size: 14px; line-height: 22px; margin-top: 32px; margin-bottom: 24px; text-align: left;">
+            Didn't request this invitation? You can safely ignore this email. Nothing changes until you activate your account. This invitation link will expire in exactly 24 hours.
+          </p>
+
+          <!-- Separator -->
+          <hr style="border: none; border-top: 1px solid #eaeaea; margin: 32px 0 24px 0;" />
+
+          <!-- Footer -->
+          <p style="color: #8A8D8F; font-size: 12px; line-height: 20px; margin: 0 0 4px 0; text-align: left;">
+            If you'd like to report an issue, please reach out to <a href="mailto:support@latrics.com" style="color: #2563EB; text-decoration: none;">Latrics Support</a>.
+          </p>
+          <p style="color: #8A8D8F; font-size: 12px; margin: 0; text-align: left;">
+            Copyright &copy; ${new Date().getFullYear()} Latrics. All rights reserved.
+          </p>
         </td>
       </tr>
     </table>

@@ -6,6 +6,7 @@ import DeveloperGuide from '../../components/admin/DeveloperGuide.jsx';
 import { getUsers, inviteUser, deleteUser, getAuditLogs, revokeInvite } from '../../api/adminApi.js';
 import { format, isToday, isYesterday } from 'date-fns';
 import { Users, CircleDot, Shield, ClipboardList, User, AlertTriangle } from 'lucide-react';
+import latricsLogo from '../../assets/images/latrics_grey_red_logo.png';
 
 export default function AdminOverview() {
   const { user, logout } = useAuth();
@@ -145,91 +146,101 @@ export default function AdminOverview() {
       const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Latrics CRM Invitation</title>
+  <meta charset="UTF-8">
+  <title>You're Invited to Latrics CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#f4f6f8;font-family:Poppins,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 0;">
-<tr>
-<td align="center">
-<table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
-<!-- Top Brand Bar -->
-<tr>
-<td style="height:6px;background:#DA291C;"></td>
-</tr>
-<!-- Header -->
-<tr>
-<td align="center" style="padding:40px 40px 20px;">
-<img src="https://ui-avatars.com/api/?name=L&color=DA291C&background=fef2f2" width="40" alt="Latrics CRM">
-<p style="margin-top:8px;color:#8A8D8F;font-size:14px;">
-Building Better Tomorrow
-</p>
-</td>
-</tr>
-<!-- Hero -->
-<tr>
-<td style="padding:0 50px;">
-<h1 style="margin:0;font-size:32px;color:#54585A;font-weight:700;">
-You're Invited to Join Latrics CRM
-</h1>
-<p style="margin-top:24px;font-size:16px;line-height:28px;color:#54585A;">
-Hello <strong>${username}</strong>,
-</p>
-<p style="font-size:16px;line-height:28px;color:#54585A;">
-You have been invited to join the
-<strong>Latrics CRM Platform</strong>
-as an <strong>${displayRole}</strong>.
-</p>
-<p style="font-size:16px;line-height:28px;color:#54585A;">
-Create your account credentials and activate your profile using the secure link below.
-</p>
-</td>
-</tr>
-<!-- CTA -->
-<tr>
-<td align="center" style="padding:35px 50px;">
-<a href="${link}" style="background:#DA291C;color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:10px;font-size:16px;font-weight:600;display:inline-block;">
-Activate Account
-</a>
-</td>
-</tr>
-<!-- Security Box -->
-<tr>
-<td style="padding:0 50px 30px;">
-<div style="background:#F7F8F9;border-left:4px solid #DA291C;padding:20px;border-radius:10px;">
-<p style="margin:0;font-size:14px;line-height:24px;color:#54585A;">
-🔒 This invitation link will expire in
-<strong>24 hours</strong>.
-</p>
-</div>
-</td>
-</tr>
-<!-- Link -->
-<tr>
-<td style="padding:0 50px 40px;">
-<p style="font-size:14px;color:#8A8D8F;">
-If the button does not work, use the link below:
-</p>
-<p style="word-break:break-all;font-size:13px;color:#DA291C;">
-${link}
-</p>
-</td>
-</tr>
-<!-- Footer -->
-<tr>
-<td style="background:#54585A;padding:30px;text-align:center;">
-<p style="margin:0;color:#ffffff;font-size:14px;font-weight:600;">
-Latrics System Operations Team
-</p>
-<p style="margin-top:8px;color:#C7C9C7;font-size:12px;">
-Building Better Tomorrow
-</p>
-</td>
-</tr>
-</table>
-</td>
-</tr>
-</table>
+<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
+  <div style="width: 100%; background-color: #ffffff; padding: 40px 0; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table style="width: 100%; max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #eaeaea; border-radius: 8px; border-collapse: collapse;" cellpadding="0" cellspacing="0" border="0" align="center">
+      <tr>
+        <td style="padding: 40px;">
+          <!-- Logo -->
+          <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="left">
+                <img src="${window.location.origin}${latricsLogo}" alt="Latrics Logo" style="max-width: 140px; height: auto; border: none; display: block;" />
+              </td>
+            </tr>
+          </table>
+
+          <!-- Title -->
+          <h1 style="color: #111827; font-size: 24px; font-weight: 600; line-height: 1.3; margin-top: 32px; margin-bottom: 24px; text-align: left;">
+            You've been invited to Latrics CRM
+          </h1>
+
+          <!-- Greeting -->
+          <p style="color: #111827; font-size: 14px; font-weight: 600; margin: 0 0 16px 0; text-align: left;">
+            Hello <strong>${username}</strong>,
+          </p>
+
+          <!-- Body Message -->
+          <p style="color: #54585A; font-size: 14px; line-height: 24px; margin: 0 0 20px 0; text-align: left;">
+            You have been exclusively invited to join the <strong>Latrics CRM Platform</strong>. Your account has been provisioned with <strong style="color: #DA291C;">${displayRole}</strong> access.
+          </p>
+
+          <!-- Recipient Highlight Box -->
+          <table style="width: 100%; border-collapse: collapse; margin: 24px 0;" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color: #F5F5F5; border: 1px solid #C7C9C7; border-radius: 5px; padding: 14px; text-align: center; font-family: monospace; font-size: 14px; color: #54585A;">
+                ${email}
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA Button -->
+          <table style="width: 100%; border-collapse: collapse; margin: 24px 0;" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="left">
+                <table border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+                  <tr>
+                    <td align="center" bgcolor="#DA291C" style="border-radius: 5px; padding: 12px 24px; background-color: #DA291C;">
+                      <a href="${link}" target="_blank" style="font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #ffffff; text-decoration: none; display: block; font-weight: 500; line-height: 100%;">
+                        <span style="color: #ffffff; text-decoration: none;">Activate Account</span>
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Fallback Link -->
+          <p style="color: #8A8D8F; font-size: 14px; margin-top: 24px; margin-bottom: 8px; text-align: left;">
+            Or copy and paste this URL into your browser:
+          </p>
+          <p style="margin: 0; text-align: left;">
+            <a href="${link}" style="color: #2563EB; font-size: 14px; word-break: break-all; text-decoration: none;">
+              ${link}
+            </a>
+          </p>
+
+          <!-- Security Disclaimer -->
+          <p style="color: #8A8D8F; font-size: 14px; line-height: 22px; margin-top: 32px; margin-bottom: 24px; text-align: left;">
+            Didn't request this invitation? You can safely ignore this email. Nothing changes until you activate your account. This invitation link will expire in exactly 24 hours.
+          </p>
+
+          <!-- Separator -->
+          <hr style="border: none; border-top: 1px solid #eaeaea; margin: 32px 0 24px 0;" />
+
+          <!-- Footer -->
+          <p style="color: #8A8D8F; font-size: 12px; line-height: 20px; margin: 0 0 4px 0; text-align: left;">
+            If you'd like to report an issue, please reach out to <a href="mailto:support@latrics.com" style="color: #2563EB; text-decoration: none;">Latrics Support</a>.
+          </p>
+          <p style="color: #8A8D8F; font-size: 12px; margin: 0; text-align: left;">
+            Copyright &copy; ${new Date().getFullYear()} Latrics. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </div>
 </body>
 </html>`;
 
