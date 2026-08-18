@@ -37,13 +37,13 @@ export const createDeal = asyncHandler(async (req, res) => {
   await Lead.create({
     _id: leadIdObj,
     leadId: req.body.dealId,
-    company: req.body.company || req.body.title || 'Direct Deal Lead',
-    decisionMaker: req.body.contact || req.body.title || 'Direct Deal Contact',
-    email: req.body.email || `no-email-${req.body.dealId.toLowerCase()}@example.com`,
-    phone: req.body.phone,
-    city: req.body.city,
-    state: req.body.state,
-    designation: req.body.designation,
+    company: req.body.company || req.body.title || '',
+    decisionMaker: req.body.contact || '',
+    email: req.body.email || '',
+    phone: req.body.phone || '',
+    city: req.body.city || '',
+    state: req.body.state || '',
+    designation: req.body.designation || '',
     status: 'Converted',
     value: req.body.value || 0,
     owner: req.body.owner,
@@ -215,7 +215,10 @@ export const deleteDeal = asyncHandler(async (req, res) => {
 
   if (deal.from_lead_id) {
     await Lead.findByIdAndDelete(deal.from_lead_id);
+    await Doc.deleteMany({ entity_id: deal.from_lead_id });
   }
+  await Lead.findByIdAndDelete(deal._id);
+  await Doc.deleteMany({ entity_id: deal._id });
 
   if (deal.owner) {
     await createNotification({

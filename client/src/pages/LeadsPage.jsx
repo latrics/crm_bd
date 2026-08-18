@@ -10,7 +10,7 @@ import BANTSection from '../components/leads/BANTSection.jsx';
 import DocsPanel from '../components/docs/DocsPanel.jsx';
 import Confirm from '../components/common/Confirm.jsx';
 import ImportWizard from '../components/leads/ImportWizard.jsx';
-import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads } from '../api/leadsApi.js';
+import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads, cleanupOrphanedLeads } from '../api/leadsApi.js';
 import useToast from '../hooks/useToast.js';
 import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
@@ -36,7 +36,7 @@ export default function LeadsPage() {
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('latest');
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
-  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
+  const [bulkUpdateData, setBulkUpdateData] = useState({ status: '', outbound: '', owner: '', industry: '', customIndustry: '', customOutbound: '', deadline: '' });
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const dropdownRef = useRef(null);
@@ -119,8 +119,8 @@ export default function LeadsPage() {
     key: stage,
     label: stage.toUpperCase(),
     count: stage === 'Closure'
-      ? state.leads.filter(l => l.status === 'Closure' || l.status === 'Converted').length
-      : state.leads.filter(l => l.status === stage).length,
+      ? (state.leads || []).filter(l => l && (l.status === 'Closure' || l.status === 'Converted')).length
+      : (state.leads || []).filter(l => l && l.status === stage).length,
     color: STG_COLORS[stage] || '#8A8D8F'
   }));
 
@@ -132,6 +132,7 @@ export default function LeadsPage() {
     { key: 'nurture', label: 'Nurture', color: 'bg-green-100 text-green-600' },
     { key: 'unscored', label: 'Unscored', color: 'bg-gray-100 text-gray-600' },
     { key: 'unassigned', label: 'Unassigned', color: 'bg-purple-100 text-purple-600' },
+    { key: 'converted', label: 'Converted', color: 'bg-emerald-100 text-emerald-700' },
   ];
 
   const handleExportCSV = () => {
@@ -172,7 +173,8 @@ export default function LeadsPage() {
   };
 
   const getCount = (key) => {
-    const activeLeads = state.leads.filter(l => l.status !== 'Converted');
+    if (key === 'converted') return (state.leads || []).filter(l => l && l.status === 'Converted').length;
+    const activeLeads = (state.leads || []).filter(l => l && l.status !== 'Converted');
     if (key === 'all') return activeLeads.length;
     if (key === 'unassigned') return activeLeads.filter(l => !l || !l.owner).length;
     return activeLeads.filter(l => {
@@ -308,12 +310,31 @@ export default function LeadsPage() {
     }
   };
 
+  const handleCleanup = async () => {
+    if (window.confirm("Run system sync to repair any orphaned or desynchronized converted leads and deals?")) {
+      try {
+        const res = await cleanupOrphanedLeads();
+        if (res?.success) {
+          addToast({ type: 'success', message: res.message });
+        }
+      } catch (err) {
+        addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error running cleanup' });
+      }
+    }
+  };
+
   const handleBulkUpdateSubmit = async () => {
     try {
       let finalData = {};
       if (bulkUpdateData.status) finalData.status = bulkUpdateData.status;
       if (bulkUpdateData.owner) finalData.owner = bulkUpdateData.owner;
-      if (bulkUpdateData.industry) finalData.industry = bulkUpdateData.industry;
+      if (bulkUpdateData.industry) {
+        if (bulkUpdateData.industry === 'Others') {
+          if (bulkUpdateData.customIndustry) finalData.industry = bulkUpdateData.customIndustry;
+        } else {
+          finalData.industry = bulkUpdateData.industry;
+        }
+      }
       
       if (bulkUpdateData.outbound) {
         if (bulkUpdateData.outbound === 'Others') {
@@ -347,7 +368,7 @@ export default function LeadsPage() {
       addToast({ type: 'success', message: `${selectedLeads.length} leads updated` });
       setSelectedLeads([]);
       setBulkUpdateModalOpen(false);
-      setBulkUpdateData({ status: '', outbound: '', owner: '', industry: '', customOutbound: '', deadline: '' });
+      setBulkUpdateData({ status: '', outbound: '', owner: '', industry: '', customIndustry: '', customOutbound: '', deadline: '' });
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Error updating leads' });
     }
@@ -506,13 +527,22 @@ export default function LeadsPage() {
           {/* Action Buttons */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             {(user?.role === 'admin' || user?.role === 'superadmin') && (
-              <button 
-                onClick={handleResetCounter} 
-                className="text-brand-silver hover:text-brand-text p-2 transition-colors" 
-                title="Reset Lead ID Sequence to 1"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              </button>
+              <>
+                <button 
+                  onClick={handleCleanup} 
+                  className="text-brand-silver hover:text-brand-text p-2 transition-colors" 
+                  title="Repair & Sync Orphaned / Converted Leads"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+                <button 
+                  onClick={handleResetCounter} 
+                  className="text-brand-silver hover:text-brand-text p-2 transition-colors" 
+                  title="Reset Lead ID Sequence to 1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </>
             )}
             <button onClick={() => setImportWizardOpen(true)} className="px-5 py-2.5 bg-white border border-brand-border text-brand-text font-bold text-sm rounded-xl hover:bg-gray-50 transition-all shadow-sm">
               Import
@@ -738,13 +768,23 @@ export default function LeadsPage() {
             value={bulkUpdateData.owner} 
             onChange={e => setBulkUpdateData({ ...bulkUpdateData, owner: e.target.value })} 
           />
-          <Field 
-            label="Industry" 
-            type="select" 
-            options={SECTORS} 
-            value={bulkUpdateData.industry} 
-            onChange={e => setBulkUpdateData({ ...bulkUpdateData, industry: e.target.value })} 
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Field 
+              label="Industry" 
+              type="select" 
+              options={SECTORS} 
+              value={bulkUpdateData.industry} 
+              onChange={e => setBulkUpdateData({ ...bulkUpdateData, industry: e.target.value, customIndustry: '' })} 
+            />
+            {bulkUpdateData.industry === 'Others' && (
+              <Field 
+                label="Custom Industry" 
+                value={bulkUpdateData.customIndustry} 
+                onChange={e => setBulkUpdateData({ ...bulkUpdateData, customIndustry: e.target.value })} 
+                placeholder="Type industry here..."
+              />
+            )}
+          </div>
           
           <div className="grid grid-cols-2 gap-4">
             <Field 

@@ -6,7 +6,7 @@ const docSchema = new mongoose.Schema({
   name:        { type: String, required: true },
   size:        Number,
   mime_type:   String,
-  doc_type:    { type: String, enum: ['Quotation','Agreement','Purchase Order','Contract','Others'] },
+  doc_type:    { type: String },
   stage:       String,
   note:        String,
   data_url:    String,   // base64 stored in DB (or swap for GridFS/S3 URL in production)

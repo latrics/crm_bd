@@ -33,7 +33,10 @@ export const updateApproval = asyncHandler(async (req, res) => {
         await Deal.findByIdAndDelete(request.recordId);
         if (deal.from_lead_id) {
           await Lead.findByIdAndDelete(deal.from_lead_id);
+          await Doc.deleteMany({ entity_id: deal.from_lead_id });
         }
+        await Lead.findByIdAndDelete(deal._id);
+        await Doc.deleteMany({ entity_id: deal._id });
         await createNotification({
           message: `Deal deleted by admin approval: ${deal.title}`,
           type: 'warning',
@@ -45,6 +48,8 @@ export const updateApproval = asyncHandler(async (req, res) => {
       // Default to Lead deletion
       const lead = await Lead.findByIdAndDelete(request.recordId);
       if (lead) {
+        await Deal.deleteMany({ from_lead_id: request.recordId });
+        await Doc.deleteMany({ entity_id: request.recordId });
         await createNotification({
           message: `Lead deleted by admin approval: ${lead.company}`,
           type: 'warning',

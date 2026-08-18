@@ -22,9 +22,8 @@ export const createLead = asyncHandler(async (req, res) => {
   );
   req.body.leadId = `LED-${String(counter.seq).padStart(6, '0')}`;
   
-  const dmLower = req.body.decisionMaker ? req.body.decisionMaker.toLowerCase() : '';
-  if (!req.body.decisionMaker || ['na', 'n/a', 'not available', '-'].includes(dmLower)) {
-    req.body.decisionMaker = req.body.company || '';
+  if (req.body.decisionMaker === undefined || req.body.decisionMaker === null) {
+    req.body.decisionMaker = '';
   }
 
   // Set assignedAt if owner is provided (deadline comes directly from client now)
@@ -64,15 +63,10 @@ export const updateLead = asyncHandler(async (req, res) => {
   const existingLead = await Lead.findById(req.params.id);
   if (!existingLead) return res.status(404).json({ success: false, message: 'Lead not found' });
 
-  const dmLower = req.body.decisionMaker ? req.body.decisionMaker.toLowerCase() : '';
-  if (req.body.hasOwnProperty('decisionMaker') || req.body.company) {
-    if (!req.body.decisionMaker || ['na', 'n/a', 'not available', '-'].includes(dmLower)) {
-      if (req.body.company) {
-        req.body.decisionMaker = req.body.company;
-      } else {
-        req.body.decisionMaker = existingLead?.company || '';
-      }
-    }
+  // If existing lead is Converted and has a Deal, protect it from being accidentally reverted to 'Leads'
+  const dealExists = await Deal.exists({ from_lead_id: req.params.id });
+  if (existingLead.status === 'Converted' && dealExists && req.body.status === 'Leads') {
+    delete req.body.status; // Preserve 'Converted' status
   }
 
   const ownerChanged = req.body.owner !== undefined && req.body.owner !== existingLead.owner;
@@ -86,7 +80,6 @@ export const updateLead = asyncHandler(async (req, res) => {
   }
 
   // Handle automatic conversion to Deal if status becomes Closure or Converted AND no Deal exists yet
-  const dealExists = await Deal.exists({ from_lead_id: req.params.id });
   const shouldConvert = (req.body.status === 'Closure' || req.body.status === 'Converted') && !dealExists;
 
   let deal = null;
@@ -101,17 +94,17 @@ export const updateLead = asyncHandler(async (req, res) => {
         dealId: lead.leadId,
         title: `${lead.decisionMaker || 'Lead'} - ${lead.company}`,
         company: lead.company,
-        contact: lead.decisionMaker,
-        designation: lead.designation,
-        email: lead.email,
-        phone: lead.phone,
-        city: lead.city,
-        state: lead.state,
-        sector: lead.industry,
-        source: lead.outbound,
-        broughtBy: lead.broughtBy,
-        businessModel: lead.businessModel,
-        businessModelDetail: lead.businessModelDetail,
+        contact: lead.decisionMaker || '',
+        designation: lead.designation || '',
+        email: lead.email || '',
+        phone: lead.phone || '',
+        city: lead.city || '',
+        state: lead.state || '',
+        sector: lead.industry || '',
+        source: lead.outbound || '',
+        broughtBy: lead.broughtBy || '',
+        businessModel: lead.businessModel || '',
+        businessModelDetail: lead.businessModelDetail || '',
         notes: [lead.bio ? `Bio: ${lead.bio}` : '', lead.remarks ? `Remarks: ${lead.remarks}` : ''].filter(Boolean).join('\n\n'),
         owner: lead.owner,
         value: lead.value,
@@ -134,6 +127,27 @@ export const updateLead = asyncHandler(async (req, res) => {
 
   const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   
+  // If a Deal exists for this lead, keep deal fields synchronized
+  if (dealExists) {
+    const dealUpdate = {};
+    if (req.body.company !== undefined) dealUpdate.company = req.body.company;
+    if (req.body.decisionMaker !== undefined) dealUpdate.contact = req.body.decisionMaker;
+    if (req.body.email !== undefined) dealUpdate.email = req.body.email;
+    if (req.body.phone !== undefined) dealUpdate.phone = req.body.phone;
+    if (req.body.city !== undefined) dealUpdate.city = req.body.city;
+    if (req.body.state !== undefined) dealUpdate.state = req.body.state;
+    if (req.body.value !== undefined) dealUpdate.value = req.body.value;
+    if (req.body.owner !== undefined) dealUpdate.owner = req.body.owner;
+    if (req.body.industry !== undefined) dealUpdate.sector = req.body.industry;
+    if (req.body.outbound !== undefined) dealUpdate.source = req.body.outbound;
+    if (req.body.broughtBy !== undefined) dealUpdate.broughtBy = req.body.broughtBy;
+    if (req.body.businessModel !== undefined) dealUpdate.businessModel = req.body.businessModel;
+    if (req.body.businessModelDetail !== undefined) dealUpdate.businessModelDetail = req.body.businessModelDetail;
+    if (Object.keys(dealUpdate).length > 0) {
+      await Deal.updateOne({ from_lead_id: req.params.id }, { $set: dealUpdate });
+    }
+  }
+
   let msg = `Lead updated: ${lead.company}`;
   let type = 'info';
   
@@ -207,7 +221,8 @@ export const deleteLead = asyncHandler(async (req, res) => {
   }
 
   await Lead.findByIdAndDelete(req.params.id);
-  await Deal.deleteOne({ from_lead_id: req.params.id });
+  await Deal.deleteMany({ from_lead_id: req.params.id });
+  await Doc.deleteMany({ entity_id: req.params.id });
   await createNotification({ message: `Lead deleted: ${lead.company} (ID: ${lead.leadId || lead._id}) by ${req.user.name || req.user.email || 'System'}`, type: 'warning', category: 'Leads', recipientUser: lead.owner, relatedId: lead._id });
   
   res.json({ success: true, data: {} });
@@ -220,8 +235,6 @@ export const deleteMultipleLeads = asyncHandler(async (req, res) => {
   }
 
   if (req.user.role === 'manager') {
-    // For bulk delete, we can create one request per lead or one bulk request.
-    // Given the schema, one per lead is easier for admins to review individually.
     const leads = await Lead.find({ _id: { $in: ids } });
     const requests = leads.map(lead => ({
       type: 'Delete',
@@ -236,8 +249,9 @@ export const deleteMultipleLeads = asyncHandler(async (req, res) => {
     return res.json({ success: true, message: 'Bulk deletion request submitted for Admin approval', isPending: true });
   }
 
-  const result = await Lead.deleteMany({ _id: { $in: ids } });
+  await Lead.deleteMany({ _id: { $in: ids } });
   await Deal.deleteMany({ from_lead_id: { $in: ids } });
+  await Doc.deleteMany({ entity_id: { $in: ids } });
   
   await createNotification({ message: `${ids.length} leads deleted by ${req.user.name || req.user.email || 'System'}`, type: 'warning', category: 'Leads', recipientRoles: ['Super Admin', 'Admin'] });
   
@@ -301,7 +315,13 @@ export const importLeads = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: 'No valid leads provided' });
   }
 
-  const count = leads.length;
+  // Filter out any completely empty items or items missing company
+  const validLeads = leads.filter(lead => lead && lead.company && String(lead.company).trim() !== '');
+  if (validLeads.length === 0) {
+    return res.status(400).json({ success: false, message: 'No leads with valid company names found' });
+  }
+
+  const count = validLeads.length;
   const counter = await Counter.findByIdAndUpdate(
     { _id: 'leadId' },
     { $inc: { seq: count } },
@@ -309,9 +329,17 @@ export const importLeads = asyncHandler(async (req, res) => {
   );
 
   let startSeq = counter.seq - count + 1;
-  const leadsToInsert = leads.map(lead => {
+  const leadsToInsert = validLeads.map(lead => {
     const leadId = `LED-${String(startSeq++).padStart(6, '0')}`;
-    const newLead = { ...lead, leadId };
+    const newLead = { 
+      ...lead, 
+      leadId,
+      company: String(lead.company).trim(),
+      decisionMaker: lead.decisionMaker !== undefined && lead.decisionMaker !== null ? String(lead.decisionMaker).trim() : '',
+      email: lead.email !== undefined && lead.email !== null ? String(lead.email).trim() : '',
+      phone: lead.phone !== undefined && lead.phone !== null ? String(lead.phone).trim() : '',
+      status: lead.status || 'Leads'
+    };
     if (newLead.owner) {
       newLead.assignedAt = new Date();
     }
@@ -338,6 +366,42 @@ export const importLeads = asyncHandler(async (req, res) => {
     data: insertedLeads,
     total: insertedLeads.length,
     leadIdRange: `${leadsToInsert[0].leadId} to ${leadsToInsert[leadsToInsert.length - 1].leadId}`
+  });
+});
+
+export const cleanupOrphanedLeads = asyncHandler(async (req, res) => {
+  const deals = await Deal.find({}).select('_id from_lead_id company dealId title').lean();
+  const leads = await Lead.find({}).lean();
+
+  const dealLeadIdSet = new Set(deals.map(d => String(d.from_lead_id || d._id)));
+  
+  let resyncedCount = 0;
+  let orphanedConvertedCount = 0;
+  const fixedLeadIds = [];
+
+  for (const lead of leads) {
+    const isLinkedToDeal = dealLeadIdSet.has(String(lead._id));
+
+    if (isLinkedToDeal && lead.status !== 'Converted') {
+      // Re-sync status to Converted because it has an active deal
+      await Lead.findByIdAndUpdate(lead._id, { status: 'Converted' });
+      resyncedCount++;
+      fixedLeadIds.push(lead.leadId || lead._id);
+    } else if (!isLinkedToDeal && lead.status === 'Converted') {
+      // It's marked as Converted, but no Deal exists in the database
+      // If action is requested, we can revert status to 'Leads' so it becomes visible and manageable
+      await Lead.findByIdAndUpdate(lead._id, { status: 'Leads' });
+      orphanedConvertedCount++;
+      fixedLeadIds.push(lead.leadId || lead._id);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `Cleanup completed. Resynced ${resyncedCount} active deals to Converted status, and restored ${orphanedConvertedCount} orphaned converted leads back to Leads status.`,
+    resyncedCount,
+    orphanedConvertedCount,
+    fixedLeadIds
   });
 });
 

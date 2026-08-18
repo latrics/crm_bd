@@ -30,7 +30,11 @@ export default function LeadsView({
     setCurrentPage(1);
   }, [activeTab, search, activeStatusFilter]);
   
-  let filteredLeads = (state.leads || []).filter(l => l && l.status !== 'Converted');
+  let filteredLeads = (state.leads || []).filter(l => {
+    if (!l) return false;
+    if (activeTab === 'converted') return l.status === 'Converted';
+    return l.status !== 'Converted';
+  });
 
   if (search) {
     const match = search.match(/^(state|city|company|industry):\s*(.*)$/i);
@@ -54,7 +58,7 @@ export default function LeadsView({
   }
   
   // Active Tab filter
-  if (activeTab !== 'all') {
+  if (activeTab !== 'all' && activeTab !== 'converted') {
     if (activeTab === 'unassigned') {
       filteredLeads = (filteredLeads || []).filter(l => !l || !l.owner);
     } else {

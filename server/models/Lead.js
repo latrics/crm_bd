@@ -4,7 +4,7 @@ const leadSchema = new mongoose.Schema({
   leadId:   { type: String, unique: true, sparse: true },
   decisionMaker:{ type: String, trim: true },
   company:      { type: String, required: true, trim: true },
-  email:        { type: String, required: true, trim: true, lowercase: true },
+  email:        { type: String, trim: true, lowercase: true, default: '' },
   phone:        String,
   status:       { type: String, enum: ['Leads','Communicated','Discussion','Pricing / Quote','Demo','Closure', 'Converted'], default: 'Leads' },
   value:        { type: Number, default: 0 },
@@ -12,7 +12,7 @@ const leadSchema = new mongoose.Schema({
   broughtBy:    { type: String },
   owner:        { type: String },
   addedBy:      { type: String },
-  industry:     { type: String, enum: ['Mining','Highway & Railways','Urban Development','Energy & Utilities','Water Resources','Emergency Services','Others', ''] },
+  industry:     { type: String }, // Removed enum to support custom 'Others' industries
   businessModel: { type: String },
   businessModelDetail: { type: String },
   bio:          String,

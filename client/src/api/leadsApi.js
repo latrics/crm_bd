@@ -111,3 +111,11 @@ export const updateMultipleLeads = async (ids, updateData) => {
     throw err;
   }
 };
+
+export const cleanupOrphanedLeads = async () => {
+  try {
+    return await api.post('/leads/cleanup-orphans');
+  } catch (err) {
+    throw err;
+  }
+};
