@@ -36,12 +36,11 @@ export const DEAL_COLORS = { Negotiation: '#54585A', Won: '#DA291C', Lost: '#8A8
 export const OWN_COLORS = { 'Sivaram B': '#DA291C', 'Sureka Suresh': '#54585A', 'Rajib Saikia': '#16a34a', 'Sanjay Pathak': '#4F46E5' };
 
 export const BANT_TABS = [
-  { key: 'all', label: 'All Leads', range: null },
-  { key: 'hot', label: 'Hot', range: [16, 20] },
-  { key: 'warm', label: 'Warm', range: [11, 15] },
-  { key: 'cold', label: 'Cold', range: [6, 10] },
-  { key: 'nurture', label: 'Nurture', range: [1, 5] },
-  { key: 'none', label: 'Unscored', range: [0, 0] },
+  { key: 'hot', label: 'Hot', range: [16, 20], color: '#DC2626', bg: '#FEF2F2', activeBg: '#DC2626', activeText: '#FFFFFF' },
+  { key: 'warm', label: 'Warm', range: [11, 15], color: '#D97706', bg: '#FFFBEB', activeBg: '#D97706', activeText: '#FFFFFF' },
+  { key: 'cold', label: 'Cold', range: [6, 10], color: '#2563EB', bg: '#EFF6FF', activeBg: '#2563EB', activeText: '#FFFFFF' },
+  { key: 'nurture', label: 'Nurture', range: [1, 5], color: '#16a34a', bg: '#F0FDF4', activeBg: '#16a34a', activeText: '#FFFFFF' },
+  { key: 'unscored', label: 'Unscored', range: [0, 0], color: '#8A8D8F', bg: '#F3F4F6', activeBg: '#54585A', activeText: '#FFFFFF' },
 ];
 
 export const BANT_DEFS = [

@@ -10,6 +10,7 @@ export default function DealsListView({
   onRevertClick, 
   search, 
   activeStageFilter, 
+  selectedOwner,
   selectedDeals = [], 
   onToggleSelect, 
   onToggleSelectAll,
@@ -21,7 +22,7 @@ export default function DealsListView({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeStageFilter]);
+  }, [search, activeStageFilter, selectedOwner]);
   
   let filteredDeals = state.deals || [];
 
@@ -49,7 +50,20 @@ export default function DealsListView({
   }
   
   if (activeStageFilter && activeStageFilter !== 'all') {
-    filteredDeals = filteredDeals.filter(d => d && d.stage === activeStageFilter);
+    if (activeStageFilter === 'unassigned') {
+      filteredDeals = filteredDeals.filter(d => !d || !d.owner || !d.owner.trim());
+    } else {
+      filteredDeals = filteredDeals.filter(d => d && d.stage === activeStageFilter);
+    }
+  }
+
+  // Owner filter
+  if (selectedOwner && selectedOwner !== 'all') {
+    if (selectedOwner === 'unassigned') {
+      filteredDeals = filteredDeals.filter(d => !d || !d.owner || !d.owner.trim());
+    } else {
+      filteredDeals = filteredDeals.filter(d => (d?.owner || '').trim().toLowerCase() === selectedOwner.trim().toLowerCase());
+    }
   }
 
   // Sorting
@@ -59,6 +73,16 @@ export default function DealsListView({
     filteredDeals.sort((a, b) => (a?.value || 0) - (b?.value || 0));
   } else if (sortOrder === 'oldest') {
     filteredDeals.sort((a, b) => new Date(a?.createdAt || 0) - new Date(b?.createdAt || 0));
+  } else if (sortOrder === 'group_by_owner') {
+    filteredDeals.sort((a, b) => {
+      const ownerA = a.owner && a.owner.trim() ? a.owner.trim() : 'Unassigned';
+      const ownerB = b.owner && b.owner.trim() ? b.owner.trim() : 'Unassigned';
+      if (ownerA === 'Unassigned') return 1;
+      if (ownerB === 'Unassigned') return -1;
+      const cmp = ownerA.localeCompare(ownerB);
+      if (cmp !== 0) return cmp;
+      return new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0);
+    });
   } else {
     // Default: 'latest'
     filteredDeals.sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));

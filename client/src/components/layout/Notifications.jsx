@@ -468,13 +468,18 @@ export default function Notifications() {
   };
 
   const handleStageUpdate = async (lead, stage) => {
+    if (!lead || lead.status === stage) return;
+    const previousStatus = lead.status;
+    dispatch({ type: 'UPDATE_LEAD', payload: { ...lead, status: stage } });
+
     try {
       const res = await updateLead(lead._id, { status: stage });
-      if (res.success) {
+      if (res.success && res.data) {
         dispatch({ type: 'UPDATE_LEAD', payload: res.data });
         addToast({ type: 'success', message: 'Lead stage updated successfully' });
       }
     } catch (err) {
+      dispatch({ type: 'UPDATE_LEAD', payload: { ...lead, status: previousStatus } });
       addToast({ type: 'error', message: err.message || 'Error updating stage' });
     }
   };
@@ -601,45 +606,49 @@ export default function Notifications() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-3">
-             <div className="flex-1 mr-4">
-                 <div className="flex gap-1 h-1.5 w-full">
-                   {LEAD_STAGES.map((stage, idx) => (
-                     <div 
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1 gap-3 pt-2 border-t border-brand-border/40">
+             <div className="flex-1 mr-0 sm:mr-4">
+               {/* 6 Stage Buttons */}
+               <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 w-full">
+                 {LEAD_STAGES.map((stage, idx) => {
+                   const isCurrent = currentStageIdx === idx;
+                   const isPassed = currentStageIdx >= 0 && idx < currentStageIdx;
+                   const displayTitle = stage === 'Communicated' ? 'Communication' : stage;
+
+                   return (
+                     <button
                        key={stage}
+                       type="button"
                        onClick={(e) => { e.stopPropagation(); handleStageUpdate(lead, stage); }}
-                       className="h-full rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-                       title={`Move to ${stage}`}
-                       style={{
-                         flex: 1,
-                         backgroundColor: idx <= currentStageIdx ? '#8A8D8F' : '#f3f4f6', 
-                       }}
-                     />
-                   ))}
-                 </div>
-                  <div className="flex w-full mt-1.5 text-[8px] font-black text-brand-silver select-none">
-                    {LEAD_STAGES.map((stage, idx) => (
-                      <span 
-                        key={stage} 
-                        onClick={(e) => { e.stopPropagation(); handleStageUpdate(lead, stage); }}
-                        className={`cursor-pointer hover:text-brand-red transition-colors flex-1 text-center truncate px-0.5 uppercase tracking-wider ${idx === currentStageIdx ? 'text-brand-red font-black' : ''}`}
-                        title={`Move to ${stage}`}
-                      >
-                        {stage}
-                      </span>
-                    ))}
-                  </div>
-                 <div className="text-[9px] font-black text-brand-silver mt-2.5 tracking-widest uppercase">
-                   Stage: <span className="text-brand-red font-black">{lead.status}</span>
-                </div>
+                       title={`Move to ${displayTitle}`}
+                       className={`py-1.5 px-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all duration-150 flex items-center justify-center text-center cursor-pointer select-none active:scale-95 shadow-2xs ${
+                         isCurrent
+                           ? 'bg-brand-red text-white border border-brand-red shadow-sm ring-2 ring-brand-red/20 font-black'
+                           : isPassed
+                           ? 'bg-[#8A8D8F] text-white border border-[#8A8D8F] hover:bg-[#717476] font-bold'
+                           : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-white hover:text-brand-text hover:border-gray-300 font-semibold'
+                       }`}
+                     >
+                       <span className="truncate">{displayTitle}</span>
+                     </button>
+                   );
+                 })}
+               </div>
+
+               <div className="text-[9px] font-black text-brand-silver mt-2 tracking-widest uppercase flex items-center gap-1.5">
+                 <span>Stage:</span>
+                 <span className="text-brand-red font-black">
+                   {lead.status === 'Communicated' ? 'Communication' : lead.status}
+                 </span>
+               </div>
              </div>
              
              {nextStage && (
                <button
                  onClick={() => handleStageUpdate(lead, nextStage)}
-                 className="px-3 py-1 bg-brand-surfaceAlt border border-brand-border text-brand-text rounded text-[11px] font-bold hover:bg-brand-border transition-colors whitespace-nowrap"
+                 className="px-3 py-1.5 bg-brand-surfaceAlt border border-brand-border text-brand-text rounded-md text-xs font-bold hover:bg-brand-border transition-colors whitespace-nowrap cursor-pointer shadow-2xs self-end sm:self-auto"
                >
-                 Move to {nextStage}
+                 Move to {nextStage === 'Communicated' ? 'Communication' : nextStage}
                </button>
              )}
           </div>

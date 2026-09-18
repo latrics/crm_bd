@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -12,8 +12,9 @@ import Confirm from '../components/common/Confirm.jsx';
 import ImportWizard from '../components/leads/ImportWizard.jsx';
 import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, resetLeadCounter, updateMultipleLeads, cleanupOrphanedLeads } from '../api/leadsApi.js';
 import useToast from '../hooks/useToast.js';
-import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODELS } from '../constants/index.js';
+import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODELS, BANT_TABS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
+import { Search, Filter, ChevronDown, User, Users, X, Building, MapPin, Briefcase } from 'lucide-react';
 
 export default function LeadsPage() {
   const { state, dispatch } = useCRM();
@@ -27,7 +28,14 @@ export default function LeadsPage() {
   const [errors, setErrors] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+  
+  // Filtering & Sorting States
+  const [leadFilter, setLeadFilter] = useState('all'); // 'all' | 'unassigned' | 'converted'
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [bantFilter, setBantFilter] = useState('all'); // 'all' | 'hot' | 'warm' | 'cold' | 'nurture' | 'unscored'
+  const [ownerFilter, setOwnerFilter] = useState('all'); // 'all' | ownerName
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -40,6 +48,8 @@ export default function LeadsPage() {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const dropdownRef = useRef(null);
+  const filterDropdownRef = useRef(null);
+  const ownerDropdownRef = useRef(null);
 
   // Parse and calculate suggestions on search change
   useEffect(() => {
@@ -93,11 +103,17 @@ export default function LeadsPage() {
     setSuggestions(matched.slice(0, 10)); // limit to 10 suggestions
   }, [search, state.leads]);
 
-  // Click-away listener for suggestions dropdown
+  // Click-away listener for suggestions and dropdowns
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowSuggestions(false);
+      }
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target)) {
+        setFilterMenuOpen(false);
+      }
+      if (ownerDropdownRef.current && !ownerDropdownRef.current.contains(e.target)) {
+        setOwnerMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -124,16 +140,51 @@ export default function LeadsPage() {
     color: STG_COLORS[stage] || '#8A8D8F'
   }));
 
-  const filterTabs = [
-    { key: 'all', label: 'All Leads', color: 'bg-brand-red' },
-    { key: 'hot', label: 'Hot', color: 'bg-brand-redLight text-brand-red' },
-    { key: 'warm', label: 'Warm', color: 'bg-orange-100 text-orange-600' },
-    { key: 'cold', label: 'Cold', color: 'bg-blue-100 text-blue-600' },
-    { key: 'nurture', label: 'Nurture', color: 'bg-green-100 text-green-600' },
-    { key: 'unscored', label: 'Unscored', color: 'bg-gray-100 text-gray-600' },
-    { key: 'unassigned', label: 'Unassigned', color: 'bg-purple-100 text-purple-600' },
-    { key: 'converted', label: 'Converted', color: 'bg-emerald-100 text-emerald-700' },
+  const existingOwners = useMemo(() => {
+    const fromOwners = (state.owners || []).map(o => o.name).filter(Boolean);
+    const fromLeads = (state.leads || []).map(l => l.owner).filter(Boolean);
+    return [...new Set([...fromOwners, ...fromLeads])].sort();
+  }, [state.owners, state.leads]);
+
+  const allLeadsCount = (state.leads || []).filter(l => l && l.status !== 'Converted').length;
+  const unassignedCount = (state.leads || []).filter(l => l && l.status !== 'Converted' && (!l.owner || !l.owner.trim())).length;
+  const convertedCount = (state.leads || []).filter(l => l && l.status === 'Converted').length;
+
+  const filterOptions = [
+    { key: 'all', label: 'All Leads', count: allLeadsCount, dot: 'bg-brand-red' },
+    { key: 'unassigned', label: 'Unassigned', count: unassignedCount, dot: 'bg-purple-500' },
+    { key: 'converted', label: 'Converted', count: convertedCount, dot: 'bg-emerald-500' },
   ];
+
+  const bantTabs = [
+    { key: 'hot', label: 'Hot', activeBg: 'bg-red-600 text-white border-red-600', dot: 'bg-red-500' },
+    { key: 'warm', label: 'Warm', activeBg: 'bg-amber-500 text-white border-amber-500', dot: 'bg-amber-500' },
+    { key: 'cold', label: 'Cold', activeBg: 'bg-blue-600 text-white border-blue-600', dot: 'bg-blue-500' },
+    { key: 'nurture', label: 'Nurture', activeBg: 'bg-emerald-600 text-white border-emerald-600', dot: 'bg-emerald-500' },
+    { key: 'unscored', label: 'Unscored', activeBg: 'bg-gray-700 text-white border-gray-700', dot: 'bg-gray-400' },
+  ];
+
+  const getBantCount = (key) => {
+    const baseLeads = (state.leads || []).filter(l => {
+      if (!l) return false;
+      if (leadFilter === 'converted') return l.status === 'Converted';
+      if (leadFilter === 'unassigned') return l.status !== 'Converted' && (!l.owner || !l.owner.trim());
+      return l.status !== 'Converted';
+    });
+
+    return baseLeads.filter(l => {
+      const score = bantScore(l);
+      return bantCat(score).label.toLowerCase() === key;
+    }).length;
+  };
+
+  const getOwnerLeadCount = (ownerName) => {
+    return (state.leads || []).filter(l => {
+      if (!l) return false;
+      if (leadFilter === 'converted') return l.status === 'Converted' && l.owner === ownerName;
+      return l.status !== 'Converted' && l.owner === ownerName;
+    }).length;
+  };
 
   const handleExportCSV = () => {
     if (state.leads.length === 0) return;
@@ -389,17 +440,29 @@ export default function LeadsPage() {
   };
 
   const handleStageUpdate = async (lead, newStage) => {
+    if (!lead || lead.status === newStage) return;
+
+    // 1. Instant optimistic update in UI (0ms perceived latency)
+    const previousStatus = lead.status;
+    dispatch({ type: 'UPDATE_LEAD', payload: { ...lead, status: newStage } });
+
     try {
-      const res = await updateLead(lead._id, { ...lead, status: newStage });
-      dispatch({ type: 'UPDATE_LEAD', payload: res.data });
-      if (res.deal) {
+      // 2. Send only status change to avoid payload overhead
+      const res = await updateLead(lead._id, { status: newStage });
+      if (res?.data) {
+        dispatch({ type: 'UPDATE_LEAD', payload: res.data });
+      }
+      if (res?.deal) {
         dispatch({ type: 'ADD_DEAL', payload: res.deal });
         addToast({ type: 'success', message: 'Lead moved to Closure and converted to Deal!' });
       } else {
-        addToast({ type: 'success', message: `Moved to ${newStage}` });
+        const displayStage = newStage === 'Communicated' ? 'Communication' : newStage;
+        addToast({ type: 'success', message: `Moved to ${displayStage}` });
       }
     } catch (err) {
-      addToast({ type: 'error', message: err.message || 'Error updating stage' });
+      // Roll back to previous status if network or server fails
+      dispatch({ type: 'UPDATE_LEAD', payload: { ...lead, status: previousStatus } });
+      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error updating stage' });
     }
   };
 
@@ -459,67 +522,135 @@ export default function LeadsPage() {
         {/* Main Controls Row */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           {/* Search and Filters */}
-          <div className="flex flex-1 w-full md:w-auto items-center gap-3">
-            <div className="relative flex-1 max-w-md" ref={dropdownRef}>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-brand-silver/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              </div>
-              <input 
-                type="text" 
-                placeholder="Search by state, city, company, industry..." 
-                value={search}
-                onChange={e => {
-                  setSearch(e.target.value);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                className="w-full bg-brand-surfaceAlt/50 border border-brand-border rounded-xl pl-10 pr-10 py-2.5 text-sm outline-none focus:bg-white focus:border-brand-red/50 focus:ring-2 focus:ring-brand-red/10 transition-all font-medium"
-              />
-              {search && (
-                <button
-                  onClick={() => {
-                    setSearch('');
-                    setShowSuggestions(false);
+          <div className="flex flex-1 w-full md:w-auto items-center gap-3 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 min-w-[240px] max-w-md" ref={dropdownRef}>
+              <div className="flex items-center bg-brand-surfaceAlt/60 border border-brand-border rounded-xl px-3.5 py-2 focus-within:border-brand-red/60 focus-within:ring-4 focus-within:ring-brand-red/10 focus-within:bg-white transition-all shadow-xs group">
+                <Search className="w-4 h-4 text-brand-silver group-focus-within:text-brand-red transition-colors shrink-0 mr-2.5" />
+                <input 
+                  type="text" 
+                  placeholder="Search leads, company, city, industry..." 
+                  value={search}
+                  onChange={e => {
+                    setSearch(e.target.value);
+                    setShowSuggestions(true);
                   }}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-silver hover:text-brand-red transition-colors"
-                  title="Clear search"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              )}
+                  onFocus={() => setShowSuggestions(true)}
+                  className="w-full bg-transparent text-sm text-brand-text placeholder-brand-silver/80 outline-none font-medium"
+                />
+                {search ? (
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setShowSuggestions(false);
+                    }}
+                    className="text-brand-silver hover:text-brand-red p-1 transition-colors rounded-lg hover:bg-gray-100 shrink-0 ml-1 cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-brand-silver/70 bg-gray-100 rounded border border-gray-200 shrink-0 ml-1">
+                    /
+                  </kbd>
+                )}
+              </div>
 
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute left-0 right-0 mt-2 bg-white border border-brand-border rounded-xl shadow-lg z-30 max-h-60 overflow-y-auto py-1.5 animate-in fade-in slide-in-from-top-1 duration-100">
-                  {suggestions.map((s, idx) => (
-                    <button
-                      key={`${s.field}-${s.value}-${idx}`}
-                      onClick={() => {
-                        setSearch(`${s.field}: ${s.value}`);
-                        setShowSuggestions(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-brand-redLight/10 flex items-center justify-between text-xs transition-colors group cursor-pointer"
-                    >
-                      <span className="font-bold text-brand-text group-hover:text-brand-red">{s.value}</span>
-                      <span className="text-[9px] uppercase font-bold text-brand-silver bg-brand-surfaceAlt px-2 py-0.5 rounded border border-brand-border group-hover:bg-brand-redLight/20 group-hover:text-brand-red group-hover:border-brand-red/20 transition-all">
-                        {s.field}
-                      </span>
-                    </button>
-                  ))}
+                <div className="absolute left-0 right-0 mt-2 bg-white border border-brand-border rounded-xl shadow-xl z-30 max-h-64 overflow-y-auto py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-brand-silver border-b border-gray-100 mb-1 flex items-center justify-between">
+                    <span>Suggested Filters</span>
+                    <span className="text-[9px] text-brand-silver/80">Click to apply</span>
+                  </div>
+                  {suggestions.map((s, idx) => {
+                    const getFieldIcon = (field) => {
+                      if (field === 'company') return <Building className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+                      if (field === 'industry') return <Briefcase className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+                      return <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+                    };
+                    return (
+                      <button
+                        key={`${s.field}-${s.value}-${idx}`}
+                        onClick={() => {
+                          setSearch(`${s.field}: ${s.value}`);
+                          setShowSuggestions(false);
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-brand-redLight/10 flex items-center justify-between text-xs transition-colors group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {getFieldIcon(s.field)}
+                          <span className="font-bold text-brand-text group-hover:text-brand-red truncate">{s.value}</span>
+                        </div>
+                        <span className="text-[9px] uppercase font-bold text-brand-silver bg-brand-surfaceAlt px-2 py-0.5 rounded-md border border-brand-border group-hover:bg-brand-redLight/30 group-hover:text-brand-red group-hover:border-brand-red/30 transition-all shrink-0 ml-2">
+                          {s.field}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
             
+            {/* Filter Button - All Leads, Unassigned, Converted */}
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setFilterMenuOpen(!filterMenuOpen)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm font-bold transition-all shadow-xs cursor-pointer ${
+                  leadFilter !== 'all' 
+                    ? 'bg-brand-redLight/40 border-brand-red/40 text-brand-red' 
+                    : 'bg-brand-surfaceAlt/60 border-brand-border text-brand-text hover:bg-white hover:border-gray-300'
+                }`}
+              >
+                <Filter className={`w-4 h-4 ${leadFilter !== 'all' ? 'text-brand-red' : 'text-brand-silver'}`} />
+                <span>{filterOptions.find(o => o.key === leadFilter)?.label || 'All Leads'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-brand-silver transition-transform duration-200 ${filterMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {filterMenuOpen && (
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-brand-border z-30 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-brand-silver border-b border-gray-100">
+                    Lead Filter
+                  </div>
+                  {filterOptions.map(opt => {
+                    const isSelected = leadFilter === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        onClick={() => {
+                          setLeadFilter(opt.key);
+                          setFilterMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                          isSelected ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
+                          <span>{opt.label}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${isSelected ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                          {opt.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-brand-silver uppercase tracking-wider hidden md:inline">Sort:</span>
+              <span className="text-xs font-bold text-brand-silver uppercase tracking-wider hidden lg:inline">Sort:</span>
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
-                className="bg-brand-surfaceAlt/50 border border-brand-border rounded-xl px-4 py-2.5 text-sm text-brand-text outline-none focus:bg-white focus:border-brand-red/50 shadow-sm font-bold cursor-pointer"
+                className="bg-brand-surfaceAlt/60 border border-brand-border rounded-xl px-3.5 py-2 text-sm text-brand-text outline-none focus:bg-white focus:border-brand-red/50 shadow-xs font-bold cursor-pointer"
               >
                 <option value="latest">Latest Added</option>
                 <option value="oldest">Older Added</option>
                 <option value="highest_value">Highest Revenue</option>
                 <option value="lowest_value">Lowest Revenue</option>
+                <option value="group_by_owner">Group by Owner</option>
               </select>
             </div>
           </div>
@@ -581,47 +712,172 @@ export default function LeadsPage() {
 
         <hr className="border-brand-border" />
 
-        {/* Secondary Row: BANT Tabs & Contextual Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-h-[36px]">
-          {/* Quick Filter Tabs */}
-          <div className={`flex flex-wrap items-center gap-2 transition-opacity duration-200 ${selectedLeads.length > 0 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-            <span className="text-[11px] font-bold text-brand-silver uppercase tracking-wider mr-2 hidden sm:block">BANT:</span>
-            {filterTabs.map(tab => (
-              <button 
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border ${activeTab === tab.key ? 'border-transparent ' + tab.color.replace('text-', 'border-').replace('bg-', 'bg-') : 'bg-white border-brand-border text-brand-silver hover:border-gray-300'}`}
-                style={activeTab === tab.key && tab.key === 'all' ? { backgroundColor: '#DA291C', color: 'white' } : {}}
-              >
-                {tab.label}
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] leading-none ${activeTab === tab.key ? 'bg-white/90' : 'bg-brand-surfaceAlt'} ${tab.key === 'all' && activeTab === 'all' ? 'text-brand-red' : ''}`}>
-                  {getCount(tab.key)}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Contextual Action Bar (Shows when items are selected) */}
-          {selectedLeads.length > 0 && (
-            <div className="flex items-center gap-3 bg-brand-surfaceAlt px-4 py-2 rounded-xl border border-brand-border">
-              <span className="text-sm font-bold text-brand-text flex items-center gap-2 mr-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-xs">{selectedLeads.length}</span>
-                Selected
-              </span>
-              
-              {selectedLeads.length > 1 && (
-                <button onClick={() => setBulkUpdateModalOpen(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-brand-border rounded-lg text-xs font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
-                  <svg className="w-3.5 h-3.5 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                  Update
+        {/* Secondary Row: BANT Tabs (Left) & Owner Filter (Right) */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-h-[44px]">
+          {/* Left: Prominent BANT Score Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-xs font-black text-brand-silver uppercase tracking-wider mr-1 hidden sm:block">BANT:</span>
+            <div className={`flex flex-wrap items-center gap-2 transition-opacity duration-200 ${selectedLeads.length > 0 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+              {bantTabs.map(tab => {
+                const isActive = bantFilter === tab.key;
+                return (
+                  <button 
+                    key={tab.key}
+                    onClick={() => setBantFilter(isActive ? 'all' : tab.key)}
+                    title={isActive ? `Active: ${tab.label} (Click to clear)` : `Filter by ${tab.label}`}
+                    className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2.5 border shadow-xs cursor-pointer ${
+                      isActive 
+                        ? `${tab.activeBg} shadow-md scale-102 ring-2 ring-brand-red/20` 
+                        : 'bg-white border-brand-border text-brand-charcoal hover:border-gray-400 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isActive ? 'bg-white shadow-xs' : tab.dot}`} />
+                    <span>{tab.label}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-xs font-mono font-extrabold leading-none shrink-0 ${
+                      isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-brand-silver'
+                    }`}>
+                      {getBantCount(tab.key)}
+                    </span>
+                  </button>
+                );
+              })}
+              {bantFilter !== 'all' && (
+                <button
+                  onClick={() => setBantFilter('all')}
+                  className="text-xs font-bold text-brand-silver hover:text-brand-red ml-1.5 underline underline-offset-4 transition-colors cursor-pointer"
+                >
+                  Clear BANT
                 </button>
               )}
-              
-              <button onClick={() => setBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-brand-redLight border border-brand-red/20 rounded-lg text-xs font-bold text-brand-red hover:bg-red-100 transition-all shadow-sm">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                Delete
-              </button>
             </div>
-          )}
+          </div>
+
+          {/* Right: Owner Dropdown & Contextual Actions */}
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            {/* Contextual Action Bar (Shows when items are selected) */}
+            {selectedLeads.length > 0 && (
+              <div className="flex items-center gap-2.5 bg-brand-surfaceAlt px-3.5 py-1.5 rounded-xl border border-brand-border shadow-xs">
+                <span className="text-xs font-bold text-brand-text flex items-center gap-1.5 mr-1">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-red text-white text-xs">{selectedLeads.length}</span>
+                  Selected
+                </span>
+                
+                {selectedLeads.length > 1 && (
+                  <button onClick={() => setBulkUpdateModalOpen(true)} className="flex items-center gap-1 px-3 py-1 bg-white border border-brand-border rounded-lg text-xs font-bold text-brand-text hover:bg-gray-50 transition-all shadow-xs cursor-pointer">
+                    <svg className="w-3 h-3 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    Update
+                  </button>
+                )}
+                
+                <button onClick={() => setBulkDeleteConfirm(true)} className="flex items-center gap-1 px-3 py-1 bg-brand-redLight border border-brand-red/20 rounded-lg text-xs font-bold text-brand-red hover:bg-red-100 transition-all shadow-xs cursor-pointer">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  Delete
+                </button>
+              </div>
+            )}
+
+            {/* Owner Dropdown (Right-aligned) */}
+            <div className="relative" ref={ownerDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setOwnerMenuOpen(!ownerMenuOpen)}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all shadow-xs cursor-pointer ${
+                  ownerFilter !== 'all'
+                    ? 'bg-brand-redLight/40 border-brand-red/40 text-brand-red ring-2 ring-brand-red/10'
+                    : 'bg-white border-brand-border text-brand-text hover:bg-gray-50 hover:border-gray-300'
+                }`}
+              >
+                <User className={`w-4 h-4 ${ownerFilter !== 'all' ? 'text-brand-red' : 'text-brand-silver'}`} />
+                <span>{ownerFilter !== 'all' ? `Owner: ${ownerFilter === 'unassigned' ? 'Unassigned' : ownerFilter}` : 'Owner'}</span>
+                <ChevronDown className={`w-4 h-4 text-brand-silver transition-transform duration-200 ${ownerMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {ownerMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-brand-border z-30 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3.5 py-2 text-[10px] font-black uppercase tracking-wider text-brand-silver border-b border-gray-100 flex items-center justify-between">
+                    <span>Filter by Owner</span>
+                    {ownerFilter !== 'all' && (
+                      <button 
+                        onClick={() => { setOwnerFilter('all'); setOwnerMenuOpen(false); }}
+                        className="text-brand-red hover:underline capitalize text-[10px] font-bold cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {/* 1. All Owners */}
+                    <button
+                      onClick={() => {
+                        setOwnerFilter('all');
+                        setOwnerMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                        ownerFilter === 'all' ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Users className="w-4 h-4 text-brand-silver" />
+                        <span>All Owners</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${ownerFilter === 'all' ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                        {allLeadsCount}
+                      </span>
+                    </button>
+
+                    {/* 2. Owners Present in the System */}
+                    {existingOwners.map(ownerName => {
+                      const count = getOwnerLeadCount(ownerName);
+                      const isSelected = ownerFilter === ownerName;
+                      return (
+                        <button
+                          key={ownerName}
+                          onClick={() => {
+                            setOwnerFilter(ownerName);
+                            setOwnerMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                            isSelected ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate pr-2">
+                            <div className="w-5 h-5 rounded-full bg-brand-charcoal text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                              {ownerName.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="truncate">{ownerName}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0 ${isSelected ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                    {/* 3. Unassigned */}
+                    <button
+                      onClick={() => {
+                        setOwnerFilter('unassigned');
+                        setOwnerMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors border-t border-gray-100 cursor-pointer ${
+                        ownerFilter === 'unassigned' ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                          ?
+                        </div>
+                        <span>Unassigned</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${ownerFilter === 'unassigned' ? 'bg-brand-red text-white' : 'bg-purple-100 text-purple-700'}`}>
+                        {unassignedCount}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -629,7 +885,9 @@ export default function LeadsPage() {
         onLeadClick={openEdit} 
         onDeleteClick={handleDeleteClick}
         onStageUpdate={handleStageUpdate}
-        activeTab={activeTab} 
+        leadFilter={leadFilter}
+        activeBant={bantFilter}
+        selectedOwner={ownerFilter}
         activeStatusFilter={activeStatusFilter}
         search={search} 
         sortOrder={sortOrder}

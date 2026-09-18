@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import useCRM from '../hooks/useCRM.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -12,6 +12,7 @@ import Confirm from '../components/common/Confirm.jsx';
 import { createDeal, updateDeal, deleteDeal, revertDeal } from '../api/dealsApi.js';
 import useToast from '../hooks/useToast.js';
 import { DEAL_STAGES, LEAD_STAGES, SECTORS, DEAL_COLORS, SOURCES, FLAT_SOURCES, BUSINESS_MODELS } from '../constants/index.js';
+import { Filter, ChevronDown, Users, User, X } from 'lucide-react';
 
 export default function DealsPage() {
   const { state, dispatch } = useCRM();
@@ -31,6 +32,13 @@ export default function DealsPage() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('kanban'); // kanban or list
   const [activeStageFilter, setActiveStageFilter] = useState('all');
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterDropdownRef = useRef(null);
+
+  const [ownerFilter, setOwnerFilter] = useState('all');
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  const ownerDropdownRef = useRef(null);
+
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState('latest');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -90,11 +98,17 @@ export default function DealsPage() {
     setSuggestions(matched.slice(0, 10)); // limit to 10 suggestions
   }, [search, state.deals]);
 
-  // Click-away listener for suggestions dropdown
+  // Click-away listener for suggestions and dropdown menus
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowSuggestions(false);
+      }
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target)) {
+        setFilterMenuOpen(false);
+      }
+      if (ownerDropdownRef.current && !ownerDropdownRef.current.contains(e.target)) {
+        setOwnerMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -115,7 +129,6 @@ export default function DealsPage() {
     }
   }, [location, state.deals]);
 
-
   const statusStats = DEAL_STAGES.map(stage => ({
     key: stage,
     label: stage.toUpperCase(),
@@ -123,10 +136,31 @@ export default function DealsPage() {
     color: DEAL_COLORS[stage] || '#8A8D8F'
   }));
 
+  const allDealsCount = (state.deals || []).length;
+  const unassignedCount = (state.deals || []).filter(d => !d || !d.owner || !d.owner.trim()).length;
   const wonCount = (state.deals || []).filter(d => d && d.stage === 'Won').length;
   const lostCount = (state.deals || []).filter(d => d && d.stage === 'Lost').length;
+  const negotiationCount = (state.deals || []).filter(d => d && d.stage === 'Negotiation').length;
   const closedCount = wonCount + lostCount;
   const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 100) : 0;
+
+  const existingOwners = useMemo(() => {
+    const fromOwners = (state.owners || []).map(o => o.name).filter(Boolean);
+    const fromDeals = (state.deals || []).map(d => d.owner).filter(Boolean);
+    return [...new Set([...fromOwners, ...fromDeals])].sort();
+  }, [state.owners, state.deals]);
+
+  const getOwnerDealCount = (ownerName) => {
+    return (state.deals || []).filter(d => (d.owner || '').trim().toLowerCase() === ownerName.trim().toLowerCase()).length;
+  };
+
+  const filterOptions = [
+    { key: 'all', label: 'All Deals', count: allDealsCount, dot: 'bg-brand-red' },
+    { key: 'Negotiation', label: 'In Negotiation', count: negotiationCount, dot: 'bg-amber-500' },
+    { key: 'Won', label: 'Won Deals', count: wonCount, dot: 'bg-emerald-500' },
+    { key: 'Lost', label: 'Lost Deals', count: lostCount, dot: 'bg-rose-500' },
+    { key: 'unassigned', label: 'Unassigned', count: unassignedCount, dot: 'bg-purple-500' },
+  ];
 
   // ... (keep the export functions same) ...
   const handleExportCSV = () => {
@@ -341,18 +375,31 @@ export default function DealsPage() {
   };
 
   const handleStageUpdate = async (deal, newStage) => {
+    if (!deal || deal.stage === newStage) return;
+
+    const previousStage = deal.stage;
+    const previousProbability = deal.probability;
+    let newProb = deal.probability;
+    if (newStage === 'Won') newProb = 100;
+    else if (newStage === 'Lost') newProb = 0;
+
+    // 1. Instant optimistic update in UI (0ms delay)
+    const optimisticDeal = { ...deal, stage: newStage, probability: newProb };
+    dispatch({ type: 'UPDATE_DEAL', payload: optimisticDeal });
+
     try {
-      const updatePayload = { ...deal, stage: newStage };
-      if (newStage === 'Won') {
-        updatePayload.probability = 100;
-      } else if (newStage === 'Lost') {
-        updatePayload.probability = 0;
-      }
+      // 2. Send compact payload to avoid unnecessary network latency
+      const updatePayload = { stage: newStage, probability: newProb };
       const res = await updateDeal(deal._id, updatePayload);
-      dispatch({ type: 'UPDATE_DEAL', payload: res.data });
-      addToast({ type: 'success', message: `Moved to ${newStage}` });
+      if (res?.data) {
+        dispatch({ type: 'UPDATE_DEAL', payload: res.data });
+      }
+      const displayStage = newStage === 'Won' ? 'Win' : newStage;
+      addToast({ type: 'success', message: `Moved to ${displayStage}` });
     } catch (err) {
-      addToast({ type: 'error', message: err.message || 'Error updating stage' });
+      // Rollback on error
+      dispatch({ type: 'UPDATE_DEAL', payload: { ...deal, stage: previousStage, probability: previousProbability } });
+      addToast({ type: 'error', message: err.response?.data?.message || err.message || 'Error updating stage' });
     }
   };
 
@@ -425,16 +472,17 @@ export default function DealsPage() {
         </div>
 
         {/* Main Controls Row */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          {/* Search and Filters */}
-          <div className="flex flex-1 w-full md:w-auto items-center gap-3">
-            <div className="relative flex-1 max-w-md" ref={dropdownRef}>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-brand-silver/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          {/* Search, Filter, Sort and Owner Controls */}
+          <div className="flex flex-1 w-full flex-wrap items-center gap-3">
+            {/* Search Bar */}
+            <div className="relative flex-1 min-w-[240px] max-w-md" ref={dropdownRef}>
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <svg className="w-4 h-4 text-brand-silver/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               </div>
               <input 
                 type="text" 
-                placeholder="Search by state, city, company, industry..." 
+                placeholder="Search deals by title, company, contact, city..." 
                 value={search}
                 onChange={e => {
                   setSearch(e.target.value);
@@ -449,10 +497,10 @@ export default function DealsPage() {
                     setSearch('');
                     setShowSuggestions(false);
                   }}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-silver hover:text-brand-red transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-silver hover:text-brand-red transition-colors cursor-pointer"
                   title="Clear search"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  <X className="w-4 h-4" />
                 </button>
               )}
 
@@ -476,32 +524,182 @@ export default function DealsPage() {
                 </div>
               )}
             </div>
-            
+
+            {/* Filter Button - All Deals, Negotiation, Won, Lost, Unassigned */}
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setFilterMenuOpen(!filterMenuOpen)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-bold transition-all shadow-xs cursor-pointer ${
+                  activeStageFilter !== 'all' 
+                    ? 'bg-brand-redLight/40 border-brand-red/40 text-brand-red' 
+                    : 'bg-brand-surfaceAlt/60 border-brand-border text-brand-text hover:bg-white hover:border-gray-300'
+                }`}
+              >
+                <Filter className={`w-4 h-4 ${activeStageFilter !== 'all' ? 'text-brand-red' : 'text-brand-silver'}`} />
+                <span>{filterOptions.find(o => o.key === activeStageFilter)?.label || 'All Deals'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-brand-silver transition-transform duration-200 ${filterMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {filterMenuOpen && (
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-brand-border z-30 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-brand-silver border-b border-gray-100">
+                    Deal Filter
+                  </div>
+                  {filterOptions.map(opt => {
+                    const isSelected = activeStageFilter === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        onClick={() => {
+                          setActiveStageFilter(opt.key);
+                          setFilterMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                          isSelected ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
+                          <span>{opt.label}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${isSelected ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                          {opt.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-brand-silver uppercase tracking-wider hidden md:inline">Sort:</span>
+              <span className="text-xs font-bold text-brand-silver uppercase tracking-wider hidden sm:inline">Sort:</span>
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
-                className="bg-brand-surfaceAlt/50 border border-brand-border rounded-xl px-4 py-2.5 text-sm text-brand-text outline-none focus:bg-white focus:border-brand-red/50 shadow-sm font-bold cursor-pointer"
+                className="bg-brand-surfaceAlt/60 border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-brand-text outline-none focus:bg-white focus:border-brand-red/50 shadow-xs font-bold cursor-pointer"
               >
                 <option value="latest">Latest Added</option>
                 <option value="oldest">Older Added</option>
                 <option value="highest_value">Highest Revenue</option>
                 <option value="lowest_value">Lowest Revenue</option>
+                <option value="group_by_owner">Group by Owner</option>
               </select>
+            </div>
+
+            {/* Right-Aligned Owner Dropdown */}
+            <div className="relative ml-auto" ref={ownerDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setOwnerMenuOpen(!ownerMenuOpen)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all shadow-xs cursor-pointer ${
+                  ownerFilter !== 'all' 
+                    ? 'bg-brand-red text-white border-brand-red shadow-sm' 
+                    : 'bg-white border-brand-border text-brand-charcoal hover:bg-gray-50'
+                }`}
+              >
+                <User className={`w-4 h-4 ${ownerFilter !== 'all' ? 'text-white' : 'text-brand-silver'}`} />
+                <span>{ownerFilter === 'all' ? 'Owner' : ownerFilter === 'unassigned' ? 'Unassigned' : ownerFilter}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${ownerFilter !== 'all' ? 'text-white/80' : 'text-brand-silver'} ${ownerMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {ownerMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-brand-border z-30 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3.5 py-2 text-[10px] font-black uppercase tracking-wider text-brand-silver border-b border-gray-100 flex items-center justify-between">
+                    <span>Filter by Owner</span>
+                    {ownerFilter !== 'all' && (
+                      <button 
+                        onClick={() => { setOwnerFilter('all'); setOwnerMenuOpen(false); }}
+                        className="text-brand-red hover:underline capitalize text-[10px] font-bold cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {/* 1. All Owners */}
+                    <button
+                      onClick={() => {
+                        setOwnerFilter('all');
+                        setOwnerMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                        ownerFilter === 'all' ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Users className="w-4 h-4 text-brand-silver" />
+                        <span>All Owners</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${ownerFilter === 'all' ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                        {allDealsCount}
+                      </span>
+                    </button>
+
+                    {/* 2. Owners Present in the System */}
+                    {existingOwners.map(ownerName => {
+                      const count = getOwnerDealCount(ownerName);
+                      const isSelected = ownerFilter === ownerName;
+                      return (
+                        <button
+                          key={ownerName}
+                          onClick={() => {
+                            setOwnerFilter(ownerName);
+                            setOwnerMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                            isSelected ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate pr-2">
+                            <div className="w-5 h-5 rounded-full bg-brand-charcoal text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                              {ownerName.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="truncate">{ownerName}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0 ${isSelected ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                    {/* 3. Unassigned */}
+                    <button
+                      onClick={() => {
+                        setOwnerFilter('unassigned');
+                        setOwnerMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors border-t border-gray-100 cursor-pointer ${
+                        ownerFilter === 'unassigned' ? 'bg-brand-redLight/20 text-brand-red' : 'text-brand-text hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 text-brand-silver">
+                        <User className="w-4 h-4" />
+                        <span>Unassigned Deals</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${ownerFilter === 'unassigned' ? 'bg-brand-red text-white' : 'bg-gray-100 text-gray-600'}`}>
+                        {unassignedCount}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            <button onClick={openNew} className="px-5 py-2.5 bg-brand-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md transition-all flex items-center gap-2">
+          <div className="flex items-center gap-3 w-full lg:w-auto justify-end shrink-0">
+            <button onClick={openNew} className="px-5 py-2.5 bg-brand-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md transition-all flex items-center gap-2 cursor-pointer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
               Add Deal
             </button>
             <div className="relative">
               <button 
                 onClick={() => setExportMenuOpen(!exportMenuOpen)} 
-                className="p-2.5 bg-white border border-brand-border text-brand-silver rounded-xl hover:bg-gray-50 hover:text-brand-text transition-all shadow-sm flex items-center justify-center"
+                className="p-2.5 bg-white border border-brand-border text-brand-silver rounded-xl hover:bg-gray-50 hover:text-brand-text transition-all shadow-sm flex items-center justify-center cursor-pointer"
                 title="Export Options"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -511,11 +709,11 @@ export default function DealsPage() {
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)}></div>
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-brand-border z-20 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <button onClick={handleExportCSV} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2">
+                    <button onClick={handleExportCSV} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
                       <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                       Export as CSV
                     </button>
-                    <button onClick={handleExportJSON} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50">
+                    <button onClick={handleExportJSON} className="w-full text-left px-4 py-2.5 text-sm text-brand-text font-bold hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50 cursor-pointer">
                       <svg className="w-4 h-4 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                       Export as JSON
                     </button>
@@ -537,12 +735,12 @@ export default function DealsPage() {
                   Selected
                 </span>
                 
-                <button onClick={() => { setSelectedDeal(null); setRevertConfirm(true); }} className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-brand-border rounded-lg text-xs font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm">
+                <button onClick={() => { setSelectedDeal(null); setRevertConfirm(true); }} className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-brand-border rounded-lg text-xs font-bold text-brand-text hover:bg-gray-50 transition-all shadow-sm cursor-pointer">
                   <svg className="w-3.5 h-3.5 text-brand-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                   Revert to Lead
                 </button>
                 
-                <button onClick={() => setBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-brand-redLight border border-brand-red/20 rounded-lg text-xs font-bold text-brand-red hover:bg-red-100 transition-all shadow-sm">
+                <button onClick={() => setBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-brand-redLight border border-brand-red/20 rounded-lg text-xs font-bold text-brand-red hover:bg-red-100 transition-all shadow-sm cursor-pointer">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                   Delete
                 </button>
@@ -559,6 +757,7 @@ export default function DealsPage() {
           onRevertClick={handleRevertClick}
           onStageUpdate={handleStageUpdate}
           activeStageFilter={activeStageFilter}
+          selectedOwner={ownerFilter}
           search={search} 
           sortOrder={sortOrder}
           selectedDeals={selectedDeals}
@@ -572,6 +771,7 @@ export default function DealsPage() {
           onRevertClick={handleRevertClick}
           onStageUpdate={handleStageUpdate}
           activeStageFilter={activeStageFilter}
+          selectedOwner={ownerFilter}
           search={search}
           sortOrder={sortOrder}
           selectedDeals={selectedDeals}

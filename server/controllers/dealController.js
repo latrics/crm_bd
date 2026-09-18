@@ -124,70 +124,70 @@ export const updateDeal = asyncHandler(async (req, res) => {
   const updaterName = req.user ? (req.user.name || req.user.email) : 'System';
   if (ownerChanged) {
     if (existingDeal.owner) {
-      await createNotification({
+      createNotification({
         message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) reassigned to ${deal.owner || 'Unassigned'} by ${updaterName}`,
         type: 'info',
         category: 'Deals',
         recipientUser: existingDeal.owner,
         relatedId: deal._id
-      });
+      }).catch(err => console.error(err));
     }
     if (deal.owner) {
-      await createNotification({
+      createNotification({
         message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) assigned to you by ${updaterName} (previously owned by ${existingDeal.owner || 'Unassigned'})`,
         type: 'assignment',
         category: 'Deals',
         recipientUser: deal.owner,
         relatedId: deal._id
-      });
+      }).catch(err => console.error(err));
     }
   } else if (stageChanged) {
     if (deal.stage === 'Won') {
       if (deal.owner) {
-        await createNotification({
+        createNotification({
           message: `Congrats! Deal ${deal.title} (ID: ${deal.dealId || deal._id}) was WON by you! Value: ₹${deal.value || 0}. Marked by ${updaterName}.`,
           type: 'success',
           category: 'Deals',
           recipientUser: deal.owner,
           relatedId: deal._id
-        });
+        }).catch(err => console.error(err));
       }
-      await createNotification({
+      createNotification({
         message: `Victory! Deal ${deal.title} (ID: ${deal.dealId || deal._id}) was WON by ${deal.owner || 'Unassigned'}! Value: ₹${deal.value || 0}. Marked by ${updaterName}.`,
         type: 'success',
         category: 'Deals',
         recipientRoles: ['Super Admin', 'Admin']
-      });
+      }).catch(err => console.error(err));
     } else if (deal.stage === 'Lost') {
       if (deal.owner) {
-        await createNotification({
+        createNotification({
           message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) marked as Lost by ${updaterName}.`,
           type: 'warning',
           category: 'Deals',
           recipientUser: deal.owner,
           relatedId: deal._id
-        });
+        }).catch(err => console.error(err));
       }
     } else {
       if (deal.owner) {
-        await createNotification({
+        createNotification({
           message: `Deal ${deal.title} (ID: ${deal.dealId || deal._id}) updated to stage ${deal.stage} by ${updaterName}`,
           type: 'info',
           category: 'Deals',
           recipientUser: deal.owner,
           relatedId: deal._id
-        });
+        }).catch(err => console.error(err));
       }
     }
   } else {
     if (deal.owner) {
-      await createNotification({
+      createNotification({
         message: `Deal updated: ${deal.title} (ID: ${deal.dealId || deal._id}) by ${updaterName}`,
         type: 'info',
         category: 'Deals',
         recipientUser: deal.owner,
         relatedId: deal._id
-      });
+      }).catch(err => console.error(err));
     }
   }
 

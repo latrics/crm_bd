@@ -71,7 +71,11 @@ export function CRMProvider({ children }) {
       if (isMounted) dispatch({ type: 'SET_SYNCING', payload: false });
     });
 
-    const interval = setInterval(loadAll, 5000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadAll();
+      }
+    }, 20000);
 
     return () => {
       isMounted = false;

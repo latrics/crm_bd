@@ -60,11 +60,14 @@ export const createLead = asyncHandler(async (req, res) => {
 });
 
 export const updateLead = asyncHandler(async (req, res) => {
-  const existingLead = await Lead.findById(req.params.id);
+  // Parallelize initial check queries to reduce remote MongoDB latency
+  const [existingLead, dealExists] = await Promise.all([
+    Lead.findById(req.params.id),
+    Deal.exists({ from_lead_id: req.params.id })
+  ]);
   if (!existingLead) return res.status(404).json({ success: false, message: 'Lead not found' });
 
   // If existing lead is Converted and has a Deal, protect it from being accidentally reverted to 'Leads'
-  const dealExists = await Deal.exists({ from_lead_id: req.params.id });
   if (existingLead.status === 'Converted' && dealExists && req.body.status === 'Leads') {
     delete req.body.status; // Preserve 'Converted' status
   }
@@ -118,7 +121,7 @@ export const updateLead = asyncHandler(async (req, res) => {
         { entity_type: 'deal' }
       );
       
-      await createNotification({ message: `Congrats! Lead ${lead.company} (ID: ${lead.leadId || lead._id}) converted to Deal (ID: ${deal.dealId}) by ${req.user ? (req.user.name || req.user.email) : 'System'}.`, type: 'success', category: 'Deals', recipientUser: lead.owner, relatedId: lead._id });
+      createNotification({ message: `Congrats! Lead ${lead.company} (ID: ${lead.leadId || lead._id}) converted to Deal (ID: ${deal.dealId}) by ${req.user ? (req.user.name || req.user.email) : 'System'}.`, type: 'success', category: 'Deals', recipientUser: lead.owner, relatedId: lead._id }).catch(err => console.error(err));
       return res.json({ success: true, data: lead, deal });
     } catch (error) {
       return res.status(400).json({ success: false, message: 'Failed to convert to Deal: ' + error.message });
@@ -161,43 +164,43 @@ export const updateLead = asyncHandler(async (req, res) => {
     msg = `Congrats! Task completed successfully within the deadline for lead ${lead.company} (ID: ${lead.leadId || lead._id}) by ${updaterName}.`;
     type = 'success';
     if (lead.owner) {
-      await createNotification({ message: msg, type: type, category: 'Leads', recipientUser: lead.owner, relatedId: lead._id });
+      createNotification({ message: msg, type: type, category: 'Leads', recipientUser: lead.owner, relatedId: lead._id }).catch(err => console.error(err));
     }
   } else if (ownerChanged) {
     if (existingLead.owner) {
-      await createNotification({
+      createNotification({
         message: `Lead ${lead.company} (ID: ${lead.leadId || lead._id}) reassigned to ${lead.owner || 'Unassigned'} by ${updaterName}`,
         type: 'info',
         category: 'Leads',
         recipientUser: existingLead.owner,
         relatedId: lead._id
-      });
+      }).catch(err => console.error(err));
     }
     if (lead.owner) {
-      await createNotification({
+      createNotification({
         message: `Lead ${lead.company} (ID: ${lead.leadId || lead._id}) assigned to you by ${updaterName} (previously owned by ${existingLead.owner || 'Unassigned'})`,
         type: 'assignment',
         category: 'Leads',
         recipientUser: lead.owner,
         relatedId: lead._id
-      });
+      }).catch(err => console.error(err));
     }
   } else {
     msg = `Lead updated: ${lead.company} (ID: ${lead.leadId || lead._id}) by ${updaterName}`;
     if (lead.owner) {
-      await createNotification({ message: msg, type: type, category: 'Leads', recipientUser: lead.owner, relatedId: lead._id });
+      createNotification({ message: msg, type: type, category: 'Leads', recipientUser: lead.owner, relatedId: lead._id }).catch(err => console.error(err));
     }
   }
 
-  // Notify creator if status updated to Communicated or later
+  // Notify creator if status updated to Communicated or later (non-blocking)
   if (statusChangedToCommunicatedOrLater && lead.addedBy && lead.addedBy !== lead.owner) {
-    await createNotification({
+    createNotification({
       message: `Progress Update: Lead ${lead.company} (ID: ${lead.leadId || lead._id}) is now ${lead.status} (added by you, updated by ${updaterName})`,
       type: 'info',
       category: 'Leads',
       recipientUser: lead.addedBy,
       relatedId: lead._id
-    });
+    }).catch(err => console.error(err));
   }
 
   res.json({ success: true, data: lead });
