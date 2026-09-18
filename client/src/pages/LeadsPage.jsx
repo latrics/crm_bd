@@ -14,6 +14,7 @@ import { createLead, updateLead, deleteLead, deleteMultipleLeads, convertLead, r
 import useToast from '../hooks/useToast.js';
 import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODELS, BANT_TABS } from '../constants/index.js';
 import { bantScore, bantCat } from '../utils/bantHelpers.js';
+import { getOwnerDisplayName } from '../utils/formatters.js';
 import { Search, Filter, ChevronDown, User, Users, X, Building, MapPin, Briefcase } from 'lucide-react';
 
 export default function LeadsPage() {
@@ -141,10 +142,12 @@ export default function LeadsPage() {
   }));
 
   const existingOwners = useMemo(() => {
-    const fromOwners = (state.owners || []).map(o => o.name).filter(Boolean);
-    const fromLeads = (state.leads || []).map(l => l.owner).filter(Boolean);
-    return [...new Set([...fromOwners, ...fromLeads])].sort();
-  }, [state.owners, state.leads]);
+    return (state.owners || [])
+      .map(o => getOwnerDisplayName(o.name || o.email, state.owners))
+      .filter(Boolean)
+      .filter((name, idx, arr) => arr.indexOf(name) === idx)
+      .sort();
+  }, [state.owners]);
 
   const allLeadsCount = (state.leads || []).filter(l => l && l.status !== 'Converted').length;
   const unassignedCount = (state.leads || []).filter(l => l && l.status !== 'Converted' && (!l.owner || !l.owner.trim())).length;
@@ -178,11 +181,12 @@ export default function LeadsPage() {
     }).length;
   };
 
-  const getOwnerLeadCount = (ownerName) => {
+  const getOwnerLeadCount = (ownerDisplayName) => {
     return (state.leads || []).filter(l => {
       if (!l) return false;
-      if (leadFilter === 'converted') return l.status === 'Converted' && l.owner === ownerName;
-      return l.status !== 'Converted' && l.owner === ownerName;
+      const lOwnerName = getOwnerDisplayName(l.owner, state.owners);
+      if (leadFilter === 'converted') return l.status === 'Converted' && lOwnerName === ownerDisplayName;
+      return l.status !== 'Converted' && lOwnerName === ownerDisplayName;
     }).length;
   };
 

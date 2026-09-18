@@ -12,6 +12,7 @@ import { LEAD_STAGES, SOURCES, FLAT_SOURCES, SECTORS, STG_COLORS, BUSINESS_MODEL
 import { updateLead, deleteLead } from '../../api/leadsApi.js';
 import { getNotifications, markNotificationAsRead } from '../../api/notificationsApi.js';
 import useToast from '../../hooks/useToast.js';
+import { fmt, getOwnerDisplayName } from '../../utils/formatters.js';
 import { AlertTriangle, Hourglass, User, CheckCircle2, Bell, BarChart2, Clock, Sparkles, Target, Briefcase, Folder } from 'lucide-react';
 
 
@@ -126,17 +127,9 @@ export default function Notifications() {
     return clean(owner) === clean(userName);
   };
 
-  // Helper to format owner names in short form (e.g. Snigdha Kundu -> Snigdha K.)
+  // Helper to format owner names using profile display name
   const getShortName = (name) => {
-    if (!name) return '';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length > 1) {
-      const firstName = parts[0];
-      const lastName = parts[parts.length - 1];
-      if (lastName.length === 1) return `${firstName} ${lastName}`;
-      return `${firstName} ${lastName.charAt(0)}.`;
-    }
-    return name;
+    return getOwnerDisplayName(name, state.owners);
   };
 
   // Calculate owner workload statistics (Admins / Super Admins only)

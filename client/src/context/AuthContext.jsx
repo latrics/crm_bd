@@ -174,13 +174,18 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
-  const updateProfile = (updatedFields) => {
+  const updateProfile = async (updatedFields) => {
     dispatch({ type: 'UPDATE_PROFILE', payload: updatedFields });
     if (state.user?.email) {
       const key = `latrics_crm_user_profile_${state.user.email.toLowerCase()}`;
       const stored = JSON.parse(localStorage.getItem(key) || '{}');
       const merged = { ...stored, ...updatedFields };
       localStorage.setItem(key, JSON.stringify(merged));
+    }
+    try {
+      await authApi.updateProfile(updatedFields);
+    } catch (e) {
+      console.warn('Backend profile update silent warning:', e);
     }
   };
 

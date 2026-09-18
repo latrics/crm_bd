@@ -5,7 +5,7 @@ import { bantScore, bantCat } from '../../utils/bantHelpers.js';
 import Badge from '../common/Badge.jsx';
 import DocsPanel from '../docs/DocsPanel.jsx';
 import { Clock, ChevronDown, ChevronRight } from 'lucide-react';
-import { fmt } from '../../utils/formatters.js';
+import { fmt, getOwnerDisplayName } from '../../utils/formatters.js';
 
 export default function LeadsView({ 
   onLeadClick, 
@@ -50,7 +50,10 @@ export default function LeadsView({
     if (selectedOwner === 'unassigned') {
       filteredLeads = filteredLeads.filter(l => l && (!l.owner || !l.owner.trim()));
     } else {
-      filteredLeads = filteredLeads.filter(l => l && l.owner === selectedOwner);
+      filteredLeads = filteredLeads.filter(l => l && (
+        (l.owner || '').trim().toLowerCase() === selectedOwner.trim().toLowerCase() ||
+        getOwnerDisplayName(l.owner, state.owners).toLowerCase() === selectedOwner.trim().toLowerCase()
+      ));
     }
   }
 
@@ -175,23 +178,24 @@ export default function LeadsView({
     if (sortOrder !== 'group_by_owner') return null;
     const groups = {};
     filteredLeads.forEach(lead => {
-      const ownerName = lead.owner && lead.owner.trim() ? lead.owner.trim() : 'Unassigned';
-      if (!groups[ownerName]) {
-        groups[ownerName] = {
-          ownerName,
+      const rawOwner = lead.owner && lead.owner.trim() ? lead.owner.trim() : 'Unassigned';
+      const resolvedOwner = rawOwner === 'Unassigned' ? 'Unassigned' : getOwnerDisplayName(rawOwner, state.owners);
+      if (!groups[resolvedOwner]) {
+        groups[resolvedOwner] = {
+          ownerName: resolvedOwner,
           leads: [],
           totalValue: 0
         };
       }
-      groups[ownerName].leads.push(lead);
-      groups[ownerName].totalValue += (Number(lead.value) || 0);
+      groups[resolvedOwner].leads.push(lead);
+      groups[resolvedOwner].totalValue += (Number(lead.value) || 0);
     });
     return Object.values(groups).sort((a, b) => {
       if (a.ownerName === 'Unassigned') return 1;
       if (b.ownerName === 'Unassigned') return -1;
       return a.ownerName.localeCompare(b.ownerName);
     });
-  }, [sortOrder, filteredLeads]);
+  }, [sortOrder, filteredLeads, state.owners]);
 
   const toggleOwnerCollapse = (ownerName) => {
     setCollapsedOwners(prev => ({
@@ -317,9 +321,9 @@ export default function LeadsView({
               {lead.owner && (
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full py-1 pl-1 pr-3 shadow-sm">
                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-red">
-                      <span>{lead.owner.charAt(0)}</span>
+                      <span>{getOwnerDisplayName(lead.owner, state.owners).charAt(0).toUpperCase()}</span>
                    </div>
-                   <span className="text-xs text-brand-charcoal font-bold">{getShortName(lead.owner)}</span>
+                   <span className="text-xs text-brand-charcoal font-bold">{getOwnerDisplayName(lead.owner, state.owners)}</span>
                 </div>
               )}
               

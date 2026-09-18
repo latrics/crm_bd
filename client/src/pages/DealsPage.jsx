@@ -12,6 +12,7 @@ import Confirm from '../components/common/Confirm.jsx';
 import { createDeal, updateDeal, deleteDeal, revertDeal } from '../api/dealsApi.js';
 import useToast from '../hooks/useToast.js';
 import { DEAL_STAGES, LEAD_STAGES, SECTORS, DEAL_COLORS, SOURCES, FLAT_SOURCES, BUSINESS_MODELS } from '../constants/index.js';
+import { getOwnerDisplayName } from '../utils/formatters.js';
 import { Filter, ChevronDown, Users, User, X } from 'lucide-react';
 
 export default function DealsPage() {
@@ -145,13 +146,18 @@ export default function DealsPage() {
   const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 100) : 0;
 
   const existingOwners = useMemo(() => {
-    const fromOwners = (state.owners || []).map(o => o.name).filter(Boolean);
-    const fromDeals = (state.deals || []).map(d => d.owner).filter(Boolean);
-    return [...new Set([...fromOwners, ...fromDeals])].sort();
-  }, [state.owners, state.deals]);
+    return (state.owners || [])
+      .map(o => getOwnerDisplayName(o.name || o.email, state.owners))
+      .filter(Boolean)
+      .filter((name, idx, arr) => arr.indexOf(name) === idx)
+      .sort();
+  }, [state.owners]);
 
-  const getOwnerDealCount = (ownerName) => {
-    return (state.deals || []).filter(d => (d.owner || '').trim().toLowerCase() === ownerName.trim().toLowerCase()).length;
+  const getOwnerDealCount = (ownerDisplayName) => {
+    return (state.deals || []).filter(d => d && (
+      (d.owner || '').trim().toLowerCase() === ownerDisplayName.trim().toLowerCase() ||
+      getOwnerDisplayName(d.owner, state.owners).toLowerCase() === ownerDisplayName.trim().toLowerCase()
+    )).length;
   };
 
   const filterOptions = [

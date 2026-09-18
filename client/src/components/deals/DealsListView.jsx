@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import useCRM from '../../hooks/useCRM.js';
 import { DEAL_COLORS } from '../../constants/index.js';
-import { fmt } from '../../utils/formatters.js';
+import { fmt, getOwnerDisplayName } from '../../utils/formatters.js';
 import Badge from '../common/Badge.jsx';
 
 export default function DealsListView({ 
@@ -10,7 +10,7 @@ export default function DealsListView({
   onRevertClick, 
   search, 
   activeStageFilter, 
-  selectedOwner,
+  selectedOwner, 
   selectedDeals = [], 
   onToggleSelect, 
   onToggleSelectAll,
@@ -62,7 +62,10 @@ export default function DealsListView({
     if (selectedOwner === 'unassigned') {
       filteredDeals = filteredDeals.filter(d => !d || !d.owner || !d.owner.trim());
     } else {
-      filteredDeals = filteredDeals.filter(d => (d?.owner || '').trim().toLowerCase() === selectedOwner.trim().toLowerCase());
+      filteredDeals = filteredDeals.filter(d => d && (
+        (d?.owner || '').trim().toLowerCase() === selectedOwner.trim().toLowerCase() ||
+        getOwnerDisplayName(d?.owner, state.owners).toLowerCase() === selectedOwner.trim().toLowerCase()
+      ));
     }
   }
 
@@ -75,8 +78,8 @@ export default function DealsListView({
     filteredDeals.sort((a, b) => new Date(a?.createdAt || 0) - new Date(b?.createdAt || 0));
   } else if (sortOrder === 'group_by_owner') {
     filteredDeals.sort((a, b) => {
-      const ownerA = a.owner && a.owner.trim() ? a.owner.trim() : 'Unassigned';
-      const ownerB = b.owner && b.owner.trim() ? b.owner.trim() : 'Unassigned';
+      const ownerA = a.owner && a.owner.trim() ? getOwnerDisplayName(a.owner, state.owners) : 'Unassigned';
+      const ownerB = b.owner && b.owner.trim() ? getOwnerDisplayName(b.owner, state.owners) : 'Unassigned';
       if (ownerA === 'Unassigned') return 1;
       if (ownerB === 'Unassigned') return -1;
       const cmp = ownerA.localeCompare(ownerB);
@@ -180,9 +183,9 @@ export default function DealsListView({
                 <td className="py-5 px-5 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-brand-surfaceAlt border border-brand-border flex items-center justify-center text-[10px] font-bold text-brand-text">
-                      {deal.owner?.charAt(0) || '?'}
+                      {deal.owner ? getOwnerDisplayName(deal.owner, state.owners).charAt(0).toUpperCase() : '?'}
                     </div>
-                    <span className="text-xs text-brand-text font-medium">{deal.owner || 'Unassigned'}</span>
+                    <span className="text-xs text-brand-text font-medium">{deal.owner ? getOwnerDisplayName(deal.owner, state.owners) : 'Unassigned'}</span>
                   </div>
                 </td>
                 <td className="py-5 px-5 whitespace-nowrap text-[11px] text-brand-text">

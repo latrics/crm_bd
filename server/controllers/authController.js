@@ -163,6 +163,10 @@ export const syncUser = asyncHandler(async (req, res) => {
       user.clerkId = clerkId;
       isUpdated = true;
     }
+    if (name && name.trim() && (user.name !== name.trim() || user.name.includes('.') || user.name.includes('_'))) {
+      user.name = name.trim();
+      isUpdated = true;
+    }
     user.lastActiveAt = new Date();
     await user.save();
   }
@@ -179,11 +183,61 @@ export const syncUser = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get all active owners
+// @desc    Update current user profile
+// @route   PUT /api/v1/auth/profile
+// @access  Private
+export const updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.user.id || req.user._id;
+  const user = await User.findById(userId);
+  if (!user || !user.isActive) {
+    return res.status(404).json({ success: false, message: 'User not found or inactive.' });
+  }
+
+  if (req.body.name && req.body.name.trim()) {
+    user.name = req.body.name.trim();
+  }
+  if (req.body.phone !== undefined) {
+    user.phone = req.body.phone.trim();
+  }
+  if (req.body.company !== undefined) {
+    user.company = req.body.company.trim();
+  }
+
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      isOwner: user.isOwner
+    }
+  });
+});
+
+// @desc    Get all active owners (users with Owner tag)
 // @route   GET /api/v1/auth/owners
 // @access  Private
 export const getOwners = asyncHandler(async (req, res) => {
-  const owners = await User.find({ isOwner: true, isActive: true }).select('name email').lean();
-  res.status(200).json({ success: true, data: owners });
+  const owners = await User.find({ isOwner: true, isActive: { $ne: false } }).select('name email role isOwner').lean();
+  
+  // Format each owner name into their full name
+  const formattedOwners = owners.map(o => {
+    let name = (o.name || '').trim();
+    if (!name || name.includes('@') || /[._-]/.test(name)) {
+      const clean = (name || o.email || '').split('@')[0];
+      name = clean
+        .split(/[._\-\s]+/)
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+    }
+    return { ...o, name };
+  });
+
+  res.status(200).json({ success: true, data: formattedOwners });
 });
 

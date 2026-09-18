@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import useCRM from '../../hooks/useCRM.js';
 import { DEAL_STAGES, DEAL_COLORS } from '../../constants/index.js';
 import DocsPanel from '../docs/DocsPanel.jsx';
-import { fmt } from '../../utils/formatters.js';
+import { fmt, getOwnerDisplayName } from '../../utils/formatters.js';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function DealsView({ 
@@ -67,7 +67,10 @@ export default function DealsView({
     if (selectedOwner === 'unassigned') {
       filteredDeals = filteredDeals.filter(d => !d || !d.owner || !d.owner.trim());
     } else {
-      filteredDeals = filteredDeals.filter(d => (d?.owner || '').trim().toLowerCase() === selectedOwner.trim().toLowerCase());
+      filteredDeals = filteredDeals.filter(d => d && (
+        (d?.owner || '').trim().toLowerCase() === selectedOwner.trim().toLowerCase() ||
+        getOwnerDisplayName(d?.owner, state.owners).toLowerCase() === selectedOwner.trim().toLowerCase()
+      ));
     }
   }
 
@@ -94,7 +97,8 @@ export default function DealsView({
     if (sortOrder !== 'group_by_owner' || !filteredDeals) return null;
     const groups = {};
     filteredDeals.forEach(deal => {
-      const ownerName = deal.owner && deal.owner.trim() ? deal.owner.trim() : 'Unassigned';
+      const rawOwner = deal.owner && deal.owner.trim() ? deal.owner.trim() : '';
+      const ownerName = rawOwner ? getOwnerDisplayName(rawOwner, state.owners) : 'Unassigned';
       if (!groups[ownerName]) {
         groups[ownerName] = {
           ownerName,
@@ -111,7 +115,7 @@ export default function DealsView({
       if (b.ownerName === 'Unassigned') return -1;
       return a.ownerName.localeCompare(b.ownerName);
     });
-  }, [filteredDeals, sortOrder]);
+  }, [filteredDeals, sortOrder, state.owners]);
 
   const toggleOwnerGroup = (ownerName) => {
     setCollapsedOwners(prev => ({
@@ -148,18 +152,6 @@ export default function DealsView({
       return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    const getShortName = (name) => {
-      if (!name) return '';
-      const parts = name.trim().split(/\s+/);
-      if (parts.length > 1) {
-        const firstName = parts[0];
-        const lastName = parts[parts.length - 1];
-        if (lastName.length === 1) return `${firstName} ${lastName}`;
-        return `${firstName} ${lastName.charAt(0)}.`;
-      }
-      return name;
-    };
-
     let cardStyle = {};
     if (isWon) {
       cardStyle = {
@@ -188,7 +180,7 @@ export default function DealsView({
             <div className="flex items-center gap-4 flex-1 min-w-0">
               {onToggleSelect && (
                 <input 
-                  type="checkbox"
+                  type="checkbox" 
                   className="w-4 h-4 cursor-pointer accent-brand-red shrink-0"
                   checked={selectedDeals.includes(deal._id)}
                   onChange={() => onToggleSelect(deal._id)}
@@ -215,9 +207,9 @@ export default function DealsView({
               {deal.owner && (
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full py-1 pl-1 pr-3 shadow-sm">
                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-brand-red">
-                      <span>{deal.owner.charAt(0)}</span>
+                      <span>{getOwnerDisplayName(deal.owner, state.owners).charAt(0).toUpperCase()}</span>
                    </div>
-                   <span className="text-xs text-brand-charcoal font-bold">{getShortName(deal.owner)}</span>
+                   <span className="text-xs text-brand-charcoal font-bold">{getOwnerDisplayName(deal.owner, state.owners)}</span>
                 </div>
               )}
               

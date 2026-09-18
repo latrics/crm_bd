@@ -7,7 +7,7 @@ import PipelineBySector from '../components/dashboard/PipelineBySector.jsx';
 import ChartCard from '../components/charts/ChartCard.jsx';
 import ChartCanvas from '../components/charts/ChartCanvas.jsx';
 import { getQuickRange, daysBetween } from '../utils/dateHelpers.js';
-import { fmt } from '../utils/formatters.js';
+import { fmt, getOwnerDisplayName } from '../utils/formatters.js';
 import { LEAD_STAGES } from '../constants/index.js';
 import { Users, Target, Percent, Trophy } from 'lucide-react';
 
@@ -264,14 +264,14 @@ export default function DashboardPage() {
     return leads.filter(l => l.status === stage).length;
   });
 
-  const allUniqueOwners = Array.from(new Set([
-    ...(state.owners || []).map(o => o.name),
-    ...leads.map(l => l.owner).filter(Boolean)
-  ]));
+  const allUniqueOwners = (state.owners || [])
+    .map(o => getOwnerDisplayName(o.name || o.email, state.owners))
+    .filter(Boolean)
+    .filter((name, idx, arr) => arr.indexOf(name) === idx);
 
   const leadsByOwner = allUniqueOwners.map(owner => ({
     owner,
-    count: leads.filter(l => l.owner === owner).length
+    count: leads.filter(l => getOwnerDisplayName(l.owner, state.owners) === owner).length
   })).sort((a,b) => b.count - a.count);
 
   const maxOwnerCount = Math.max(...leadsByOwner.map(o => o.count), 1);

@@ -96,3 +96,12 @@ export const getOwners = async () => {
     throw err.response?.data || err;
   }
 };
+
+export const updateProfile = async (profileData) => {
+  try {
+    const res = await axios.put(`${API_URL}/profile`, profileData);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
