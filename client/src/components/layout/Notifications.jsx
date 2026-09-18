@@ -123,8 +123,12 @@ export default function Notifications() {
   // Case-insensitive name comparison helper to match different formats (e.g. snigdha.kundu vs Snigdha Kundu)
   const isMatch = (owner, userName) => {
     if (!owner || !userName) return false;
-    const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return clean(owner) === clean(userName);
+    const clean = (str) => (str || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanO = clean(owner);
+    const cleanU = clean(userName);
+    const cleanOUser = clean(owner.toString().split('@')[0]);
+    const cleanUUser = clean(userName.toString().split('@')[0]);
+    return cleanO === cleanU || cleanOUser === cleanU || cleanO === cleanUUser || cleanOUser === cleanUUser;
   };
 
   // Helper to format owner names using profile display name

@@ -11,6 +11,7 @@ import {
   Mail, Phone, Camera, Image as ImageIcon, ChevronDown, ChevronUp, AlertCircle,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { getOwnerDisplayName } from '../utils/formatters.js';
 import latricsWhiteLogo from '../assets/images/Latrics_white_logo_full.svg';
 
 // Helper to detect actual browser & OS from navigator.userAgent
@@ -289,20 +290,33 @@ export default function AccountPage() {
 
   // Personal statistics strictly filtered for the logged-in user
   const userId = user?._id?.toString();
-  const userName = user?.name?.toLowerCase();
-  const userEmail = user?.email?.toLowerCase();
+  const clean = (str) => (str || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const userCleanName = clean(user?.name);
+  const userCleanEmailUser = clean((user?.email || '').split('@')[0]);
+  const userCleanEmail = clean(user?.email);
 
   const isUserMatch = (item) => {
     if (!item) return false;
-    const createdBy = (item.created_by || item.createdBy || '').toString();
+    const createdBy = (item.created_by || item.createdBy || item.userId || '').toString();
     const assignedTo = (item.assigned_to || item.assignedTo || '').toString();
-    const owner = (item.owner || item.owner_name || item.assigned_to || '').toString().toLowerCase();
+    const rawOwner = (item.owner || item.owner_name || item.assigned_to || '').toString();
+    const cleanOwner = clean(rawOwner);
+    const cleanOwnerUser = clean(rawOwner.split('@')[0]);
+    const cleanBroughtBy = clean(item.broughtBy || item.brought_by || '');
 
-    return (
-      (userId && (createdBy === userId || assignedTo === userId)) ||
-      (userName && owner.includes(userName)) ||
-      (userEmail && owner.includes(userEmail))
-    );
+    if (userId && (createdBy === userId || assignedTo === userId)) return true;
+
+    if (userCleanName && (cleanOwner === userCleanName || cleanOwnerUser === userCleanName || cleanBroughtBy === userCleanName)) return true;
+    if (userCleanEmailUser && (cleanOwner === userCleanEmailUser || cleanOwnerUser === userCleanEmailUser || cleanBroughtBy === userCleanEmailUser)) return true;
+    if (userCleanEmail && cleanOwner === userCleanEmail) return true;
+
+    // Check with getOwnerDisplayName
+    if (user?.name && rawOwner) {
+      const resolved = getOwnerDisplayName(rawOwner, state.owners);
+      if (clean(resolved) === userCleanName) return true;
+    }
+
+    return false;
   };
 
   const myLeads = (state.leads || []).filter(isUserMatch);
@@ -347,13 +361,9 @@ export default function AccountPage() {
   // Group leads by broughtBy field
   const activeLeadsList = isAdminOrSuper ? (state.leads || []) : myLeads;
   
-  const capitalizeName = (str) => {
-    if (!str) return 'Unassigned';
-    return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-  };
-
   const leadsGroupedByBroughtBy = activeLeadsList.reduce((acc, lead) => {
-    const name = lead.broughtBy?.trim() ? capitalizeName(lead.broughtBy.trim()) : 'Unassigned';
+    const rawBrought = lead.broughtBy?.trim() || lead.owner?.trim();
+    const name = rawBrought ? getOwnerDisplayName(rawBrought, state.owners) : 'Unassigned';
     acc[name] = (acc[name] || 0) + 1;
     return acc;
   }, {});
